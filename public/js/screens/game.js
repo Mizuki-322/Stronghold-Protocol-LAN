@@ -87,6 +87,7 @@ import { BondStrip, BondPopup } from '../ui/bondStrip.js';
 import { TeamPanel } from '../ui/teamPanel.js';
 import { ShopBar } from '../ui/shopBar.js';
 import { DetailPanel, resolveDetail } from '../ui/detailPanel.js';
+import { TraitSynergyDialog } from '../ui/traitSynergyDialog.js';
 import { RewardOverlay } from '../ui/rewardOverlay.js';
 import { FinalAssaultPlate, HiddenCorePlate, EndPlate, preloadBossPlateArt, bossPlateArtReady, finalPlateRows, endPlateOf } from '../ui/bossPlates.js';
 import { DownedPlate, downedDue, preloadDownedArt, downedArtReady } from '../ui/downedPlate.js';
@@ -219,6 +220,7 @@ function MatchScreen() {
   const [bondOpen, setBondOpen] = useState(null);        // { id, ownerId, from }: the bond popup and whose bond it shows
   const [bondsCollapsed, setBondsCollapsed] = useState(false);
   const [detail, setDetail] = useState(null);            // detail target
+  const [traitSynergyId, setTraitSynergyId] = useState(null);
   // every shop / reward card opened by a tap is a new tap — `tap` in the target: two cards of one operator (the pool
   // deals duplicates) carry the same chess id and no piece, and each must say its 选中干员 (detailPanel selectVoiceKey)
   const cardTap = useRef(0);
@@ -1765,7 +1767,9 @@ function MatchScreen() {
         bonds=${detailBonds} offBonds=${offBonds} loadout=${detailLoadout} ops=${priv?.ops ?? null} side=${dSide} shopOpen=${shopOpen} live=${liveStats} voice=${true}
         morphMode=${morphMode} unequipAllowed=${unequipAllow}
         onUnequip=${editable && unequipAllow ? (itemUid) => actions.unequip(itemUid) : null}
-        onBond=${(id) => openBond(id, detailOwner, 'detail')} />` : null}
+        onBond=${(id) => openBond(id, detailOwner, 'detail')} onSynergy=${setTraitSynergyId} />` : null}
+      ${traitSynergyId ? html`<${TraitSynergyDialog} synergyId=${traitSynergyId} bannedChess=${pub?.bannedChess || []}
+        onClose=${() => setTraitSynergyId(null)} onPick=${(id) => { setTraitSynergyId(null); setDetail({ kind: 'chess', id, foreign: true }); }} />` : null}
 
       ${selEntry && editable && !facing && !drag && showPrep ? html`<${Underframe} key=${sel.uid} view=${view} uid=${sel.uid}
         row=${pieceTile(selEntry)?.row} col=${pieceTile(selEntry)?.col} actions=${underframeActions(placeCtx, sel.uid)} busy=${selBusy}

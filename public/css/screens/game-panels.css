@@ -170,6 +170,18 @@
 .dgarrison__type { display: inline-flex; align-items: center; gap: .04rem; font-size: calc(.12 * var(--t)); line-height: 1.5; color: var(--gold-2); padding: 0 .07rem 0 .03rem; border: 1px solid rgba(242, 189, 62, .4); }
 .dgarrison__icon { width: .18rem; height: .18rem; object-fit: contain; }
 .dgarrison__text { font-size: calc(.15 * var(--t)); line-height: 1.55; color: var(--text-hi); }
+.dgarrison__synergy { align-self: flex-start; padding: .03rem .1rem; font: inherit; font-size: calc(.13 * var(--t)); color: var(--mint-400); background: rgba(78, 216, 175, .08); border: 1px solid var(--mint-800); cursor: pointer; }
+.dgarrison__synergy:hover, .dgarrison__synergy:focus-visible { color: var(--text-hi); border-color: var(--mint-400); }
+.modal__box.trait-synergy-dialog { width: min(8.8rem, 94vw); }
+.trait-synergy-dialog__summary { margin: 0 0 .1rem; font-size: max(.15rem, 12px); line-height: 1.55; }
+.trait-synergy-dialog__count { margin: 0 0 .14rem; color: var(--mint-400); font-size: max(.14rem, 11px); }
+.trait-synergy-dialog__list { display: grid; grid-template-columns: repeat(auto-fill, minmax(max(.85rem, 66px), 1fr)); gap: .1rem; }
+.trait-synergy-dialog__operator { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: .05rem; padding: .08rem .03rem; font: inherit; color: var(--text-hi); background: rgba(255, 255, 255, .035); border: 1px solid var(--line); cursor: pointer; }
+.trait-synergy-dialog__operator:hover, .trait-synergy-dialog__operator:focus-visible { border-color: var(--mint-400); }
+.trait-synergy-dialog__portrait { position: relative; }
+.trait-synergy-dialog__ban { position: absolute; top: -.04rem; right: -.08rem; width: .22rem; height: .22rem; display: grid; place-items: center; color: white; background: var(--red); border-radius: 50%; }
+.trait-synergy-dialog__ban .icon { width: 75%; height: 75%; }
+.trait-synergy-dialog__name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: max(.12rem, 10px); }
 .dbonds { display: flex; flex-wrap: wrap; gap: .08rem; }
 .dbond { display: inline-flex; align-items: center; gap: .05rem; padding: .03rem .1rem .03rem .05rem; font-size: calc(.15 * var(--t)); background: rgba(78, 216, 175, .08); border: 1px solid var(--mint-800); color: var(--mint-400); }
 /* the unit's bonds in the header's right column, right under name / class (user playtest #2 item 9): icon, name,

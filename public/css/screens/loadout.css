@@ -126,6 +126,8 @@
 }
 .lo-select select option { background: var(--bg-2); color: var(--text-hi); }
 .lo-select:focus-within { border-color: var(--mint-700); }
+.lo-synergy-summary { margin: .02rem 0 .04rem; padding: .06rem .1rem; font-size: max(.14rem, 11px); line-height: 1.45; color: var(--text-lo); border-left: 2px solid var(--mint-500); background: rgba(78, 216, 175, .07); }
+.lo-synergy-summary b { color: var(--mint-400); white-space: nowrap; }
 
 .lo-toggle {
   display: inline-flex; align-items: center; gap: .07rem; height: max(.4rem, 24px); padding: 0 .12rem;

@@ -65,7 +65,7 @@ export const loadoutStore = createStore({
   from: null,          // 'lobby' | 'room' | 'briefing' | 'prep'
   tab: 'loadout',      // 'loadout' (干员调配) | 'ownership' (干员持有) | 'diy' (自选编队)
   sel: null,           // selected base chess id
-  filters: { tier: null, prof: null, bond: null, query: '', changedOnly: false },
+  filters: { tier: null, prof: null, bond: null, query: '', changedOnly: false, synergy: null },
   sync: 'idle',
   ownSync: 'idle',
   diySync: 'idle',

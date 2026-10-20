@@ -27,6 +27,7 @@ import { html, Icon, MicroLabel, Button, TierChip, TextField, Countdown, Spinner
 import { Img, RichText, UnitThumb } from '../ui/gameComponents.js';
 import { chessAvatarUrl, chessPortraitUrl, subProfIconUrl, bondIconUrl, moduleTypeIconUrl } from '../ui/assetUrls.js';
 import { GarrisonBlock } from '../ui/detailPanel.js';
+import { TRAIT_SYNERGIES, traitSynergy, traitSynergyForGarrison } from '../ui/traitSynergy.js';
 import { data, useData, localAsset, DATA_FILES } from '../data.js';
 import { useStore } from '../store.js';
 import { PHASE } from '../../../shared/constants.js';
@@ -237,10 +238,11 @@ export function RosterRow({ m, chess, golden, entries, ops = {}, selected, onPic
 // ---- detail --------------------------------------------------------------------------------------------------------------
 
 /** The same attribute records and rich-text renderer as the in-match card, including literal trigger markers. */
-export function LoadoutGarrisons({ chess, m }) {
+export function LoadoutGarrisons({ chess, m, onSynergy = null }) {
   const records = (chess?.garrisonIds || []).map((id) => data.lookup('garrisons', id)).filter(Boolean);
   return records.length ? html`<section class="lo-garrisons" data-variant=${chess.isGolden ? 'elite' : 'normal'}>
-    ${records.map((garrison) => html`<${GarrisonBlock} key=${garrison.garrisonId} garrison=${garrison} m=${m} />`)}
+    ${records.map((garrison) => html`<${GarrisonBlock} key=${garrison.garrisonId} garrison=${garrison} m=${m}
+      synergy=${traitSynergyForGarrison(garrison.garrisonId)} onSynergy=${onSynergy} />`)}
   </section>` : null;
 }
 
@@ -310,7 +312,7 @@ export function ModuleInfo({ m, golden, opt, potential = null }) {
 const standInName = (chess) => data.get('backups')?.units?.[chess?.backup?.charId]?.name ?? null;
 
 
-function Detail({ m, chess, golden, entries, ops = {}, onChange, onOps, onReset, locked, level = 'normal', onLevel, notOwned = false }) {
+function Detail({ m, chess, golden, entries, ops = {}, onChange, onOps, onReset, onSynergy, locked, level = 'normal', onLevel, notOwned = false }) {
   const [statLevel, setStatLevel] = useState('elite'); // 局内数值: the 精锐 shows the chosen module's effect
   const setLevel = onLevel;
   const bodyRef = useRef(null);
@@ -352,7 +354,7 @@ function Detail({ m, chess, golden, entries, ops = {}, onChange, onOps, onReset,
            it has no skin). */ null}
       <${SkinSection} charId=${chess.charId} />
       <${CultivationSection} charId=${chess.charId} ops=${ops} onSet=${onOps} standIn=${notOwned} />
-      <${LoadoutGarrisons} chess=${level === 'elite' && golden ? golden : chess} m=${m} />
+      <${LoadoutGarrisons} chess=${level === 'elite' && golden ? golden : chess} m=${m} onSynergy=${onSynergy} />
       <section class="lo-sec">
         <header class="lo-sec__head">
           <h3>${t('技能')}<${MicroLabel}>SKILL<//></h3>
@@ -395,8 +397,9 @@ function Detail({ m, chess, golden, entries, ops = {}, onChange, onOps, onReset,
 
 // ---- filters -------------------------------------------------------------------------------------------------------------
 
-function Filters({ m, filters, onFilters, bonds }) {
+function Filters({ m, filters, onFilters, bonds, getChess, resultCount }) {
   const set = (patch) => onFilters({ ...filters, ...patch });
+  const synergy = traitSynergy(filters.synergy);
   return html`<div class="lo-filters">
     <div class="lo-frow">
       <div class="lo-chips" role="group" aria-label=${t('阶级')}>
@@ -420,9 +423,19 @@ function Filters({ m, filters, onFilters, bonds }) {
           ${bonds.map((b) => html`<option key=${b.bondId} value=${b.bondId}>${b.name}</option>`)}
         </select>
       </label>
+      <label class="lo-select">
+        <span class="lo-select__k">${t('特质配合')}</span>
+        <select value=${synergy?.id || ''} onChange=${(e) => set({ synergy: e.currentTarget.value || null })} aria-label=${t('按特质配合筛选')}>
+          <option value="">${t('全部组合')}</option>
+          ${TRAIT_SYNERGIES.map((p) => html`<option key=${p.id} value=${p.id}>${t('{name} · {timing}', {
+            name: getChess(p.sourceChessId)?.name || '', timing: t(p.targetLabel),
+          })}</option>`)}
+        </select>
+      </label>
       <button type="button" class=${cx('lo-toggle', filters.changedOnly && 'is-on')} aria-pressed=${filters.changedOnly ? 'true' : 'false'}
         onClick=${() => set({ changedOnly: !filters.changedOnly })}><i class="lo-toggle__box"><${Icon} name="check" /></i>${t('仅看已调整')}</button>
     </div>
+    ${synergy ? html`<p class="lo-synergy-summary" role="status">${t(synergy.summary)} <b>${t('符合条件：{n} 名', { n: resultCount })}</b></p>` : null}
   </div>`;
 }
 
@@ -499,14 +512,15 @@ function LoadoutScreen({ st }) {
   const m = data.get('assets');
   const getChess = (id) => data.lookup('chess', id);
   const getBond = (id) => data.lookup('bonds', id);
+  const getGarrison = (id) => data.lookup('garrisons', id);
   const roster = useMemo(() => rosterOf(data.list('chess')), [ready, data.locale()]); // (names follow a language switch)
   const bonds = useMemo(() => {
     const used = new Set(roster.flatMap((c) => c.bonds || []));
     return (data.list('bonds') || []).filter((b) => b && used.has(b.bondId))
       .sort((a, b) => (b.isCore ? 1 : 0) - (a.isCore ? 1 : 0) || (a.bondOrder ?? 0) - (b.bondOrder ?? 0) || String(a.name).localeCompare(String(b.name), 'zh'));
   }, [ready, roster]);
-  const list = filterRoster(roster, st.filters, st.entries, getChess, getBond, st.ops, potentialEditable);
-  const selId = st.sel && roster.some((c) => c.chessId === st.sel) ? st.sel : list[0]?.chessId || roster[0]?.chessId || null;
+  const list = filterRoster(roster, st.filters, st.entries, getChess, getBond, st.ops, potentialEditable, getGarrison);
+  const selId = st.sel && list.some((c) => c.chessId === st.sel) ? st.sel : list[0]?.chessId || null;
   const { base, golden } = selId ? recordsOf(selId, getChess) : { base: null, golden: null };
   const nChanged = changedCount(st.entries, getChess, st.ops, roster, potentialEditable);
   const rules = useStore((s) => s.room?.content?.rules ?? null);
@@ -542,6 +556,10 @@ function LoadoutScreen({ st }) {
     if (ok) setNotOwned([]);
   };
   const pick = (id) => { loadoutStore.set({ sel: id }); setNarrowDetail(true); };
+  const showSynergy = (synergy) => {
+    loadoutStore.set({ filters: { tier: null, prof: null, bond: null, query: '', changedOnly: false, synergy }, sel: null });
+    setNarrowDetail(false);
+  };
   // a row's quick choice (PR #301): the same setChoice / setEntries path; the row becomes the selection, a phone stays on the list
   const quickChange = (id, patch) => {
     const recs = recordsOf(id, getChess);
@@ -646,7 +664,7 @@ function LoadoutScreen({ st }) {
       // (a row's quick choices: ←/→ stay with the focused group, PR #301)
       if (e.target?.closest?.('.lo-quick') && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) return;
       if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && loadoutStore.get().tab !== 'ownership' && loadoutStore.get().tab !== 'diy') {
-        const ids = filterRoster(rosterOf(data.list('chess')), loadoutStore.get().filters, loadoutStore.get().entries, getChess, getBond, loadoutStore.get().ops, potentialEditable).map((c) => c.chessId);
+        const ids = filterRoster(rosterOf(data.list('chess')), loadoutStore.get().filters, loadoutStore.get().entries, getChess, getBond, loadoutStore.get().ops, potentialEditable, getGarrison).map((c) => c.chessId);
         if (!ids.length) return;
         const cur = Math.max(0, ids.indexOf(loadoutStore.get().sel));
         const next = ids[(cur + (e.key === 'ArrowRight' ? 1 : -1) + ids.length) % ids.length];
@@ -727,7 +745,8 @@ function LoadoutScreen({ st }) {
       ? html`<${OwnershipPanel} m=${m} roster=${ownRoster} notOwned=${st.notOwned} onToggle=${toggleOwned} />`
       : html`<main class=${cx('lo-body', narrowDetail && 'is-detail')}>
       <section class="lo-roster">
-        <${Filters} m=${m} filters=${st.filters} bonds=${bonds} onFilters=${(filters) => loadoutStore.set({ filters })} />
+        <${Filters} m=${m} filters=${st.filters} bonds=${bonds} getChess=${getChess} resultCount=${list.length}
+          onFilters=${(filters) => loadoutStore.set({ filters })} />
         <div class="lo-list" ref=${gridRef}>
           <${RosterHead} />
           <div class="lo-list__rows" role="list" aria-label=${t('干员列表')}>
@@ -739,7 +758,7 @@ function LoadoutScreen({ st }) {
       </section>
       <div class="lo-detail-wrap">
         <button type="button" class="lo-detail-back tapx" onClick=${() => setNarrowDetail(false)}><${Icon} name="chevronLeft" />${t('干员列表')}</button>
-        <${Detail} m=${m} chess=${base} golden=${golden} entries=${st.entries} ops=${st.ops} onChange=${change} onOps=${setOpsOf} onReset=${resetOne} locked=${locked}
+        <${Detail} m=${m} chess=${base} golden=${golden} entries=${st.entries} ops=${st.ops} onChange=${change} onOps=${setOpsOf} onReset=${resetOne} onSynergy=${showSynergy} locked=${locked}
           level=${golden ? previewLevel : 'normal'} onLevel=${setPreviewLevel}
           notOwned=${!!base && (st.notOwned || []).includes(base.chessId)} />
       </div>

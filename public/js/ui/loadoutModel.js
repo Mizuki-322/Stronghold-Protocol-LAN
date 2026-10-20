@@ -16,6 +16,7 @@
 import { loadoutOptions, checkLoadout, checkLoadoutOps, resolveLoadout, MODULE_NONE, LOADOUT_LIMITS } from '../../../shared/protocol.js';
 import { isPotential, isCultivate, POTENTIAL_DEFAULT, CULTIVATE_DEFAULT } from '../../../shared/potential.js';
 import { t, N_ } from '../../../shared/i18n.js';
+import { matchesTraitSynergy, traitSynergy } from './traitSynergy.js';
 
 export { MODULE_NONE };
 
@@ -388,20 +389,23 @@ function opsVisibleChange(ops, charId, potentialCounts) {
 /**
  * Apply the screen's filters.
  * @param {any[]} roster rosterOf(...)
- * @param {{ tier?: number|null, prof?: string|null, bond?: string|null, query?: string, changedOnly?: boolean }} f
+ * @param {{ tier?: number|null, prof?: string|null, bond?: string|null, query?: string, changedOnly?: boolean, synergy?: string|null }} f
  * @param {Record<string, any>} entries stored loadout (for changedOnly)
  * @param {(id: string) => any} getChess
  * @param {(id: string) => any} [getBond] bond lookup (the search also matches bond names)
  * @param {Record<string, any>|null} [ops] the per-operator 潜能 / 练度 (changedOnly counts them too)
  * @param {(charId: string) => boolean} [potentialCounts] false hides a potential-only change (no curve)
+ * @param {(id: string) => any} [getGarrison] 特质 lookup for the synergy filter
  */
 
-export function filterRoster(roster, f = {}, entries = {}, getChess = () => null, getBond = () => null, ops = null, potentialCounts = null) {
+export function filterRoster(roster, f = {}, entries = {}, getChess = () => null, getBond = () => null, ops = null, potentialCounts = null, getGarrison = () => null) {
   const q = String(f.query || '').trim().toLowerCase();
+  const synergy = traitSynergy(f.synergy);
   return roster.filter((c) => {
     if (f.tier && c.tier !== f.tier) return false;
     if (f.prof && c.profession !== f.prof) return false;
     if (f.bond && !(Array.isArray(c.bonds) && c.bonds.includes(f.bond))) return false;
+    if (synergy && !matchesTraitSynergy(c, synergy, getChess, getGarrison)) return false;
     if (f.changedOnly) {
       const golden = c.goldenId ? getChess(c.goldenId) : null;
       if (!effectiveChoice(entries, c, golden).changed && !opsVisibleChange(ops, c.charId, potentialCounts)) return false;
