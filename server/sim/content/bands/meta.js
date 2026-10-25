@@ -31,6 +31,8 @@
 //   round_start_gain_coin_by_bond_char_chess_buy       玛恩纳   each <bond> chess bought → +count funds next round (≤ max_count / round)
 //   refresh_shop_count_gain_coin_bond_char_chess       贾维     every refresh_count manual refreshes (match total) → <bond> chess ≤ shop level (≤ max_count / round)
 //   preparation_start_add_special_goods_every_n_round  娜仁图亚 round % n = 0: pick choice_cnt of refresh_cnt items of pool (free)
+//   band_yela_kjerag_grant 圣山护佑 R7 and the prep after a no-LP-loss battle from R8: Kjerag chess ≤ shop level,
+//                         prefer a base operator the player does not currently own
 // "进入休整期时" / "回合开始时" = onRoundStart (research 01 §5 step 6).
 
 import { GEO } from '../../../../shared/constants.js';
@@ -165,6 +167,38 @@ K.preparation_start_gain_chess_every_n_round = (ps) => ({
     }
   },
 });
+
+K.band_yela_kjerag_grant = (ps) => {
+  const p = ps[0];
+  const pending = 'band:yela:rewardRound';
+  const lost = 'band:yela:lostRound';
+  const reward = (ctx) => {
+    const bond = p.bond || 'kjeragShip';
+    const maxTier = Math.max(1, ctx.shopLevel());
+    const owned = new Set([...ctx.board(), ...ctx.hand(), ...ctx.temp()]
+      .filter((piece) => piece?.kind === 'chess').map((piece) => ctx.gd.baseIdOf(piece.id)));
+    const fresh = ctx.rollChess({ bond, maxTier, filter: (id) => !owned.has(ctx.gd.baseIdOf(id)) });
+    const id = fresh || ctx.rollChess({ bond, maxTier });
+    if (id) ctx.grantChess(id, { source: 'band' });
+  };
+  return {
+    onRoundStart(ctx) {
+      if (ctx.round === int(p.round, 7)) reward(ctx);
+      if (ctx.counter(pending) !== ctx.round) return;
+      ctx.setCounter(pending, 0);
+      reward(ctx);
+    },
+    onBattleResult(ctx, ev) {
+      if (ctx.round < int(p.reward_from_round, 8) || !Number.isFinite(ev?.lpLoss)) return;
+      if (ev.lpLoss > 0) {
+        ctx.setCounter(lost, ctx.round);
+        ctx.setCounter(pending, 0);
+      } else if (ctx.counter(lost) !== ctx.round) {
+        ctx.setCounter(pending, ctx.round + 1);
+      }
+    },
+  };
+};
 
 K.give_coin_in_round = (ps) => ({
   onIncome(ctx, ev) {

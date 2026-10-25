@@ -267,6 +267,8 @@ Screens: **Title** (season art backdrop, 开始 → nickname), **Lobby** (独立
 
 盟约栏支持「收起／展开盟约」（GitHub #142）：收起时隐藏完整列表并关闭由列表打开的浮层，让原图标区域的指针事件到达棋盘，只保留至少 44×44 CSS px 的恢复按钮。折叠状态在本局阶段变化、观看队友时保留；展开后仍按当前观看对象显示最新盟约。按钮支持 Enter / Space，聚焦按钮时 Space 不触发准备或暂停。
 
+首领战和联防的战斗快照提供每名玩家各自的部署费用；HUD 显示当前观察玩家的费用。大型同盟的寻呼模块详情显示四选一，普通模式显示三选一。
+
 A bond the mode normally leaves inactive (标准: official `inactiveBondIdList`) is dimmed on shop / reward cards and detail chips. The bond popup shows its actual 在场 count and 未激活／已激活 state, without a ban label or a claim that it can never activate. It omits 当前效果 while inactive (§21.7); a strategy built around one carries a 本局禁用 tag and note in the strategy draft and stays selectable (bands.json `bondIds`, §21.26).
 
 The strategy draft enables skip only on the viewer's turn, with quota left and another unpicked player to pass to.

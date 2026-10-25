@@ -459,10 +459,11 @@
 .bslot.is-open .bond__core { box-shadow: 0 0 0 2px var(--mint-400), 0 0 .2rem rgba(23, 249, 183, .6); }
 .bslot.is-tracked .bond__core { box-shadow: 0 0 0 2px var(--gold-2), 0 0 .2rem rgba(255, 198, 0, .5); }
 .bslot.is-tracked .bond__name, .bslot.is-tracked .bslot__count { color: var(--gold-2); }
-/* A bond with banned members, including a mode-off bond, stays readable and clickable without a red cross. */
-.bslot.is-muted .bond__core { filter: grayscale(1) brightness(.58); }
+/* Banned members dim the outer ring. An activated bond keeps its normal mint core and count. */
+.bslot.is-muted:not(.is-active) .bond__core { filter: grayscale(1) brightness(.58); }
 .bslot.is-muted .bond__ring { opacity: .4; }
-.bslot.is-muted .bond__name, .bslot.is-muted .bslot__count { color: var(--text-dim); }
+.bslot.is-muted:not(.is-active) .bond__name,
+.bslot.is-muted:not(.is-active) .bslot__count { color: var(--text-dim); }
 
 /* ---- team panel ------------------------------------------------------------------------------------------- */
 .team { position: absolute; left: .22rem; top: 2.36rem; display: flex; flex-direction: column; gap: .14rem; pointer-events: none; }

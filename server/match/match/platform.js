@@ -136,6 +136,7 @@ export class MatchPlatform {
       if (this.clientCombat) this._authorityLost(ps, 'disconnect');
       // a rehearsal this host was running falls back to the server (DESIGN §14; a no-op without tasks)
       this._rehearsalHostChanged();
+      if (playerId === this.hostId && this.phase === PHASE.BAND_DRAFT && this.players.get(this.draftTurn())?.isBot) this.scheduleBandBot();
       this.markPublic();
     });
   }

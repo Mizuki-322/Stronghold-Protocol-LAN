@@ -69,7 +69,7 @@ const slotOf = (id) => ({ kind: 'chess', id, basePrice: DATA.chess[id].tier === 
 test('bands.js wires both parts: 28 bands with a prep handler, 10 with a battle part, 鸭爵 global, 歌利亚 = LP only', () => {
   assert.equal(typeof bands.install, 'function');
   assert.equal(typeof bands.registerMeta, 'function');
-  const ids = Object.keys(DATA.bands);
+  const ids = Object.keys(DATA.bands).filter((id) => !DATA.bands[id].extendedOnly);
   assert.equal(ids.length, 40);
   const meta = ids.filter((id) => REG.has(`band:${id}`));
   const battle = ids.filter(hasBattlePart);
@@ -799,7 +799,7 @@ test('外勤医疗: 联防右侧 Touch retains its prepared targeting order', ()
 
 test('coverage: every band is exercised by a test above', () => {
   cover('band_dusk'); // 夕: 画卷 grant (fixed-round test) + 墨色真颜 (battle test)
-  const missing = Object.keys(DATA.bands).filter((id) => !COVER.has(id)).sort();
+  const missing = Object.keys(DATA.bands).filter((id) => !DATA.bands[id].extendedOnly && !COVER.has(id)).sort();
   assert.deepEqual(missing, []);
 });
 

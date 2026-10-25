@@ -66,6 +66,7 @@ test('“双眼皮”: the turret reads its stats and the bond-layer scaling fro
   assert.deepEqual(info.stats, [
     { k: '生命上限', v: 3000 }, { k: '攻击', v: 900 }, { k: '防御', v: 200 }, { k: '攻击间隔', v: '4s' },
   ]);
+  assert.deepEqual(info.rangeTiles, d.rangeTiles, 'ordinary turret uses its original authored range');
   assert.deepEqual(info.facts, ['不可部署']);
 });
 
@@ -75,10 +76,13 @@ test('森蚺的大型同盟提示显示全队装置的新攻击与层数规则',
   const own = effectiveStage(st, { deviceOverrides: { [d.alias]: true }, eunectesTurrets: true });
   const info = deviceInfo(own, d.pos[0], d.pos[1]);
   assert.match(info.lines[0], /优先攻击射程内的领袖/);
-  assert.match(info.lines[0], /72\.25%/);
+  assert.match(info.lines[0], /物理范围伤害/);
   assert.match(info.lines[1], /超出 50/);
-  assert.equal(info.stats.find((s) => s.k === '攻击').v, 1000);
+  assert.match(info.lines[2], /最多 20%/);
+  assert.equal(info.stats.find((s) => s.k === '攻击').v, 500);
   assert.equal(info.stats.find((s) => s.k === '攻击间隔').v, '4s');
+  assert.equal(info.rangeTiles.length, 21);
+  assert.ok(info.rangeTiles.some(([r, c]) => r === d.pos[0] && c === d.pos[1] - 2));
 });
 
 test('射击台: the platform tells the deploy class it feeds the deploy map', () => {

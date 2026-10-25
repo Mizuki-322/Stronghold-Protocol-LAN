@@ -9,6 +9,7 @@
 // is reported (g.bandFocus) and the server assigns it while it is free, else 「华法琳」, else the first free strategy
 // (timeoutBand). It starts on that default, so the tip under the order list always names what a timeout gives.
 // Solo, and a co-op match with a single human (the server's soloUntimed: draft.untimed): no clock at all.
+// During a room AI turn, the connected host picks its opening strategy or explicitly requests a random choice.
 // Pool exclusions never switch off a strategy's bond effect; the former BandOffTag / BandOffNote helpers remain
 // for compatibility but receive no disabled bond IDs in current modes.
 // 本局信息 (GitHub issue #8 item 1, "选策略时没法返回查看禁用的干员和盟约"): 查看盟约与禁用干员 under the order list opens the
@@ -50,11 +51,12 @@ export function BandOffNote({ names = [] }) {
  * Bands selectable in a mode (modeTypeList contains the mode's type), sorted by sortId.
  * @param {any[]} bands
  * @param {string|null} modeType 'SINGLE'|'MULTI'
+ * @param {boolean} extendedRoom
  */
-export function allowedBands(bands, modeType) {
+export function allowedBands(bands, modeType, extendedRoom = false) {
   const sid = (b) => (Number.isFinite(b.sortId) ? b.sortId : 99);
   return (Array.isArray(bands) ? bands : [])
-    .filter((b) => b && (!modeType || !Array.isArray(b.modeTypeList) || b.modeTypeList.includes(modeType)))
+    .filter((b) => b && (extendedRoom || !b.extendedOnly) && (!modeType || !Array.isArray(b.modeTypeList) || b.modeTypeList.includes(modeType)))
     .sort((a, b) => sid(a) - sid(b) || (a.bandId < b.bandId ? -1 : a.bandId > b.bandId ? 1 : 0));
 }
 
@@ -171,6 +173,8 @@ export function BandDraftScreen() {
   const priv = useStore((s) => s.match.private);
   const myId = useStore((s) => s.me.playerId);
   const roomSolo = useStore((s) => s.room?.mode === 'solo');
+  const extendedRoom = useStore((s) => s.room?.mode === 'coop8');
+  const hostId = useStore((s) => s.room?.hostId);
   const gd = useGameData();
   const [sel, setSel] = useState(null);
   const [busy, setBusy] = useState(null);
@@ -181,14 +185,17 @@ export function BandDraftScreen() {
   const mode = gd.config?.modes?.[pub?.modeId];
   const offBonds = modeOffBonds(mode); // no mode disables bond effects; retained for optional off-state UI
   const solo = roomSolo || mode?.type === 'SINGLE' || String(pub?.modeId || '').includes('single');
-  const bands = useMemo(() => allowedBands(gd.list('bands'), mode?.type || (solo ? 'SINGLE' : 'MULTI')), [gd.ready, mode?.type, solo, data.locale()]);
+  const bands = useMemo(() => allowedBands(gd.list('bands'), mode?.type || (solo ? 'SINGLE' : 'MULTI'), extendedRoom), [gd.ready, mode?.type, solo, extendedRoom, data.locale()]);
   const players = sortedPlayers(pub);
   const draft = normalizeDraft(pub?.draft, players);
   const myPick = draft.picks.get(myId) || priv?.bandId || null;
   const myTurn = !myPick && (solo || draft.turnPid === myId);
+  const botTurn = players.find((p) => p.playerId === draft.turnPid)?.isBot === true;
+  const hostBotTurn = !solo && !!myId && hostId === myId && botTurn;
+  const canChoose = myTurn || hostBotTurn;
   const skipsLeft = draft.skipsLeft.has(myId) ? draft.skipsLeft.get(myId) : (skipped ? 0 : 1);
   const canSkip = !solo && myTurn && skipsLeft > 0 && draft.order.filter((pid) => !draft.picks.has(pid)).length > 1;
-  const taken = solo ? new Map() : teammateBands(draft.picks, myId);
+  const taken = solo ? new Map() : teammateBands(draft.picks, hostBotTurn ? null : myId);
   const pickers = new Map(); // bandId → players
   for (const [pid, bid] of draft.picks) {
     const p = players.find((x) => x.playerId === pid);
@@ -201,9 +208,9 @@ export function BandDraftScreen() {
   const defaultId = gd.config?.bandDraft?.timeoutBandId || DEFAULT_TIMEOUT_BAND;
   const takenKey = [...taken.keys()].sort().join(',');
   useEffect(() => {
-    const next = draftSelection(sel, { bands, taken, myPick, myTurn, defaultId });
+    const next = draftSelection(sel, { bands, taken, myPick: hostBotTurn ? null : myPick, myTurn: canChoose, defaultId });
     if (next !== sel) setSel(next);
-  }, [bands.length, myPick, myTurn, takenKey]);
+  }, [bands.length, myPick, canChoose, hostBotTurn, takenKey]);
   // "your turn" cue: the sound, and the event's 请选择策略 band (ui/turnBanner.js) once its art is in
   const [turnBanner, setTurnBanner] = useState(0);
   useEffect(() => {
@@ -223,21 +230,27 @@ export function BandDraftScreen() {
   const focusSent = useRef(null);
   useEffect(() => {
     // (a spectator seat — community report #26 — is in no draft order: it never reports)
-    if (!timed || myPick || !sel || focusSent.current === sel || !draft.order.includes(myId)) return;
+    if (!timed || myPick || hostBotTurn || !sel || focusSent.current === sel || !draft.order.includes(myId)) return;
     focusSent.current = sel;
     act('g.bandFocus', { bandId: sel }, { sfx: false, quiet: true });
-  }, [sel, timed, myPick]);
+  }, [sel, timed, myPick, hostBotTurn]);
 
   // what a timeout gives me: the highlighted band while free, else the default (never 队友已选 — match/phases.js timeoutBand)
-  const autoId = autoPickBand(sel, { bands, taken, myPick, defaultId });
+  const autoId = autoPickBand(sel, { bands, taken, myPick: hostBotTurn ? null : myPick, defaultId });
   const autoName = (autoId && gd.band(autoId)?.name) || gd.band(defaultId)?.name || tName('华法琳');
 
   const band = sel ? gd.band(sel) : null;
   const selTaken = !!band && taken.has(band.bandId);
   const confirm = async () => {
-    if (!band || busy || !myTurn || selTaken) return;
+    if (!band || busy || !canChoose || selTaken) return;
     setBusy('pick');
-    await actions.band(band.bandId);
+    await (hostBotTurn ? actions.botBand(band.bandId) : actions.band(band.bandId));
+    setBusy(null);
+  };
+  const randomBot = async () => {
+    if (busy || !hostBotTurn) return;
+    setBusy('random');
+    await actions.botBand();
     setBusy(null);
   };
   const skip = async () => {
@@ -285,7 +298,7 @@ export function BandDraftScreen() {
         })}
         <${Button} variant="secondary" icon="search" block=${true} class="draft-order__info" data-testid="match-info-open"
           aria-haspopup="dialog" onClick=${() => setInfoOpen(true)}>${t('查看盟约与禁用干员')}<//>
-        ${!solo ? html`<p class="draft-order__tip" data-testid="draft-tip">${draftTip({ timed, turnSeconds: turnLen, autoName: myPick ? null : autoName, selected: autoId === sel })}</p>` : null}
+        ${!solo ? html`<p class="draft-order__tip" data-testid="draft-tip">${hostBotTurn ? t('请为当前 AI 队友选择策略，或点击随机选择') : draftTip({ timed, turnSeconds: turnLen, autoName: myPick ? null : autoName, selected: autoId === sel })}</p>` : null}
       </aside>
 
       <section class="draft-grid" role="listbox" aria-label=${t('策略')}>
@@ -320,13 +333,15 @@ export function BandDraftScreen() {
             <${RichText} as="p" text=${band.descRaw || band.desc} class="draft-detail__desc" />
           </div>` : html`<p class="t-dim">${t('选择一个策略查看详情')}</p>`}
         <div class="draft-detail__actions">
-          ${myPick ? html`<p class="draft-detail__status t-mint"><${Icon} name="check" />${t('已选择「{name}」', { name: gd.band(myPick)?.name || '' })}${!solo && !draft.done ? t('，等待其他博士') : ''}</p>`
+          ${hostBotTurn ? html`<p class="draft-detail__status t-gold"><${Icon} name="robot" />${t('房主正在为 AI 队友选择策略')}</p>`
+            : myPick ? html`<p class="draft-detail__status t-mint"><${Icon} name="check" />${t('已选择「{name}」', { name: gd.band(myPick)?.name || '' })}${!solo && !draft.done ? t('，等待其他博士') : ''}</p>`
             : selTaken ? html`<p class="draft-detail__status draft-detail__status--taken"><${Icon} name="close" />${t('队友已选，请选择其他策略')}</p>`
             : !myTurn ? html`<p class="draft-detail__status"><${Icon} name="hourglass" />${turnName ? t('{turnName} 正在决策…', { turnName }) : t('等待轮到你')}</p>` : null}
           <div class="draft-detail__btns">
-            ${!solo ? html`<${Button} variant="secondary" size="lg" icon="chevrons" disabled=${!canSkip} loading=${busy === 'skip'} onClick=${skip}
+            ${!solo && !hostBotTurn ? html`<${Button} variant="secondary" size="lg" icon="chevrons" disabled=${!canSkip} loading=${busy === 'skip'} onClick=${skip}
               title=${skipsLeft > 0 ? t('跳过本轮，稍后再选') : t('跳过次数已用完')}>${t('跳过')}${skipsLeft > 0 ? '' : t('（已用）')}<//>` : null}
-            <${Button} variant="primary" size="lg" icon="check" disabled=${!myTurn || !band || selTaken} loading=${busy === 'pick'} onClick=${confirm}>${selTaken ? t('队友已选') : t('确认选择')}<//>
+            ${hostBotTurn ? html`<${Button} variant="secondary" size="lg" icon="refresh" loading=${busy === 'random'} onClick=${randomBot}>${t('随机选择')}<//>` : null}
+            <${Button} variant="primary" size="lg" icon="check" disabled=${!canChoose || !band || selTaken} loading=${busy === 'pick'} onClick=${confirm}>${selTaken ? t('队友已选') : t('确认选择')}<//>
           </div>
         </div>
       </aside>

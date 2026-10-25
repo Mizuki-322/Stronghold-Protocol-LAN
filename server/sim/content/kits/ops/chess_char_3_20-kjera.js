@@ -2,7 +2,8 @@
 // Conventions of the tier-3 kits: ../shared/tier3.js; kit contract and rules: ../README.md.
 
 import { COLS } from '../../../constants.js';
-import { canTargetEnemy, sortEnemyTargets } from '../../../targeting.js';
+import { battleRangeKeys, canTargetEnemy, sortEnemyTargets } from '../../../targeting.js';
+import { bodyInRange, colliderKeys } from '../../../body.js';
 import { num, defOf, talentBb, altSkills, statSkill, funnelMap, installFunnelPrune } from '../shared/tier3.js';
 
 export const DRONE_TAG = 'kjera:drone';
@@ -18,7 +19,9 @@ function stepMap(ramp, id, time, f) {
 
 function acquire(battle, unit, rel) {
   const prof = unit.profile;
-  const ok = (e) => !!e && e.alive && canTargetEnemy(unit, e, prof);
+  const own = unit.mem.holyMountain ? new Set(battleRangeKeys(unit.rangeGrid, unit.tileR, unit.tileC, unit.dir, unit.s.rangeExtend)) : null;
+  const ok = (e) => !!e && e.alive && canTargetEnemy(unit, e, prof)
+    && (!own || bodyInRange(e, own) || !!e.findBuff('freeze'));
   const cands = battle.enemiesInKeys(unit.rangeKeys, unit, prof);
   for (const e of battle.blockedTargets(unit, prof)) if (!cands.includes(e)) cands.push(e);
   sortEnemyTargets(battle, unit, cands, prof.priority);
@@ -36,6 +39,34 @@ function acquire(battle, unit, rel) {
     d.lock = e;
     d.scale = null;
   }
+}
+
+/** 圣山护佑: frozen enemies join 耶拉's selectable targets without changing her ordinary target order. */
+export function installHolyMountain(battle, unit) {
+  if (battle.getPlayer(unit.ownerId)?.bandId !== 'band_yela') return;
+  unit.mem.holyMountain = true;
+  const update = () => {
+    const keys = unit.alive && unit.deployed ? [...new Set(battle.enemies
+      .filter((e) => e.findBuff('freeze') && canTargetEnemy(unit, e, unit.profile))
+      .flatMap(colliderKeys))].sort((a, b) => a - b) : [];
+    const sig = keys.join(',');
+    if (unit.mem.holyMountainSig === sig) return;
+    unit.mem.holyMountainSig = sig;
+    battle.setExtraRange(unit, keys);
+  };
+  battle.on('deploy', (ctx) => { if (ctx.unit === unit) update(); }, { owner: unit });
+  battle.on('tick', update, { owner: unit });
+  battle.on('beforeAttack', (ctx) => {
+    if (ctx.attacker !== unit || !unit.extraRangeKeys) return;
+    const own = new Set(battleRangeKeys(unit.rangeGrid, unit.tileR, unit.tileC, unit.dir, unit.s.rangeExtend));
+    const eligible = (e) => bodyInRange(e, own) || !!e.findBuff('freeze');
+    if (ctx.targets.every(eligible)) return;
+    const cands = battle.enemiesInKeys(unit.rangeKeys, unit, ctx.profile);
+    for (const e of battle.blockedTargets(unit, ctx.profile)) if (!cands.includes(e)) cands.push(e);
+    const usable = cands.filter(eligible);
+    sortEnemyTargets(battle, unit, usable, ctx.profile?.priority ?? null);
+    ctx.targets = usable.slice(0, Math.max(1, ctx.targets.length));
+  }, { owner: unit, priority: 5 });
 }
 
 /**
@@ -132,6 +163,7 @@ export default {
       install(battle, unit) {
         installFunnelPrune(battle, unit);
         rel.install(battle, unit);
+        installHolyMountain(battle, unit);
       },
       talents: [{ install(battle, unit) {
         battle.on('deploy', (ctx) => {

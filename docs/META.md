@@ -7,6 +7,8 @@ Normative contracts stay in DESIGN.md §6 and §8 ([design/match.md](design/matc
 
 The local `coop8` room uses [its own rule contract](design/extended-coop.md): eight available seats, at least five occupied to start, scaled card stock and boss HP, and up to three helpers in 联防.
 
+During BAND_DRAFT, `g.botBand { bandId }` lets the connected room host assign a free strategy to the current built-in AI seat; `bandId: null` requests its weighted random choice. An absent host and a timed-out AI turn also choose randomly. Human seats under AI control continue to choose automatically.
+
 ```
 server/match/
   Match.js         state machine, timers, round loop, co-op orchestration, views (the lobby⇄match interface is at the top)
@@ -277,7 +279,8 @@ deadline would; the operator a transformation gains waits on the bench and the n
 like any owned unit — AI 托管 too; the buy loop's bench shed, which sells by piece value while the bench is crowded,
 never sells a piece gained since the bot's last prep ended, `rememberOwned`), 身份牌 / 通讯机 / 寻呼模块 on a focus
 member; 画卷 copies the most
-valuable deployed operator; 教鞭 / “神秘顾客” are used after a perfect battle and otherwise kept in the hand — a bot drops
+valuable deployed operator; 教鞭 / “神秘顾客” are used after a perfect battle and otherwise kept in the hand, except that
+杜宾 strategy AI uses its 教鞭 with at least 10 LP even after a leaky battle — a bot drops
 a kept one only when it needs the hand slot (“神秘顾客” then pays its fund), a human's seat under AI 托管 never; 教鞭's three
 cards are scored like a 机变 bounty draft (§2.5). 机变: a
 bounty card is scored by its expected payout minus its expected leaks × the value of an LP (2 + 20 / LP), the kill

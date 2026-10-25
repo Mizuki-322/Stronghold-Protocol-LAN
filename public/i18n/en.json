@@ -1,7 +1,8 @@
 {
   "查看联防队友 {name}，再次点击返回全景": "View joint-defense teammate {name}; click again to return to the full field",
-  "优先攻击射程内的领袖，否则攻击当前生命值最低的敌人；造成法术伤害，最多弹射两次（100% / 85% / 72.25%）": "Prioritizes leaders in range, otherwise the enemy with the lowest current HP. Deals Arts damage and bounces up to twice (100% / 85% / 72.25%).",
+  "优先攻击射程内的领袖，否则攻击当前生命值最高的敌人；造成物理范围伤害": "Prioritizes leaders in range, otherwise the enemy with the highest current HP; deals physical splash damage.",
   "按已激活盟约总层数超出 50 的部分计算：每层攻击速度 +1、命中附加 0.1% 脆弱（最多 300 层）": "For total active bond layers beyond 50, each layer grants +1 attack speed and adds 0.1% Fragile on hit (up to 300 layers).",
+  "每 30 有效层使命中敌人的防御力和法术抗性降低 2%，持续 2 秒且不叠加（最多 20%）；总层数达到 350 时额外发射一颗射弹，优先攻击当前生命值最低的敌人": "Every 30 effective layers reduce a hit enemy's DEF and RES by 2% for 2 seconds, without stacking (up to 20%). At 350 total layers, fires an extra projectile prioritizing the enemy with the lowest current HP.",
   "大型同盟": "Large Alliance",
   "5–8 名博士共享干员池，至少 5 人开局；AI 队友计入人数。": "5–8 Doctors share the operator pool. At least five seats are required; AI teammates count.",
   "牌堆随人数扩大": "Operator stock scales with player count",
@@ -2279,5 +2280,9 @@
   "追踪干员已出现：{names}": "Tracked Operator appeared: {names}",
   "魔王：身前一格干员在战斗中因自身特质获得盟约层数时，可使该次层数额外增加。赋予队友叠层特质的干员需要让受赠者站在魔王身前。": "Theresa: when the Operator directly in front gains Alliance stacks from their own trait during battle, she adds extra stacks. For traits granted to allies, the recipient must stand directly in front of Theresa.",
   "选择追踪干员": "Select Operators to track",
-  "已追踪 {n} 名干员": "Tracking {n} Operators"
+  "已追踪 {n} 名干员": "Tracking {n} Operators",
+  "请为当前 AI 队友选择策略，或点击随机选择": "Choose an opening strategy for the current AI teammate, or select Random",
+  "房主正在为 AI 队友选择策略": "The host is choosing a strategy for an AI teammate",
+  "随机选择": "Random choice",
+  "大型同盟：装备时销毁，特殊刷新出 4 名同盟约干员，免费选择 1 名（不高于当前调度中心等级）。": "Large Alliance: destroys this item when equipped and offers 4 Operators of the same Alliance, up to the current shop level. Choose 1 for free."
 }

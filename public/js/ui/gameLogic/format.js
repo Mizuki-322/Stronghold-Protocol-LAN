@@ -27,13 +27,15 @@ export const STATUS_META = Object.freeze({
  * an older snapshot without it falls back to the kill count.
  * @param {any} snap
  */
-export function snapHud(snap) {
+export function snapHud(snap, playerId = null) {
   if (!isObj(snap)) return null;
   const n = (v) => (Number.isFinite(v) ? v : null);
   let boss = null;
   if (isObj(snap.boss) && Number.isFinite(snap.boss.hp)) boss = { hp: snap.boss.hp, max: n(snap.boss.max) ?? n(snap.boss.maxHp) };
   const killed = n(snap.killed);
-  return { killed, resolved: n(snap.resolved) ?? killed, total: n(snap.total), dp: n(snap.dp), boss };
+  // Shared boss and 联防 fields carry one DP pool per player. snap.dp belongs to the first seat.
+  const ownDp = playerId && isObj(snap.dps) ? n(snap.dps[playerId]) : null;
+  return { killed, resolved: n(snap.resolved) ?? killed, total: n(snap.total), dp: ownDp ?? n(snap.dp), boss };
 }
 
 /** Boss HP fraction 0..1 (null when unknown). */

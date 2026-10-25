@@ -512,8 +512,11 @@ export function ChessDetail({ chess, piece, unit, snapHp, editable, onSell, bond
  * 变形同构体 lists its pairings (its 天赋栏: MorphPairings, `offBonds` marks 本局禁用); a bond item says which bond it gives
  * a 变形同构体 wearer (MorphGrantLine). (An equipped item is shown on its wearer's card: ChessDetail's 装备 rows.)
  */
-export function ItemDetail({ item, piece, editable, onDestroy, offBonds = null, morphMode = 'official', unequipAllowed = false }) {
+export function ItemDetail({ item, piece, editable, onDestroy, offBonds = null, morphMode = 'official', unequipAllowed = false, extendedRoom = false }) {
   const m = data.get('assets');
+  const desc = extendedRoom && item.id?.startsWith('chess_item_4_01_e')
+    ? t('大型同盟：装备时销毁，特殊刷新出 4 名同盟约干员，免费选择 1 名（不高于当前调度中心等级）。')
+    : item.descRaw || item.desc;
   return html`
     <div class="dhead dhead--item">
       <div class=${cx('dhead__icon', item.isGolden && 'is-golden')}><${Img} src=${itemIconUrl(m, item)} fallback=${html`<${GIcon} name="bolt" />`} /></div>
@@ -524,7 +527,7 @@ export function ItemDetail({ item, piece, editable, onDestroy, offBonds = null, 
         ${item.flavor ? html`<span class="dhead__flavor">${item.flavor}</span>` : null}
       </div>
     </div>
-    <${Section} title=${t('效果')} micro="EFFECT"><${RichText} as="p" text=${item.descRaw || item.desc} class="dtext" /><//>
+    <${Section} title=${t('效果')} micro="EFFECT"><${RichText} as="p" text=${desc} class="dtext" /><//>
     ${item.canGiveBond ? html`<${Section} title=${t('天赋')} micro="TALENT" class="dsec--morph"><${MorphPairings} off=${offBonds} mode=${morphMode} /><//>` : null}
     ${item.canGiveBond && morphMode === 'plus' ? html`<p class="dhint" data-testid="morph-free"><${Icon} name="info" />${t('不占装备格')}</p>` : null}
     ${!item.canGiveBond && item.giveBondId ? html`<${MorphGrantLine} item=${item} off=${offBonds} mode=${morphMode} />` : null}
@@ -862,7 +865,7 @@ export function selectVoiceKey(detail) {
  *   (the owner's request of 2026-10-08 「添加一下干员点击上去的语气一样的语音」 lifted 2026-10-03's 「整备阶段不需要干员语音」
  *   for this line only; [ASSUMED] the official prep tap says 选中干员 like the battle's FOCUS_CHAR)
  */
-export function DetailPanel({ detail, editable, snapHp, onClose, onSell, onDestroy, bonds = [], offBonds = null, mutedBonds = null, loadout = null, ops = null, onBond = null, onSynergy = null, tracked = false, onTrack = null, side = 'left', shopOpen = false, live = null, voice = false, morphMode = 'official', onUnequip = null, unequipAllowed = false }) {
+export function DetailPanel({ detail, editable, snapHp, onClose, onSell, onDestroy, bonds = [], offBonds = null, mutedBonds = null, loadout = null, ops = null, onBond = null, onSynergy = null, tracked = false, onTrack = null, side = 'left', shopOpen = false, live = null, voice = false, morphMode = 'official', onUnequip = null, unequipAllowed = false, extendedRoom = false }) {
   const getter = typeof live === 'function' ? live : null;
   useTicker(detail && getter ? 250 : 0);
   // 选中干员 voice (audio.voice 'select'): once per opened operator — the panel stays mounted while the target changes,
@@ -896,7 +899,7 @@ export function DetailPanel({ detail, editable, snapHp, onClose, onSell, onDestr
       ${detail.type === 'chess' ? html`<${ChessDetail} chess=${detail.chess} piece=${detail.piece} snapHp=${snapHp} editable=${editable} onSell=${sellIt}
         bonds=${bonds} offBonds=${offBonds} mutedBonds=${mutedBonds} loadout=${loadout} onBond=${onBond} onSynergy=${onSynergy} tracked=${tracked} onTrack=${onTrack} live=${liveNow} hint=${detail.hint || null} unitItems=${detail.unitItems || null}
         standIn=${detail.standIn || null} diy=${detail.diy || null} cultOpts=${detail.cultOpts || { ops }} morphMode=${morphMode} onUnequip=${onUnequip} />` : null}
-      ${detail.type === 'item' ? html`<${ItemDetail} item=${detail.item} piece=${detail.piece} editable=${editable} onDestroy=${destroyIt} offBonds=${offBonds} morphMode=${morphMode} unequipAllowed=${unequipAllowed} />` : null}
+      ${detail.type === 'item' ? html`<${ItemDetail} item=${detail.item} piece=${detail.piece} editable=${editable} onDestroy=${destroyIt} offBonds=${offBonds} morphMode=${morphMode} unequipAllowed=${unequipAllowed} extendedRoom=${extendedRoom} />` : null}
       ${detail.type === 'enemy' ? html`<${EnemyDetail} enemy=${detail.enemy} snapHp=${snapHp} count=${detail.count} live=${liveNow} />` : null}
       ${detail.type === 'token' ? html`<${TokenDetail} token=${detail.token} piece=${detail.piece} ownerId=${detail.ownerId ?? null} snapHp=${snapHp} live=${liveNow} />` : null}
       ${detail.type === 'terrain' ? html`<${TerrainDetail} terrain=${detail.terrain} />` : null}

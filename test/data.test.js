@@ -75,14 +75,14 @@ test('numbers: every stats/bb/enemyScale object holds only finite numbers (no nu
   assert.deepEqual(bad.slice(0, 10), [], `${bad.length} bad numeric fields`);
 });
 
-test('chess: 266 records, 112 visible non-DIY (16/17/19/22/19/19 per tier)', () => {
-  assert.equal(Object.keys(chess).length, 266);
+test('chess: 266 official records plus six local reward records, 112 visible non-DIY', () => {
+  assert.equal(Object.keys(chess).length, 272);
   assert.equal(visible.length, 112);
   const perTier = {};
   for (const c of visible) perTier[c.tier] = (perTier[c.tier] || 0) + 1;
   assert.deepEqual(perTier, { 1: 16, 2: 17, 3: 19, 4: 22, 5: 19, 6: 19 });
   assert.equal(normalChess.filter((c) => c.isDiy).length, 4);
-  assert.equal(normalChess.filter((c) => c.isHidden).length, 17);
+  assert.equal(normalChess.filter((c) => c.isHidden).length, 20); // 17 official + three local reward operators
 });
 
 test('chess: ids, golden pairs and references resolve', () => {
@@ -112,11 +112,17 @@ test('chess: every non-DIY chess has stats, range, classification and a resolvab
     assert.ok(['melee', 'ranged', 'heal', 'none'].includes(c.attackKind), `${c.chessId}: attackKind`);
     assert.ok(['arrow', 'bolt', 'orb', 'none'].includes(c.projectile), `${c.chessId}: projectile`);
     assert.equal(typeof c.canHitFly, 'boolean');
-    assert.ok(c.skill && typeof c.skill.skillId === 'string', `${c.chessId}: skill`);
-    assert.ok(c.skill.level === (c.isGolden ? 7 : 4), `${c.chessId}: skill level ${c.skill.level}`);
-    assert.ok(typeof c.skill.trigger?.rule === 'string', `${c.chessId}: trigger`);
-    assert.ok(typeof c.skill.desc === 'string' && !/\{[a-z_@.\[\]]+(:[0-9.%]+)?\}/i.test(c.skill.desc), `${c.chessId}: unresolved skill placeholder`);
-    for (const [k, v] of Object.entries(c.skill.bb)) assert.ok(isFiniteNum(v), `${c.chessId}: skill bb ${k}`);
+    if (['chess_char_1_22_a', 'chess_char_1_22_b', 'chess_char_1_23_a', 'chess_char_1_23_b'].includes(c.chessId)) {
+      assert.equal(c.skill, null, `${c.chessId}: no skill`);
+      assert.deepEqual(c.skills, [], `${c.chessId}: no selectable skills`);
+      assert.deepEqual(c.talents, [], `${c.chessId}: no talents`);
+    } else {
+      assert.ok(c.skill && typeof c.skill.skillId === 'string', `${c.chessId}: skill`);
+      assert.ok(c.skill.level === (c.isGolden ? 7 : 4), `${c.chessId}: skill level ${c.skill.level}`);
+      assert.ok(typeof c.skill.trigger?.rule === 'string', `${c.chessId}: trigger`);
+      assert.ok(typeof c.skill.desc === 'string' && !/\{[a-z_@.\[\]]+(:[0-9.%]+)?\}/i.test(c.skill.desc), `${c.chessId}: unresolved skill placeholder`);
+      for (const [k, v] of Object.entries(c.skill.bb)) assert.ok(isFiniteNum(v), `${c.chessId}: skill bb ${k}`);
+    }
     assert.ok(c.trait && typeof c.trait.desc === 'string', `${c.chessId}: trait`);
     assert.ok(Array.isArray(c.talents));
     assert.ok(c.assets && c.assets.avatar && c.assets.spine, `${c.chessId}: assets`);
@@ -178,10 +184,10 @@ test('items: 115 item chess with valid effects, bonds and golden links', () => {
   }
 });
 
-test('bands: 40 strategies with effects and starting LP', () => {
-  assert.equal(Object.keys(bands).length, 40);
+test('bands: 40 official and four large-alliance strategies with effects and starting LP', () => {
+  assert.equal(Object.keys(bands).length, 44);
   for (const b of Object.values(bands)) {
-    assert.ok(effects[b.effectId], `${b.bandId}: effect`);
+    if (!b.extendedOnly) assert.ok(effects[b.effectId], `${b.bandId}: effect`);
     assert.ok(isInt(b.totalHp) && b.totalHp >= 20 && b.totalHp <= 45, `${b.bandId}: totalHp`);
     assert.ok(b.name && b.iconId);
   }
@@ -439,6 +445,11 @@ test('chess/tokens: talent tokens resolve and every token variant says where it 
 test('chess: skills[] = every skill unlocked at the status, at the chess skill level; exactly one default = skill', () => {
   for (const c of Object.values(chess)) {
     if (c.isDiy) { assert.equal(c.skills, undefined, `${c.chessId}: DIY has no skills`); continue; }
+    if (['chess_char_1_22_a', 'chess_char_1_22_b', 'chess_char_1_23_a', 'chess_char_1_23_b'].includes(c.chessId)) {
+      assert.equal(c.skill, null, `${c.chessId}: no skill`);
+      assert.deepEqual(c.skills, [], `${c.chessId}: no selectable skills`);
+      continue;
+    }
     assert.ok(Array.isArray(c.skills) && c.skills.length >= 1 && c.skills.length <= 3, `${c.chessId}: skills`);
     const idx = c.skills.map((s) => s.index);
     assert.deepEqual(idx, [...idx].sort((a, b) => a - b), `${c.chessId}: skills ordered by index`);

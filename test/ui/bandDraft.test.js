@@ -262,6 +262,10 @@ describe('UI: timeoutBand (the tip names what a timeout gives me)', () => {
     const m = h.m;
     const all = allowedBands(Object.values(DATA.bands), 'MULTI');
     assert.deepEqual(all.map((b) => b.bandId), m.gd.bandIds(), 'same order as gd.bandIds');
+    const extended = allowedBands(Object.values(DATA.bands), 'MULTI', true);
+    assert.ok(extended.some((b) => b.bandId === 'band_technician'));
+    assert.ok(extended.some((b) => b.bandId === 'band_eunectes'));
+    assert.ok(!all.some((b) => b.bandId === 'band_technician'), 'normal rooms hide large-alliance-only strategies');
     const [a, b, c, d] = m.draft.order;
     for (const picks of [[], ['band_bldsk'], ['band_bldsk', 'band_amiya'], ['band_amiya', 'band_duyaoy'], ['band_bldsk', 'band_amiya', 'band_duyaoy']]) {
       m.draft.picks = Object.fromEntries(picks.map((id, i) => [[a, b, c][i], id]));

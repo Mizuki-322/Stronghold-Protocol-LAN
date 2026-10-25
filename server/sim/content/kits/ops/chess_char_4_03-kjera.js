@@ -3,7 +3,7 @@
 
 import { COLS } from '../../../constants.js';
 import { num, tbb, withDefaults } from '../shared/tier4.js';
-import { kjeraRelease } from './chess_char_3_20-kjera.js';
+import { installHolyMountain, kjeraRelease } from './chess_char_3_20-kjera.js';
 
 export default withDefaults({
   // ===== 耶拉 (funnel, hidden) S2 心随意动 — +1 drone locking targets, ATK up, chance to chill; talent 低眉.
@@ -18,12 +18,12 @@ export default withDefaults({
         battle.on('deploy', (c) => {
           if (c.unit !== unit) return;
           let low = 0;
-          for (const k of unit.rangeKeys || []) if (battle.grid.isLow((k / COLS) | 0, k % COLS)) low++;
+          for (const k of unit.baseRangeKeys || []) if (battle.grid.isLow((k / COLS) | 0, k % COLS)) low++;
           const v = low >= num(t0.cnt, 2) ? num(t0['kjera_t_1[high].atk'], num(t0.atk)) : num(t0.atk);
           battle.addBuff(unit, { key: 'kjera:t1', mods: { atkPct: v } });
         }, { owner: unit });
       } }],
-      install(battle, unit) { rel.install(battle, unit); },
+      install(battle, unit) { rel.install(battle, unit); installHolyMountain(battle, unit); },
     };
   },
 });

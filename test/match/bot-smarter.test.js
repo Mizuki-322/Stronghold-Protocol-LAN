@@ -339,6 +339,24 @@ test('bounty Arts (教鞭): kept after a battle with leaks, used after a perfect
   }
 });
 
+test('杜宾 strategy AI uses 教鞭 after a leaky battle while it has enough LP', () => {
+  const h = soloBot({ seed: 4 }).start();
+  const m = h.m;
+  const ps = m.order[0];
+  try {
+    h.run(() => m.phase === PHASE.PREP && m.round === 3);
+    ps.bandId = 'band_doberm';
+    ps.lp = 20;
+    m.lastResults.set(ps.playerId, { killed: 5, total: 6, leaked: [{ counted: true }], perfect: false });
+    const whip = giveItem(m, ps, 'chess_item_6_03_m');
+    assert.ok([...ps.board.values()].some((p) => p.kind === 'chess'));
+    h.run(() => m.phase === PHASE.COMBAT && m.round === 3);
+    assert.equal(ps.find(whip.uid), null, 'the whip was used');
+    assert.equal(ps.personalChoice, null, 'the AI resolved its personal bounty choice');
+    assert.ok(ps.bounties.length > 0);
+  } finally { m.dispose(); }
+});
+
 test('a tactician\'s 援军 (伺夜\'s 狼群) is placed on a tactical point inside the tactician\'s attack range', () => {
   const VIGIL = 'chess_char_3_19_a';
   const WOLF = 'token_10028_vigil_wolf';

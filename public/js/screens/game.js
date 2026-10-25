@@ -510,6 +510,7 @@ function MatchScreen() {
   // 联防 / normal rects are stage rows; the boss PREP draws the player's half (stage rows 2–5) as board rows 9–12
   // (render/prepfield.js toDisp), which is exactly gameLogic.fieldTile.
   live.current.terrainStage = ownView ? ownStage : baseStage;
+  live.current.terrainRect = shownField?.rect ?? GEO.NORMAL_RECT;
   live.current.terrainTile = showPrep && (deployField === 'bossL' || deployField === 'bossR')
     ? (row, col) => fieldTile(deployField, row, col)
     : (row, col) => [row, col];
@@ -624,7 +625,8 @@ function MatchScreen() {
       if (Array.isArray(earlySnap.units)) {
         snapUnitsRef.current = new Map(earlySnap.units.filter(Array.isArray).map((t) => [t[0], t]));
       }
-      hudRef.current = snapHud(earlySnap);
+      const current = live.current;
+      hudRef.current = snapHud(earlySnap, current.watchWho?.fieldId === field.fieldId ? current.watchWho.playerId : current.myId);
       setHud(hudRef.current);
     }
   }, [view, showPrep, priv, editable, field, combat, mode, watchingOther, watching, holdSeq]);
@@ -668,7 +670,8 @@ function MatchScreen() {
         for (const t of snap.units) if (Array.isArray(t)) mp.set(t[0], t);
         snapUnitsRef.current = mp;
       }
-      hudRef.current = snapHud(snap);
+      const current = live.current;
+      hudRef.current = snapHud(snap, current.watchWho?.fieldId === snap.fieldId ? current.watchWho.playerId : current.myId);
       const dt = performance.now() - last;
       if (dt >= HUD_HZ_MS) flush();
       else if (!pending) pending = setTimeout(flush, HUD_HZ_MS - dt);
@@ -1224,8 +1227,8 @@ function MatchScreen() {
         const L = live.current;
         const [row, col] = L.terrainTile(t.row, t.col);
         const device = L.deviceBattle
-          ? deviceTipAt(L.terrainStage, row, col, { units: [...deviceUnitsRef.current.values()], snap: snapUnitsRef.current })
-          : deviceInfo(L.terrainStage, row, col);
+          ? deviceTipAt(L.terrainStage, row, col, { units: [...deviceUnitsRef.current.values()], snap: snapUnitsRef.current, rect: L.terrainRect })
+          : deviceInfo(L.terrainStage, row, col, { rect: L.terrainRect });
         if (device) {
           audio.sfx('click', { volume: 0.4 });
           setSel(null);
@@ -1679,7 +1682,8 @@ function MatchScreen() {
   const cardRangeKey = cardRange ? JSON.stringify(cardRange) : '';
   useEffect(() => {
     if (!view) return undefined;
-    showRange(view, cardRange?.grid, cardRange?.row, cardRange?.col, cardRange?.dir, SEL_RANGE);
+    if (cardRange?.tiles) view.highlightTiles(cardRange.tiles, { ...SEL_RANGE, includePadRows: true });
+    else showRange(view, cardRange?.grid, cardRange?.row, cardRange?.col, cardRange?.dir, SEL_RANGE);
     return () => showRange(view, null, 0, 0, null, SEL_RANGE);
   }, [view, cardRangeKey, showPrep, field]);
   // the card's bond chips — and the popup a chip opens: a battle / scouted unit's OWNER's bonds (yours, or that
@@ -1796,7 +1800,7 @@ function MatchScreen() {
 
       ${resolved ? html`<${DetailPanel} detail=${resolved} snapHp=${snapHp} onClose=${() => { setDetail(null); setSel(null); }}
         bonds=${detailBonds} offBonds=${offBonds} mutedBonds=${bannedBonds} loadout=${detailLoadout} ops=${priv?.ops ?? null} side=${dSide} shopOpen=${shopOpen} live=${liveStats} voice=${true}
-        morphMode=${morphMode} unequipAllowed=${unequipAllow}
+        morphMode=${morphMode} unequipAllowed=${unequipAllow} extendedRoom=${extendedRoom}
         onUnequip=${editable && unequipAllow ? (itemUid) => actions.unequip(itemUid) : null}
         onBond=${(id) => openBond(id, detailOwner, 'detail')} onSynergy=${setTraitSynergyId}
         tracked=${trackedOperators.has(operatorTrackId(resolved.chess))} onTrack=${toggleTrackedOperator} />` : null}

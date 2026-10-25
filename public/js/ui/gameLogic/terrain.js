@@ -9,6 +9,7 @@
 
 import { isObj } from './shared.js';
 import { t, N_ } from '../../../../shared/i18n.js';
+import { eunectesRangeTiles } from '../../../../shared/eunectesRange.js';
 
 // ---- special terrain tips (GitHub issue #184: 特殊地形的单击信息提示) ----------------------------------------
 
@@ -160,8 +161,9 @@ const DEVICE_TIPS = Object.freeze({
       const aspdMax = param(bb.max_attack_speed, Infinity);
       const fragMax = param(bb.max_damage_scale, Infinity);
       if (st?.eunectesTurrets) return [
-        t('优先攻击射程内的领袖，否则攻击当前生命值最低的敌人；造成法术伤害，最多弹射两次（100% / 85% / 72.25%）'),
+        t('优先攻击射程内的领袖，否则攻击当前生命值最高的敌人；造成物理范围伤害'),
         t('按已激活盟约总层数超出 50 的部分计算：每层攻击速度 +1、命中附加 0.1% 脆弱（最多 300 层）'),
+        t('每 30 有效层使命中敌人的防御力和法术抗性降低 2%，持续 2 秒且不叠加（最多 20%）；总层数达到 350 时额外发射一颗射弹，优先攻击当前生命值最低的敌人'),
         dur ? t('脆弱持续 {sec} 秒', { sec: Number(dur[1]) }) : null,
       ];
       return [
@@ -178,7 +180,7 @@ const DEVICE_TIPS = Object.freeze({
     stats: (st, d) => {
       const s = isObj(d.stats) ? d.stats : {};
       const out = [{ k: t('生命上限'), v: param(s.maxHp, 100) }];
-      if (param(s.atk, 0)) out.push({ k: t('攻击'), v: st?.eunectesTurrets ? 1000 : param(s.atk, 0) });
+      if (param(s.atk, 0)) out.push({ k: t('攻击'), v: st?.eunectesTurrets ? 500 : param(s.atk, 0) });
       if (param(s.def, 0)) out.push({ k: t('防御'), v: param(s.def, 0) });
       const sec = param(s.bat, 0) > 0 ? param(s.bat, 0) * 100 / (param(s.aspd, 100) > 0 ? param(s.aspd, 100) : 100) : 0;
       if (sec) out.push({ k: t('攻击间隔'), v: `${round1(sec)}s` });
@@ -223,15 +225,23 @@ const round2 = (v) => Math.round(v * 100) / 100;
 const deviceDrawn = (d) => (typeof d.active === 'boolean' ? d.active : !d.hidden);
 
 /** The card of stage device `d` standing at (row, col) — `tip` is DEVICE_TIPS[d.role]. */
-function deviceCard(stage, d, row, col) {
+function deviceCard(stage, d, row, col, rect = null) {
   const tip = DEVICE_TIPS[d.role];
   const special = stage.eunectesTurrets ? { ...stage.special, eunectesTurrets: true } : stage.special;
   const lines = tip.lines(special, d).filter((s) => typeof s === 'string' && s);
   const stats = typeof tip.stats === 'function' ? tip.stats(special, d) : null;
   const name = typeof d.name === 'string' && d.name ? d.name : String(d.role);
+  const authored = Array.isArray(d.rangeTiles) ? d.rangeTiles.filter((p) => Array.isArray(p) && p.length >= 2) : [];
+  const size = Array.isArray(stage.size) ? stage.size : [stage.rows?.length ?? 0, stage.rows?.[0]?.length ?? 0];
+  const rangeTiles = d.role !== 'turret' ? null : special?.eunectesTurrets
+    ? eunectesRangeTiles(d.pos[0], d.pos[1], authored, {
+      inBounds: (r, c) => r >= 0 && c >= 0 && r < size[0] && c < size[1],
+      inField: (r, c) => !rect || (r >= rect.r0 && r <= rect.r1 && c >= rect.c0 && c <= rect.c1),
+    }) : (rect ? authored.filter(([r, c]) => r >= rect.r0 && r <= rect.r1 && c >= rect.c0 && c <= rect.c1) : authored);
   return {
     key: d.role, name, tag: t(TIP_TAG), row, col, lines, facts: tip.facts(special, d).filter(Boolean),
     ...(stats && stats.length ? { stats } : {}),
+    ...(rangeTiles?.length ? { rangeTiles } : {}),
   };
 }
 
@@ -248,13 +258,13 @@ function deviceCard(stage, d, row, col) {
  * @param {{ roles?: readonly string[] }} [opts] `roles`: only these roles answer (default: the four of DEVICE_TIP_ROLES)
  * @returns {{ key:string, name:string, tag:string, row:number, col:number, lines:string[], facts:string[], stats?:{k:string,v:string|number}[] } | null}
  */
-export function deviceInfo(stage, row, col, { roles = DEVICE_TIP_ROLES } = {}) {
+export function deviceInfo(stage, row, col, { roles = DEVICE_TIP_ROLES, rect = null } = {}) {
   const list = Array.isArray(stage?.devices) ? stage.devices : null;
   if (!list || !Number.isInteger(row) || !Number.isInteger(col)) return null;
   for (const d of list) {
     if (!isObj(d) || !Array.isArray(d.pos) || d.pos[0] !== row || d.pos[1] !== col) continue;
     if (!roles.includes(d.role) || !DEVICE_TIPS[d.role] || !deviceDrawn(d)) continue;
-    return deviceCard(stage, d, row, col);
+    return deviceCard(stage, d, row, col, rect);
   }
   return null;
 }
@@ -275,10 +285,10 @@ export function deviceInfo(stage, row, col, { roles = DEVICE_TIP_ROLES } = {}) {
  * @param {{ units?: any[]|null, snap?: Map<number, any[]>|null }} battle the field's unit infos (m.field.units) and the
  *   latest snapshot tuples by unit id ([id, x, y, hp, maxHp, …])
  */
-export function deviceTipAt(stage, row, col, { units = null, snap = null } = {}) {
+export function deviceTipAt(stage, row, col, { units = null, snap = null, rect = null } = {}) {
   if (!Number.isInteger(row) || !Number.isInteger(col)) return null;
   const u = (Array.isArray(units) ? units : []).find((x) => isObj(x) && x.kind === 'device' && Math.round(Number(x.x)) === col && Math.round(Number(x.y)) === row);
-  if (!u) return deviceInfo(stage, row, col, { roles: DEVICE_TIP_ROLES.filter((r) => !DEVICE_UNIT_ROLES.includes(r)) });
+  if (!u) return deviceInfo(stage, row, col, { roles: DEVICE_TIP_ROLES.filter((r) => !DEVICE_UNIT_ROLES.includes(r)), rect });
   if (snap && snap.size > 0) {
     const tuple = snap.get(u.id);
     if (!Array.isArray(tuple) || !(tuple[3] > 0)) return null;
@@ -286,7 +296,7 @@ export function deviceTipAt(stage, row, col, { units = null, snap = null } = {})
   const list = Array.isArray(stage?.devices) ? stage.devices : [];
   const same = list.filter((d) => isObj(d) && d.key === u.defId && DEVICE_UNIT_ROLES.includes(d.role));
   const d = same.find((x) => Array.isArray(x.pos) && x.pos[0] === row && x.pos[1] === col) || same[0];
-  return d ? { ...deviceCard(stage, d, row, col), unitId: u.id } : null;
+  return d ? { ...deviceCard(stage, d, row, col, rect), unitId: u.id } : null;
 }
 
 /**

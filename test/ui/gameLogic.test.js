@@ -661,6 +661,8 @@ describe('enemies, HUD, stats', () => {
   });
   test('snapHud / bossFrac', () => {
     assert.deepEqual(snapHud({ killed: 3, total: 9, dp: 20 }), { killed: 3, resolved: 3, total: 9, dp: 20, boss: null });
+    assert.deepEqual(snapHud({ killed: 3, total: 9, dp: 99, dps: { p_0: 99, p_1: 12 } }, 'p_1'),
+      { killed: 3, resolved: 3, total: 9, dp: 12, boss: null }, 'a shared field shows the watched player’s DP');
     // the capsule's numerator: the field's own enemies knocked out or leaked (a runtime split / summon knocked down
     // counts in `killed` only, so the two may differ — 5/9 down but 3/9 of the round's own list resolved)
     assert.deepEqual(snapHud({ killed: 5, resolved: 3, total: 9, dp: 20 }), { killed: 5, resolved: 3, total: 9, dp: 20, boss: null });

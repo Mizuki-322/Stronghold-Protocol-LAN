@@ -29,14 +29,16 @@ const raw = (f) => JSON.parse(readFileSync(join(CACHE, 'excel', `${f}.json`), 'u
 
 const all = Object.values(chess);
 const base = all.filter((c) => !c.isGolden);
+const localBase = new Set(['chess_char_1_21_a', 'chess_char_1_22_a', 'chess_char_1_23_a']);
+const officialBase = base.filter((c) => !localBase.has(c.chessId));
 const ofType = (t) => base.filter((c) => c.chessType === t);
 const isFiniteNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const ELITES = ['char_608_acpion', 'char_609_acguad', 'char_610_acfend', 'char_611_acnipe', 'char_612_accast', 'char_613_acmedc', 'char_614_acsupo', 'char_615_acspec', 'char_617_sharp2'];
 const RESERVES = ['char_600_cpione', 'char_601_cguard', 'char_602_cdfend', 'char_603_csnipe', 'char_604_ccast', 'char_605_cmedic', 'char_606_csuppo', 'char_607_cspec'];
 
 test('chess: 133 base chess — 74 PRESET / 55 NORMAL / 4 DIY — and every record keeps the five official backup fields', () => {
-  assert.equal(base.length, 133);
-  assert.deepEqual([ofType('PRESET').length, ofType('NORMAL').length, ofType('DIY').length], [74, 55, 4]);
+  assert.equal(officialBase.length, 133);
+  assert.deepEqual([ofType('PRESET').length, ofType('NORMAL').length, ofType('DIY').length], [77, 55, 4]);
   for (const c of all) {
     assert.deepEqual(Object.keys(c.backup), ['charId', 'tmplId', 'skillIndex', 'uniEquipId', 'potRank'], `${c.chessId}: backup fields`);
     assert.deepEqual(c.backup, chess[c.baseId].backup, `${c.chessId}: the elite shares its base row's backup`);
@@ -57,6 +59,7 @@ test('chess: 133 base chess — 74 PRESET / 55 NORMAL / 4 DIY — and every reco
 test('chess: the backup fields are the official shop row, verbatim', { skip: !HAS_CACHE && 'no .cache/gamedata' }, () => {
   const act = raw('activity_table').activity.AUTOCHESS_SEASON.act2autochess;
   for (const c of all) {
+    if (localBase.has(c.baseId)) continue;
     const s = act.charShopChessDatas[c.baseId];
     assert.deepEqual(c.backup, { charId: s.backupCharId, tmplId: s.backupTmplId, skillIndex: s.backupCharSkillIndex, uniEquipId: s.backupCharUniEquipId, potRank: s.backupCharPotRank }, c.chessId);
     assert.equal(c.chessType, s.chessType, c.chessId);

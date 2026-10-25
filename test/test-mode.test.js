@@ -181,8 +181,8 @@ test('startMatch forwards test only for a room created with the flag', (t) => {
   assert.equal(seen[1].hostId, host2.playerId);
 });
 
-test('wireOptions and setHost stay silent unless the match was created as a test', () => {
-  assert.deepEqual(wireOptions({ roomCode: 'ABCD', mode: 'solo', hostId: 'p', test: false }), { roomCode: 'ABCD', mode: 'solo' });
+test('wireOptions and setHost forward the room host; only test rooms enable test commands', () => {
+  assert.deepEqual(wireOptions({ roomCode: 'ABCD', mode: 'solo', hostId: 'p', test: false }), { roomCode: 'ABCD', mode: 'solo', hostId: 'p' });
   assert.deepEqual(
     wireOptions({ roomCode: 'ABCD', mode: 'solo', hostId: 'p', test: true }),
     { roomCode: 'ABCD', mode: 'solo', test: true, hostId: 'p' },
@@ -190,8 +190,9 @@ test('wireOptions and setHost stay silent unless the match was created as a test
   const posts = [];
   const normal = new MatchProxy({ host: { post: (m) => posts.push(m) }, matchId: 'n', opts: { roomCode: 'ABCD', test: false, hostId: 'p' } });
   normal.setHost('q');
-  assert.deepEqual(posts, []);
-  assert.equal(normal.opts.hostId, 'p');
+  assert.equal(normal.opts.hostId, 'q');
+  assert.equal(posts.at(-1).method, 'setHost');
+  assert.deepEqual(posts.at(-1).args, ['q']);
   const testMatch = new MatchProxy({ host: { post: (m) => posts.push(m) }, matchId: 't', opts: { roomCode: 'ABCD', test: true, hostId: 'p' } });
   testMatch.setHost('q');
   assert.equal(testMatch.opts.hostId, 'q');
@@ -988,6 +989,10 @@ test('sliced bot prep and a server-run battle replay a host command between slic
       if (ps && !ps.left) {
         if (m.phase === 'INFO_CHECK' && !ps.infoReady) m.handle('p_0', { t: 'g.infoReady' });
         else if (m.phase === 'BAND_DRAFT' && m.draftTurn() === 'p_0') m.handle('p_0', { t: 'g.band', bandId: 'band_bldsk' });
+        else if (m.phase === 'BAND_DRAFT' && m.draftTurn() === 'ai_0') {
+          const bandId = m.gd.bandIds().find((id) => !m.bandTaken(id, 'ai_0'));
+          m.handle('p_0', { t: 'g.botBand', bandId });
+        }
       }
       if (pred()) return true;
       if (!scheduler.runNext()) return !!pred();

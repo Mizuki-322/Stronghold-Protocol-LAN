@@ -618,7 +618,7 @@ export function previewOf(spawns) {
  * step = min(max(W / M, 0.05·W), MAX_ACTION_INTERVAL_FOR_UID 5 s), and unit i of the k-th owner spawns at
  * preDelay + k·ACTION_INTERVAL_FOR_UID (0.5 s) + i·step.
  * @param {Array<{ enemyKey: string, mods: object|null, sourcePlayerId: string, bounty?: object|null, isToken?: boolean }>} leaked
- * @param {number} helperCount 1 | 2
+ * @param {number} helperCount 1 | 2 | 3
  * @returns {{ templateId: string|null, spawns: object[], routes: object[] }}
  */
 export function buildUniteWave(gd, leaked, helperCount, timeLimit) { // eslint-disable-line no-unused-vars
@@ -626,8 +626,14 @@ export function buildUniteWave(gd, leaked, helperCount, timeLimit) { // eslint-d
   const templateId = templates[String(Math.min(helperCount, 2))] || templates[Math.min(helperCount, 2)] || null;
   const tpl = templateId ? gd.wave(templateId) : null;
   const routes = tpl && Array.isArray(tpl.routes) ? (helperCount === 3
-    ? tpl.routes.map((route) => ({ ...route, start: [route.start[0], route.start[1] + 8],
-      checkpoints: [[route.start[0], route.start[1]], ...(route.checkpoints || [])] }))
+    ? tpl.routes.map((route) => {
+      // Flying routes need waypoints through the new right-hand section to cross the first defender's board.
+      const firstSection = route.motion === 'FLY'
+        ? (route.checkpoints || []).filter((point) => Array.isArray(point) && point[1] >= 11).map(([row, col]) => [row, col + 8])
+        : [];
+      return { ...route, start: [route.start[0], route.start[1] + 8],
+        checkpoints: [...firstSection, [route.start[0], route.start[1]], ...(route.checkpoints || [])] };
+    })
     : tpl.routes) : [];
   const ts = gd.factions.templateSlots || {};
   const list = tpl && Array.isArray(tpl.spawns) ? tpl.spawns : [];

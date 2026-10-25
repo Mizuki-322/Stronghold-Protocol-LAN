@@ -72,6 +72,14 @@ test('three defenders get a third stage section, entry route and extended time',
   const wave = buildUniteWave(gd, [{ enemyKey, sourcePlayerId: 'p1' }], 3, 100);
   assert.equal(wave.routes[0].start[1], 26);
   assert.equal(wave.routes[0].end[1], 2);
+  for (const [index, route] of wave.routes.entries()) {
+    if (route.motion !== 'FLY') continue;
+    const old = gd.wave(wave.templateId).routes[index];
+    assert.ok(old, 'original flying route exists');
+    const copied = old.checkpoints.filter((point) => point[1] >= 11).map(([row, col]) => [row, col + 8]);
+    assert.ok(copied.length > 0, 'the right section has a waypoint');
+    assert.deepEqual(route.checkpoints.slice(0, copied.length), copied, 'flying route crosses the first defender’s board');
+  }
   const battle = new Battle({ kind: 'unite', stageId: normal.id, data: DATA, rect: EXTENDED_UNITE_RECT,
     flags: { extendedUnite: true, uniteAntiStall: true }, routes: wave.routes, spawns: wave.spawns, players: [], content: 'none' });
   assert.equal(battle.rect.c1, 28);

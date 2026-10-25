@@ -1927,7 +1927,8 @@ const isBountyArt = (gd, itemId) => { const rec = gd.item(itemId); return !!rec 
 /**
  * Use an Art: 画卷 copies the operator on its tile (its range is the tile + the one in front) — the most valuable
  * deployed operator, with a free hand slot for the copy; 教鞭 offers a scored personal bounty choice, “神秘顾客” adds a
- * random bounty — only after a perfect battle with LP to spare, else the Art stays in the hand for a later round
+ * random bounty — normally only after a perfect battle with LP to spare; Dobermann's own whip can be used after
+ * a leaky battle with at least 10 LP, while other bounty Arts stay in the hand for a later round
  * (destroying 教鞭 gives nothing; a full hand at the prep end: freeHandSlot).
  */
 function useArt(m, ps, item, ctx) {
@@ -1942,7 +1943,9 @@ function useArt(m, ps, item, ctx) {
     return;
   }
   if (keys.includes('trap_create_self_choice')) {
-    if (!lastPerfect(m, ps) || ps.lp < 10) return; // kept
+    // 杜宾 generates a 教鞭 every two rounds; do not hold all of them after a difficult battle.
+    const dobermWhip = ps.bandId === 'band_doberm' && item.id === 'chess_item_6_03_m';
+    if ((!lastPerfect(m, ps) && !dobermWhip) || ps.lp < 10) return; // kept
     const [key] = [...ps.board.keys()];
     if (key) {
       const [r, c] = parseKey(key);

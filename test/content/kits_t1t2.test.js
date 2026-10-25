@@ -1434,6 +1434,10 @@ test('every tier 1/2 chess (normal & elite, hidden included) fights 40 s with it
     h.run(40);
     checkInvariants(h.b);
     assert.equal(h.b.errors.length, 0, `${id}: ${JSON.stringify(h.b.errors[0])}`);
-    assert.equal(h.unit(id).kit.generic, undefined, `${id} uses its hand-authored kit`);
+    if (/^chess_char_1_2[23]_[ab]$/.test(id)) {
+      assert.equal(h.unit(id).kit.generic, true, `${id} uses skill-free reserve combat`);
+    } else {
+      assert.equal(h.unit(id).kit.generic, undefined, `${id} uses its hand-authored kit`);
+    }
   }
 });

@@ -1258,15 +1258,16 @@ export async function createFieldView(host, options = {}) {
     return group || (typeof style === 'object' && style ? style.group : null) || (typeof style === 'string' ? style : 'custom');
   }
   /**
-   * Draw a BOARD-space highlight group: range previews never light the bench / temp pads (rows 7–8: no battle
-   * happens there), the prep field transform maps the tiles onto the boss field in the Final Assault prep, and the 2D
+   * Draw a BOARD-space highlight group: operator range previews omit the bench / temp pads (rows 7–8), while a
+   * device can include its authored row 8; the prep field transform maps tiles onto the boss field, and the 2D
    * board stripes range previews under the units (the 3D board gets them from the direction wheel's layer).
    */
   function drawHighlight(list, style, group) {
     const key = hlKey(style, group);
     const range = RANGE_GROUPS.has(key) || style === 'range';
     let t = tilesToDisp(IDENTITY, list);
-    if (range) t = t.filter(([r]) => r !== GEO.HAND_ROW && r !== GEO.TEMP_ROW);
+    // Device ranges can include row 8 (the authored turret stands there); operator previews still omit the hand pads.
+    if (range && !style?.includePadRows) t = t.filter(([r]) => r !== GEO.HAND_ROW && r !== GEO.TEMP_ROW);
     if (mode === 'prep' && prepXf !== IDENTITY) t = tilesToDisp(prepXf, t);
     tiles.setHighlights(t, style, key, { stripes: range && key !== 'rangeStand' && !board3d });
   }

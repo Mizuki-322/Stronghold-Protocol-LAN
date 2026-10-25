@@ -892,6 +892,18 @@ test('寻呼模块: a pick-one offer of 3 different same-bond operators (tier �
   cover(A('4_01'), B('4_01'));
 });
 
+test('大型同盟寻呼模块 offers four different same-bond operators', () => {
+  const { m, ps, equip } = setup({ mode: 'coop8', humans: 5, seed: 23 });
+  ps.shop.level = 4;
+  const cid = targetWithCandidates(m, 1, 4, 5);
+  const target = give(m, ps, cid, 'hand');
+  assert.deepEqual(equip(giveItem(m, ps, A('4_01')), target), OK);
+  const ids = ps.offers[0].slots.map((slot) => slot.id);
+  assert.equal(ids.length, 4);
+  assert.equal(new Set(ids).size, 4);
+  m.dispose();
+});
+
 test('信标: target and item destroyed, offer of 2 same-tier operators; co-op: the original goes to the teammate with most of its bonds next round', () => {
   const { h, m, equip } = setup({ mode: 'coop', humans: 2, seed: 31 });
   const p0 = h.ps('p_0'), p1 = h.ps('p_1');
