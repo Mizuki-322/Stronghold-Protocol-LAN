@@ -51,7 +51,7 @@
 
 import { num, talentBb, moduleBb, traitBb, skillRec, up, giveSp, batMod } from '../shared/tier1.js';
 import { COLS } from '../../../constants.js';
-import { absoluteRangeKeys } from '../../../targeting.js';
+import { battleRangeKeys } from '../../../targeting.js';
 import { bodyInRange } from '../../../body.js';
 import { isHpLoss } from '../../../damage.js';
 
@@ -91,7 +91,7 @@ export default {
     /** The break: Lin's current attack range centred on the holder — stun first, then the damage (PRTS 备注). */
     const burst = (battle, lin, holder) => {
       const grid = lin.liveRangeGrid || lin.rangeGrid || [[0, 0]];
-      const keys = absoluteRangeKeys(grid, holder.tileR, holder.tileC, lin.dir, 0);
+      const keys = battleRangeKeys(grid, holder.tileR, holder.tileC, lin.dir, 0);
       const victims = battle.enemiesInKeys(keys, lin, { canHitFly: true });
       if (glass.stun > 0) for (const e of victims) battle.applyStatus(e, 'stun', { duration: glass.stun, source: lin });
       for (const e of victims) {

@@ -162,7 +162,7 @@
 //     a player seat (the seat is kept and given back on resume).
 
 import { randomBytes, randomInt } from 'node:crypto';
-import { DIFFICULTIES, ERR, MAX_SEATS, MAX_SPECTATORS, ROOM_CODE_LEN, modeIdFor } from '../shared/constants.js';
+import { DIFFICULTIES, ERR, MAX_SPECTATORS, ROOM_CODE_LEN, modeIdFor, seatsForMode } from '../shared/constants.js';
 import { checkLoadout, checkLoadoutOps, cultivationCharIds, checkNotOwned, checkDiyPicks, charPotentialChanges, checkSkinSelection, operatorCharIds } from '../shared/protocol.js';
 import { encode, isDroppable, isErrCode, sendRaw, sendSession } from './net.js';
 import { getData as defaultGetData, lookup } from './data.js';
@@ -186,6 +186,7 @@ export const LOBBY_DEFAULTS = Object.freeze({
   maxMatchesPerAddr: 8,   // matches started from one client network that may run at once (0 = unlimited)
   resyncMinGapMs: 1000,   // heavy resyncs (match state / result replay) per session at most this often on repeated hellos
   soloReconnectWindowMs: null, // a dropped solo run stays resumable this long (null = data singleReconnectTime, 24 h)
+  prepUntimedConfirmMs: 60_000, // all human players must confirm the untimed rest phase before this expires
 });
 
 /** Official `singleReconnectTime` (s) when the data lacks it (constData, research 01 §1). */
@@ -262,9 +263,9 @@ function freezeSkins(skins, hasOperator) {
   return Object.freeze({ ...res.skins });
 }
 
-/** One room: 4 seat slots, host, difficulty, optional running match. */
+/** One room: one, four or eight seat slots, host, difficulty, optional running match. */
 export class Room {
-  /** @param {string} code @param {'solo'|'coop'} mode @param {string} difficulty @param {number} now */
+  /** @param {string} code @param {'solo'|'coop'|'coop8'} mode @param {string} difficulty @param {number} now */
   constructor(code, mode, difficulty, now) {
     this.code = code;
     this.mode = mode;
@@ -274,10 +275,15 @@ export class Room {
      * put every human seat before every AI seat (Match opts.aiPicksLast). Kept across the room's matches.
      */
     this.aiPicksLast = false;
+    /** Co-op room option for this match only: remove the rest-phase deadline. */
+    this.prepUntimed = false;
+    /** @type {{ id: number, deadline: number, voters: string[], accepted: Set<string>, key: string|null, timer: NodeJS.Timeout } | null} */
+    this.prepUntimedVote = null;
+    this.prepUntimedVoteSeq = 0;
     /** @type {string | null} */
     this.hostId = null;
     /** @type {(Seat | null)[]} */
-    this.seats = new Array(MAX_SEATS).fill(null);
+    this.seats = new Array(seatsForMode(mode)).fill(null);
     /** @type {{ playerId: string, name: string, connected: boolean }[]} spectator seats, ≤ MAX_SPECTATORS (header) */
     this.spectators = [];
     /** @type {any} running Match instance */
@@ -343,9 +349,14 @@ export class Room {
       mode: this.mode,
       difficulty: this.difficulty,
       aiPicksLast: this.aiPicksLast,
+      prepUntimed: this.prepUntimed,
+      ...(this.prepUntimedVote ? { prepUntimedVote: {
+        id: this.prepUntimedVote.id, deadline: this.prepUntimedVote.deadline,
+        accepted: [...this.prepUntimedVote.accepted],
+      } } : {}),
       inMatch: !!this.match,
       seats: this.seats.map((s) => (s
-        ? { seat: s.seat, playerId: s.playerId, name: s.name, isBot: s.isBot, ready: s.ready, connected: s.connected && !s.left,
+        ? { seat: s.seat, playerId: s.playerId, name: s.name, isBot: s.isBot, ...(s.isAgent ? { isAgent: true } : {}), ready: s.ready, connected: s.connected && !s.left,
           // a room with gameplay plugins (header "Gameplay plugins"): has this player's page loaded and checked its content?
           ...(this.modded && !s.isBot ? { content: s.content || 'loading' } : {}) }
         : null)),
@@ -634,6 +645,11 @@ export class Lobby {
    * @param {{ from?: { seat: Seat, gen: number } | null } | null} [ctx]
    */
   handleMessage(session, msg, ctx = null) {
+    const pending = this.roomOf(session)?.prepUntimedVote;
+    if (pending && msg.t.startsWith('room.') && !['room.confirmPrepUntimed', 'room.leave', 'room.create', 'room.join',
+      'room.spectate', 'room.contentReady', 'room.setPrepUntimed'].includes(msg.t)) {
+      return fail(ERR.WRONG_PHASE, 'waiting for untimed rest confirmation');
+    }
     switch (msg.t) {
       case 'room.create': return this.create(session, msg);
       case 'room.join': return this.join(session, msg);
@@ -641,6 +657,8 @@ export class Lobby {
       case 'room.ready': return this.ready(session, msg);
       case 'room.setDifficulty': return this.setDifficulty(session, msg);
       case 'room.setAiPicksLast': return this.setAiPicksLast(session, msg);
+      case 'room.setPrepUntimed': return this.setPrepUntimed(session, msg);
+      case 'room.confirmPrepUntimed': return this.confirmPrepUntimed(session, msg);
       case 'room.addBot': return this.addBot(session);
       case 'room.removeBot': return this.removeBot(session, msg);
       case 'room.kick': return this.kick(session, msg);
@@ -686,7 +704,8 @@ export class Lobby {
         else this.callMatch(room, 'onDisconnect', session.playerId);
       }
     } else this.startGrace(room, seat);
-    this.broadcastState(room);
+    if (room.prepUntimedVote && player) this.cancelPrepUntimedVote(room);
+    else this.broadcastState(room);
   }
 
   /** The session's reconnect window elapsed (already removed from the registry). */
@@ -784,6 +803,7 @@ export class Lobby {
     session.notice = null;
     session.pendingResult = null;
     if (!room.hostId) room.hostId = session.playerId;
+    if (room.prepUntimedVote) this.cancelPrepUntimedVote(room, false);
     this.broadcastState(room);
     return OK;
   }
@@ -887,6 +907,59 @@ export class Lobby {
       this.broadcastState(room);
     }
     return OK;
+  }
+
+  /** Private co-op rooms have no automatic matchmaking; the host may remove this match's PREP deadline. */
+  setPrepUntimed(session, { on }) {
+    const room = this.roomOf(session);
+    if (!room) return fail(ERR.NOT_IN_ROOM);
+    if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
+    if (room.match) return fail(ERR.ROOM_STARTED);
+    if (room.mode === 'solo') return fail(ERR.BAD_TARGET, 'solo prep is already untimed');
+    if (room.prepUntimedVote) {
+      if (on) return fail(ERR.WRONG_PHASE, 'waiting for untimed rest confirmation');
+      this.cancelPrepUntimedVote(room);
+      return OK;
+    }
+    if (room.prepUntimed !== on) {
+      room.prepUntimed = on;
+      for (const s of room.seats) if (s && !s.isBot && s.playerId !== room.hostId) s.ready = false;
+      this.broadcastState(room);
+    }
+    return OK;
+  }
+
+  /** A failed, declined, interrupted or expired confirmation returns everyone to the ready room. */
+  cancelPrepUntimedVote(room, broadcast = true) {
+    const vote = room.prepUntimedVote;
+    if (!vote) return;
+    clearTimeout(vote.timer);
+    room.prepUntimedVote = null;
+    room.prepUntimed = false;
+    for (const seat of room.seats) if (seat && !seat.isBot) seat.ready = false;
+    if (broadcast) this.broadcastState(room);
+  }
+
+  /** Only the human players in the starting roster vote; external AI seats do not need a browser confirmation. */
+  confirmPrepUntimed(session, { voteId, accept }) {
+    const room = this.roomOf(session);
+    if (!room) return fail(ERR.NOT_IN_ROOM);
+    const vote = room.prepUntimedVote;
+    if (!vote || vote.id !== voteId || room.match) return fail(ERR.WRONG_PHASE);
+    if (!vote.voters.includes(session.playerId)) return fail(ERR.BAD_TARGET);
+    if (this.now() >= vote.deadline) { this.cancelPrepUntimedVote(room); return fail(ERR.WRONG_PHASE); }
+    if (!accept) { this.cancelPrepUntimedVote(room); return OK; }
+    vote.accepted.add(session.playerId);
+    if (vote.accepted.size < vote.voters.length) { this.broadcastState(room); return OK; }
+    clearTimeout(vote.timer);
+    room.prepUntimedVote = null;
+    const result = this.startMatch(room, vote.key);
+    if (result.error) {
+      room.prepUntimed = false;
+      for (const seat of room.seats) if (seat && !seat.isBot) seat.ready = false;
+      this.broadcastState(room);
+    }
+    return result;
   }
 
   /**
@@ -1117,6 +1190,7 @@ export class Lobby {
     if (!room) return fail(ERR.NOT_IN_ROOM);
     if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
     if (room.match) return fail(ERR.ROOM_STARTED);
+    if (room.prepUntimedVote) return fail(ERR.WRONG_PHASE, 'waiting for untimed rest confirmation');
     const humans = room.activeHumans();
     if (room.content?.trusted && humans.some(s => s.consentCs !== room.content.cs)) return fail(ERR.PLUGIN_CONSENT);
     for (const s of humans) {
@@ -1128,12 +1202,25 @@ export class Lobby {
     if (humans.length < 1 || (room.mode === 'solo' && (humans.length !== 1 || bots.length > 0))) {
       return fail(ERR.BAD_MSG, 'invalid seat configuration');
     }
+    if (room.mode === 'coop8' && humans.length + bots.length < 5) return fail(ERR.NOT_READY, 'five seats required');
     const key = session.limitKey || null;
     if (key && this.opts.maxMatchesPerAddr > 0 && this.countRooms((r) => !!r.match && r.matchKey === key) >= this.opts.maxMatchesPerAddr) {
       this.limitWarn(`match limit (${this.opts.maxMatchesPerAddr}) reached for ${session.addr}`);
       return fail(ERR.RATE, 'too many running matches from your network');
     }
-    return this.startMatch(room, key);
+    if (!room.prepUntimed) return this.startMatch(room, key);
+    const voters = humans.filter((s) => !s.isAgent).map((s) => s.playerId);
+    if (voters.length === 0) return this.startMatch(room, key);
+    const id = ++room.prepUntimedVoteSeq;
+    const deadline = this.now() + this.opts.prepUntimedConfirmMs;
+    const vote = { id, deadline, voters, accepted: new Set(), key, timer: null };
+    vote.timer = setTimeout(() => {
+      if (room.prepUntimedVote === vote) this.cancelPrepUntimedVote(room);
+    }, this.opts.prepUntimedConfirmMs);
+    vote.timer.unref?.();
+    room.prepUntimedVote = vote;
+    this.broadcastState(room);
+    return OK;
   }
 
   /** Host authorization stays in the lobby; the match owns the vote and setup. */
@@ -1361,7 +1448,7 @@ export class Lobby {
       // a setting checked for another content is filtered to this room's data (header "Gameplay plugins")
       const own = s.isBot ? null : this.seatSettings(room, s, data);
       return {
-        seat: s.seat, playerId: s.playerId, name: s.name, isBot: s.isBot, connected: s.connected,
+        seat: s.seat, playerId: s.playerId, name: s.name, isBot: s.isBot, isAgent: !!s.isAgent, connected: s.connected,
         // DESIGN §16: the human's checked operator loadout and (0.2.2) per-operator 潜能 / 练度 (bots fight with the defaults)
         loadout: own ? own.loadout : null,
         ops: own ? own.ops : null,
@@ -1387,6 +1474,7 @@ export class Lobby {
         modeId: room.content?.modeId || modeIdFor(room.mode, room.difficulty),
         // 「AI 队友最后选择」 (GitHub #338): fixed for the match
         aiPicksLast: room.mode !== 'solo' && room.aiPicksLast === true,
+        prepUntimed: room.mode !== 'solo' && room.prepUntimed === true,
         seats,
         // the spectator seats (header): watched like eliminated players, never players
         spectators: room.spectators.map((s) => s.playerId),
@@ -1444,6 +1532,7 @@ export class Lobby {
     room.match = null;
     room.matchCtx = null;
     room.matchKey = null;
+    room.prepUntimed = false;
     room.replay = this.buildReplay(room, ctx);
     setImmediate(() => this.disposeMatchCtx(ctx));
     // a match of gameplay plugins whose match host stopped (header "Gameplay plugins"; its members were told: proxy.js)
@@ -1689,7 +1778,8 @@ export class Lobby {
   /** @returns {Seat} */
   humanSeat(idx, session) {
     return {
-      seat: idx, playerId: session.playerId, name: session.name, isBot: false, ready: false, connected: session.connected, left: false,
+      seat: idx, playerId: session.playerId, name: session.name, isBot: false, isAgent: session.agent === true,
+      ready: false, connected: session.connected, left: false,
       loadout: session.loadout || null,
       ops: session.ops || null,
       notOwned: session.notOwned || null,
@@ -1727,6 +1817,7 @@ export class Lobby {
     }
     if (room.disposed) return; // onLeave may have ended the match and emptied the room
     if (room.hostId === playerId) this.migrateHost(room);
+    if (room.prepUntimedVote) this.cancelPrepUntimedVote(room, false);
     if (room.activeHumans().length === 0) this.disposeRoom(room, 'empty');
     else this.broadcastState(room);
   }
@@ -1787,6 +1878,7 @@ export class Lobby {
    */
   disposeRoom(room, reason) {
     if (room.disposed) return;
+    if (room.prepUntimedVote) this.cancelPrepUntimedVote(room, false);
     room.disposed = true;
     if (this.rooms.get(room.code) === room) { this.trustedRuntime?.event('roomClosed',{room:room.toState()}); this.rooms.delete(room.code); }
     const ctx = room.matchCtx;

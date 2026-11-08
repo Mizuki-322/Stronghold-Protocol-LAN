@@ -89,7 +89,7 @@ export class MatchClientCombat {
     for (const pid of f.players) {
       if (pid === exclude || (f.demoted && f.demoted.has(pid))) continue;
       const ps = this.players.get(pid);
-      if (!ps || ps.isBot || ps.left || !ps.connected) continue;
+      if (!ps || ps.isBot || ps.isAgent || ps.left || !ps.connected) continue;
       if (!best || ps.seat < best.seat) best = ps;
     }
     return best ? best.playerId : null;

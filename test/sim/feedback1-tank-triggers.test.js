@@ -21,7 +21,7 @@ import fs from 'node:fs';
 import { makeBattle, checkInvariants } from '../helpers/battleHarness.js';
 import { getDefaultSource } from '../../server/sim/simdata.js';
 import { bodyInRange } from '../../server/sim/body.js';
-import { absoluteRangeKeys } from '../../server/sim/targeting.js';
+import { battleRangeKeys } from '../../server/sim/targeting.js';
 
 const CHESS = JSON.parse(fs.readFileSync(new URL('../../data/chess.json', import.meta.url), 'utf8'));
 const ds = getDefaultSource();
@@ -66,7 +66,7 @@ function firstCast(chessId, skillId, { spawnAt = 0, seconds = 40 } = {}) {
     const keys = new Set(u.baseRangeKeys || u.rangeKeys);
     // by the 0.1 collider, the engine's range test since 0.3.0
     out.enemyInRange = h.b.enemies.some((e) => e.alive && e.deployed && bodyInRange(e, keys));
-    const sk = u.skill.triggerGrid ? new Set(absoluteRangeKeys(u.skill.triggerGrid, u.tileR, u.tileC, u.dir, 0)) : null;
+    const sk = u.skill.triggerGrid ? new Set(battleRangeKeys(u.skill.triggerGrid, u.tileR, u.tileC, u.dir, 0)) : null;
     out.enemyInSkillRange = !!sk && h.b.enemies.some((e) => e.alive && e.deployed && bodyInRange(e, sk));
     out.blocking = u.blocking.length > 0;
   }, { priority: 1000 });

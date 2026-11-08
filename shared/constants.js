@@ -19,6 +19,9 @@ export const DEV_BUILD = /-dev$/.test(APP_VERSION);
 export const PLUGIN_API = Object.freeze({ current: 2, min: 1 });
 
 export const MAX_SEATS = 4;
+/** Separate 5–8 player co-op rooms; ordinary co-op keeps its four-seat cap. */
+export const MAX_EXTENDED_SEATS = 8;
+export const seatsForMode = (mode) => mode === 'solo' ? 1 : mode === 'coop8' ? MAX_EXTENDED_SEATS : MAX_SEATS;
 /**
  * Spectator seats of a co-op room (community report #26, owner's decision 2026-10-04) — a remake feature: the official
  * room has 1–4 players and no spectator seat (there only eliminated players and 联防 bystanders watch, research 09 §3.1).

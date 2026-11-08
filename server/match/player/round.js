@@ -8,9 +8,21 @@
 
 import { boardOrder, pieceDir } from '../board.js';
 import { computeBonds, bondSnapshot, activatedLayers, bondsWithGains } from '../bondsMeta.js';
+import { SHU_BAND, SHU_DEPUTY } from '../../../shared/shuStrategy.js';
 
 export class PlayerRound {
   startRound(r) {
+    if (this.bandId === SHU_BAND) {
+      if (!this.shu) this.shu = { hpRatio: 0.4, progress: 0, deputyBonusGranted: false };
+      this.shu.hpRatio = 0.4;
+      if (r >= 7 && !this.shu.deputyBonusGranted) {
+        this.bondCountBonus[SHU_DEPUTY] = (this.bondCountBonus[SHU_DEPUTY] || 0) + 1;
+        this.shu.deputyBonusGranted = true;
+      }
+      const field = [...this.board.values(), ...this.hand, ...this.temp]
+        .find((p) => p?.kind === 'token' && p.id === 'token_shu_field');
+      if (!field) this.stow(this.newPiece('token', 'token_shu_field', { ownerUid: null }), { allowTemp: true });
+    }
     this.round = { refreshes: 0, buys: 0, sells: 0, spent: 0, gainedChess: 0, arts: 0 };
     this.pendingLayerGains = null; // settled (or lapsed) at the last SETTLE
     if (r > 1) this.shop.upgradePrice = Math.max(0, this.shop.upgradePrice - 1);
@@ -177,8 +189,9 @@ export class PlayerRound {
       bandId: this.bandId,
       playerEffects: this.effects.filter((e) => e.battle !== false).map((e) => ({
         id: e.id, key: e.key ?? null, source: e.iconKind ?? null, params: e.params ?? null, counter: e.counter ?? null, data: e.data ?? null,
-      })),
-      deviceOverrides: { ...this.deviceOverrides },
+      })).concat(this.bandId === SHU_BAND && this.shu ? [{ id: 'shu:state', key: 'shu:state',
+        params: { hpRatio: this.shu.hpRatio, progress: this.shu.progress } }] : []),
+      deviceOverrides: this.m.effectiveDeviceOverrides(this),
     };
   }
 }

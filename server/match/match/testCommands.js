@@ -40,7 +40,7 @@
 //     BAD_MSG, never clamped). The audit keeps the parsed args, or { rejected: true } when
 //     the shape itself was refused.
 //   * bond count sets the ordinary extra-member bonus (0..99), allowing activation without
-//     pieces. computeBonds still decides the tier; a mode-disabled bond is refused.
+//     pieces. computeBonds still decides the tier; the mode's pool exclusions do not refuse a bond.
 
 import { ERR, PHASE, layerGainRoom } from '../../../shared/constants.js';
 import { parseTestArgs, isTestCommand, TEST_LOG_CAP, TEST_RATE_COUNT, TEST_RATE_WINDOW_MS } from '../../../shared/testMode.js';
@@ -351,7 +351,7 @@ export class MatchTestCommands {
   _testBond(ps, id, layers, count) {
     const blocked = this._testQuiet();
     if (blocked) return blocked;
-    if (!this.gd.bond(id) || this.gd.modeInactiveBonds.has(id)) return fail(ERR.BAD_TARGET, 'bond');
+    if (!this.gd.bond(id)) return fail(ERR.BAD_TARGET, 'bond');
     const cur = ps.layers[id] || 0;
     if (layers < cur) return fail(ERR.BAD_TARGET, 'layers');
     // [ASSUMED] count is an absolute extra member count, applied by the ordinary bond calculator.

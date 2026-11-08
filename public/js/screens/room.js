@@ -17,9 +17,10 @@
 // Texts go through t() (docs/I18N.md).
 
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
-import { DIFFICULTIES, DIFFICULTY_NAMES, DIFFICULTY_COLORS, MAX_SEATS, MAX_SPECTATORS } from '../../../shared/constants.js';
+import { DIFFICULTIES, DIFFICULTY_NAMES, DIFFICULTY_COLORS, MAX_SPECTATORS, seatsForMode } from '../../../shared/constants.js';
 import {
   html, Button, Icon, MicroLabel, PingPill, AvatarFrame, DifficultyTag, DifficultyIcon, Tooltip, confirmDialog, doctorNo, Modal,
+  useTicker, secondsLeft,
 } from '../ui/components.js';
 import { toast, toastError } from '../ui/toasts.js';
 import { TestMark } from '../ui/testConsole.js';
@@ -41,7 +42,7 @@ import { t, tc } from '../../../shared/i18n.js';
  * @returns {(null | {seat:number, playerId:any, name:string, isBot:boolean, ready:boolean, connected:boolean})[]}
  */
 export function normalizeSeats(room) {
-  const cap = room?.mode === 'solo' ? 1 : MAX_SEATS;
+  const cap = seatsForMode(room?.mode);
   const src = Array.isArray(room?.seats) ? room.seats : [];
   const out = [];
   for (let i = 0; i < cap; i++) {
@@ -74,7 +75,9 @@ export function roomFacts(room, myId) {
   return {
     seats, occupied, humans, mine, isHost, readyHumans, isReady,
     emptySeats: seats.filter((s) => !s).length,
-    canStart: isHost && othersReady && !!mine && contentReady && (!room?.content?.trusted || humans.every(s => room.content.trusted.consent[s.seat])),
+    canStart: isHost && !room?.prepUntimedVote && othersReady && !!mine && contentReady
+      && (room?.mode !== 'coop8' || occupied.length >= 5)
+      && (!room?.content?.trusted || humans.every(s => room.content.trusted.consent[s.seat])),
     othersReady,
     modded,
     contentReady,
@@ -96,6 +99,12 @@ export function roomFacts(room, myId) {
 export function aiLastOption(room, myId) {
   if (!room || room.mode === 'solo') return null;
   return { on: room.aiPicksLast === true, editable: room.hostId != null && room.hostId === myId };
+}
+
+/** No automatic matchmaking exists in this LAN build, so every co-op room is invitation-only. */
+export function prepUntimedOption(room, myId) {
+  if (!room || room.mode === 'solo') return null;
+  return { on: room.prepUntimed === true, editable: room.hostId != null && room.hostId === myId && !room.inMatch && !room.prepUntimedVote };
 }
 
 /** Invite link for a room code (current page URL with ?room=CODE). */
@@ -137,7 +146,7 @@ function SeatCard({ seat, index, room, facts, myId, busy, onAddBot, onRemoveBot,
   const offline = seat.connected === false && !seat.isBot;
   // The host never needs to toggle ready: starting the match readies them (server rule).
   const state = offline ? 'offline' : seat.ready || seat.isBot ? 'ready' : isHostSeat ? 'host' : 'waiting';
-  return html`<article class=${`seat brackets${isMe ? ' is-me' : ''}${isHostSeat ? ' is-host' : ''}${seat.isBot ? ' is-bot' : ''} is-${state}`}
+  return html`<article class=${`seat brackets${isMe ? ' is-me' : ''}${isHostSeat ? ' is-host' : ''}${seat.isBot ? ' is-bot' : ''}${seat.isAgent ? ' is-agent' : ''} is-${state}`}
       style=${`--seat-i:${index}`}>
     ${consent ? html`<span data-testid="script-consented">${t('已同意')}</span>` : null}
     <header class="seat__head">
@@ -149,12 +158,13 @@ function SeatCard({ seat, index, room, facts, myId, busy, onAddBot, onRemoveBot,
       <div class="seat__stripes" aria-hidden="true"></div>
       <${AvatarFrame} size="xl" name=${seat.name} seat=${index} bot=${seat.isBot} self=${isMe} ready=${state === 'ready'} offline=${offline} />
       ${seat.isBot ? html`<span class="seat__bot-label"><${Icon} name="robot" />${t('AI 队友')}</span>` : null}
+      ${seat.isAgent ? html`<span class="seat__bot-label"><${Icon} name="robot" />${t('外部 AI 玩家')}</span>` : null}
     </div>
     <div class="seat__who">
       <span class="seat__name">${seat.name || t('博士')}</span>
       ${isMe ? html`<span class="seat__you">${t('你')}</span>` : null}
     </div>
-    <${MicroLabel}>${seat.isBot ? 'AUTONOMOUS UNIT' : `DOCTOR #${doctorNo(seat.playerId)}`}<//>
+    <${MicroLabel}>${seat.isBot ? 'AUTONOMOUS UNIT' : seat.isAgent ? 'EXTERNAL AI PLAYER' : `DOCTOR #${doctorNo(seat.playerId)}`}<//>
     ${facts.modded && !seat.isBot ? html`<span class=${`seat__content is-${seat.content || 'loading'}`} data-testid="seat-content">
       ${seat.content === 'ready' ? t('插件内容就绪') : seat.content === 'failed' ? t('插件内容校验失败') : t('插件内容载入中')}
     </span>` : null}
@@ -238,6 +248,39 @@ function AiLastToggle({ option, busy, onToggle }) {
   </div>`;
 }
 
+function PrepUntimedToggle({ option, busy, onToggle }) {
+  if (!option) return null;
+  return html`<div class="ailast">
+    <${Tooltip} text=${t('休整期不设倒计时；所有博士准备后结束休整期')}>
+      <button type="button" role="switch" aria-checked=${option.on ? 'true' : 'false'}
+          class=${`dpick__opt ailast__opt${option.on ? ' is-active' : ''}`} disabled=${!option.editable || !!busy}
+          onClick=${() => option.editable && onToggle(!option.on)}>
+        <${Icon} name="check" class=${option.on ? 'is-on' : ''} />${t('休整期不限时')}
+      </button>
+    <//>
+    ${option.editable ? null : html`<span class="t-dim">${t('由创建者设置')}</span>`}
+  </div>`;
+}
+
+function PrepUntimedVoteDialog({ vote, facts, myId, busy, onAnswer }) {
+  useTicker(vote ? 1000 : 0);
+  if (!vote || !facts.mine || facts.mine.isAgent) return null;
+  const voters = facts.humans.filter((seat) => !seat.isAgent);
+  const accepted = Array.isArray(vote.accepted) ? vote.accepted : [];
+  const alreadyAccepted = accepted.includes(myId);
+  const remain = secondsLeft(vote.deadline);
+  return html`<${Modal} open=${true} title=${t('确认休整期不限时')} micro="ALLIANCE CONFIRMATION"
+      closeOnBackdrop=${false} onClose=${() => onAnswer(false)}
+      actions=${html`
+        <${Button} variant="secondary" disabled=${!!busy} data-testid="prep-untimed-decline" onClick=${() => onAnswer(false)}>${t('拒绝')}<//>
+        <${Button} variant="primary" icon="check" disabled=${alreadyAccepted || !!busy} data-testid="prep-untimed-accept"
+          onClick=${() => onAnswer(true)}>${alreadyAccepted ? t('等待其他玩家确认…') : t('确认')}<//>`}>
+    <p class="modal__text">${t('本局休整期没有倒计时。所有真人玩家确认后才会开始；有人拒绝或超时，将关闭该选项并要求重新准备。')}</p>
+    <p class="modal__text" data-testid="prep-untimed-count">${t('已确认 {count}/{total} 位真人玩家', { count: accepted.length, total: voters.length })}</p>
+    ${remain == null ? null : html`<p class="modal__text">${t('剩余{remain}秒', { remain })}</p>`}
+  <//>`;
+}
+
 /** Room screen component. */
 export function RoomScreen() {
   const room = useStore((s) => s.room);
@@ -246,7 +289,15 @@ export function RoomScreen() {
   const [busy, setBusy] = useState(null);
   const alive = useRef(true);
   const inFlight = useRef(false); // synchronous guard against double clicks (state updates are async)
+  const previousVote = useRef(null);
   useEffect(() => () => { alive.current = false; }, []);
+
+  useEffect(() => {
+    if (previousVote.current && room && !room.prepUntimedVote && !room.inMatch && !room.prepUntimed) {
+      toast(t('确认未完成，已关闭休整期不限时；请重新准备。'), 'warn');
+    }
+    previousVote.current = room?.prepUntimedVote?.id ?? null;
+  }, [room]);
 
   if (!room) return null;
   const online = conn.status === 'online';
@@ -268,6 +319,10 @@ export function RoomScreen() {
 
   const toggleReady = () => run('ready', () => net.request('room.ready', { ready: !myReady }));
   const start = () => run('start', () => net.request('room.start', {}));
+  const answerPrepUntimed = (accept) => {
+    const voteId = room.prepUntimedVote?.id;
+    if (voteId != null) run('prep-vote', () => net.request('room.confirmPrepUntimed', { voteId, accept }));
+  };
   const addBot = () => run('add', () => net.request('room.addBot', {}));
   const removeBot = (seat) => run(`rm${seat}`, () => net.request('room.removeBot', { seat }));
   // the host removes a human before the match (community report #17): asked first; the player may join again. The
@@ -278,6 +333,7 @@ export function RoomScreen() {
     if (ok) run(`kick${seat}`, () => net.request('room.kick', { seat, playerId }));
   };
   const setDifficulty = (difficulty) => run('diff', () => net.request('room.setDifficulty', { difficulty }));
+  const setPrepUntimed = (on) => run('prep-time', () => net.request('room.setPrepUntimed', { on }));
   const setAiLast = (on) => run('ailast', () => net.request('room.setAiPicksLast', { on }));
   // spectator seats: the host frees one; a spectator takes a free player seat with room.join of this room
   const removeSpectator = (playerId) => run(`rs${playerId}`, () => net.request('room.removeSpectator', { playerId }));
@@ -305,12 +361,16 @@ export function RoomScreen() {
 
   const statusLine = !online
     ? html`<span class="t-orange"><${Icon} name="wifiOff" />${t('连接中断，正在重连…')}</span>`
+    : room.prepUntimedVote
+      ? html`<span class="t-mint">${t('正在等待所有真人玩家确认休整期不限时')}</span>`
     : facts.spectating
       ? html`<span class="t-lo"><${Icon} name="eye" />${t('观战中 · 不占博士席位，模拟开始后可切换观看各位博士')}</span>`
     : !coop
       ? html`<span class="t-mint">${t('*模拟协议已就绪，准许进入模拟')}</span>`
     : facts.modded && !facts.contentReady
       ? html`<span class="t-lo">${t('等待所有博士载入房间的插件内容')}</span>`
+    : facts.isHost && room.mode === 'coop8' && facts.occupied.length < 5
+      ? html`<span class="t-lo">${t('大型同盟至少需要 5 名玩家或 AI 队友')}</span>`
     : facts.isHost
       ? facts.canStart
         ? html`<span class="t-mint">${t('*同盟人数达标，准许进入模拟')}</span>`
@@ -335,7 +395,7 @@ export function RoomScreen() {
       </div>
       <div class="topbar__center">
         <${MicroLabel} tone="mint">${coop ? 'ALLIANCE LOBBY' : 'SOLO SIMULATION'}<//>
-        <h1 class="topbar__title">${coop ? t('同盟模拟') : t('独立模拟')}${room.test ? html` <${TestMark} />` : null}<span class="topbar__sep"></span><${DifficultyTag} difficulty=${room.difficulty} size="lg" />
+        <h1 class="topbar__title">${room.mode === 'coop8' ? t('大型同盟') : coop ? t('同盟模拟') : t('独立模拟')}${room.test ? html` <${TestMark} />` : null}<span class="topbar__sep"></span><${DifficultyTag} difficulty=${room.difficulty} size="lg" />
           ${room.content?.modeId ? html`<span class="room-mode" data-testid="room-mode">${(room.content.modes || []).find((m) => m.id === room.content.modeId)?.name || room.content.modeId}</span>` : null}</h1>
         <${PluginTag} room=${room} myId=${me.playerId} />
       </div>
@@ -344,7 +404,7 @@ export function RoomScreen() {
       </div>
     </header>
 
-    <main class=${`seats${coop ? '' : ' seats--solo'}`}>
+    <main class=${`seats${!coop ? ' seats--solo' : room.mode === 'coop8' ? ' seats--extended' : ''}`}>
       ${facts.seats.map((s, i) => html`<${SeatCard} key=${s ? `p${s.playerId}` : `e${i}`} seat=${s} index=${i} room=${room} facts=${facts}
         myId=${me.playerId} busy=${busy} onAddBot=${addBot} onRemoveBot=${removeBot} onKick=${kick} />`)}
       ${coop ? null : html`<aside class="solo-brief brackets">
@@ -366,6 +426,7 @@ export function RoomScreen() {
         <div class="room-bar__opts">
           <${DifficultyPicker} room=${room} isHost=${facts.isHost} busy=${busy} onPick=${setDifficulty} />
           <${AiLastToggle} option=${aiLastOption(room, me.playerId)} busy=${busy} onToggle=${setAiLast} />
+          <${PrepUntimedToggle} option=${prepUntimedOption(room, me.playerId)} busy=${busy} onToggle=${setPrepUntimed} />
         </div>
       </div>
       <div class="room-bar__center">
@@ -381,7 +442,7 @@ export function RoomScreen() {
       <div class="room-bar__right">
         <${LoadoutButton} from="room" size="lg" class="room-loadout" label=${t('干员调配')} />
         ${facts.isHost
-          ? html`<${Tooltip} text=${facts.canStart ? null : !facts.contentReady ? t('仍有博士未载入房间的插件内容') : t('仍有博士未准备就绪')}>
+          ? html`<${Tooltip} text=${facts.canStart ? null : room.mode === 'coop8' && facts.occupied.length < 5 ? t('大型同盟至少需要 5 名玩家或 AI 队友') : !facts.contentReady ? t('仍有博士未载入房间的插件内容') : t('仍有博士未准备就绪')}>
               <${Button} variant="primary" size="xl" icon="play" loading=${busy === 'start'} disabled=${!facts.canStart || !online} onClick=${start}>${t('开始模拟')}<//>
             <//>`
           : facts.spectating
@@ -392,6 +453,8 @@ export function RoomScreen() {
             <//>`}
       </div>
     </footer>
+    <${PrepUntimedVoteDialog} vote=${room.prepUntimedVote} facts=${facts} myId=${me.playerId}
+      busy=${busy === 'prep-vote'} onAnswer=${answerPrepUntimed} />
   </div>`;
 }
 

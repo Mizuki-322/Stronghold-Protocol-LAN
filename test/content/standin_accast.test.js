@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { makeBattle, enemyRec, checkInvariants } from '../helpers/battleHarness.js';
 import { unitForm } from '../../shared/standIn.js';
-import { absoluteRangeKeys } from '../../server/sim/targeting.js';
+import { battleRangeKeys } from '../../server/sim/targeting.js';
 import { COLS } from '../../server/sim/constants.js';
 
 const load = (f) => JSON.parse(readFileSync(new URL(`../../data/${f}.json`, import.meta.url), 'utf8'));
@@ -61,7 +61,7 @@ test('Pith on every chess it replaces: the stand-in body, its kit, S3; SPC-X on 
     assert.equal(u.base.maxHp, form.stats.maxHp + (mod ? mod.attr.maxHp : 0), `${where}: HP`);
     assert.deepEqual([u.profile.dmgType, u.profile.splashRadius, u.profile.canHitFly], ['arts', 1.1, true], `${where}: profile`);
     // the range: 3-6 (9 tiles), SPC-X its 3-1 grid (+ the tile [0,3])
-    const want = absoluteRangeKeys(mod ? mod.talentChanges.find((t) => t.talentIndex === -1).rangeGrid : form.rangeGrid, 10, 4, 'RIGHT', 0);
+    const want = battleRangeKeys(mod ? mod.talentChanges.find((t) => t.talentIndex === -1).rangeGrid : form.rangeGrid, 10, 4, 'RIGHT', 0);
     assert.deepEqual([...u.rangeKeys].sort((a, b) => a - b), [...want].sort((a, b) => a - b), `${where}: range`);
     assert.equal(u.rangeKeySet.has(key(10, 7)), !!mod, `${where}: (10,7) only with SPC-X`);
     const t1 = u.def.raw.talents.find((t) => t.index === 1);

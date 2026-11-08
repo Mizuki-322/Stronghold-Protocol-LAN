@@ -73,6 +73,10 @@ export class BattleSpawns {
     if (!this.players.length) return null;
     if (this.players.length === 1 || !tile) return this.players[0].playerId;
     const c = Array.isArray(tile) ? tile[1] : tile.c;
+    if (this.kind === 'unite' && this.players.length >= 3) {
+      const offset = c >= 19 ? 16 : c >= 11 ? 8 : 0;
+      return (this.players.find((p) => p.colOffset === offset) ?? this.players[0]).playerId;
+    }
     const half = c >= 11 ? 'R' : 'L';
     return (this.players.find((p) => p.half === half) ?? this.players[0]).playerId;
   }

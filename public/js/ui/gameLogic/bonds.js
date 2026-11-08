@@ -31,6 +31,20 @@ export function sortBonds(bonds, getBond = () => null) {
   ));
 }
 
+/** Keep a tracked bond in the strip even before the player owns any of its operators. */
+export function addTrackedBonds(bonds, trackedIds, getBond = () => null) {
+  const out = Array.isArray(bonds) ? [...bonds] : [];
+  const present = new Set(out.map((b) => b?.bondId));
+  for (const id of trackedIds || []) {
+    if (present.has(id)) continue;
+    const bond = getBond(id);
+    if (!bond || !bond.isCore) continue;
+    out.push({ bondId: id, count: 0, layers: 0, tier: 0, active: false, thresholds: bond.thresholds || [] });
+    present.add(id);
+  }
+  return out;
+}
+
 /**
  * Tier reached for a member count against ascending thresholds (downward bonds: active while count ≤ max).
  * @param {number} count
@@ -283,20 +297,17 @@ export function bannedPerBond(bonds, bannedChess) {
 }
 
 /**
- * The two kinds of greyed bonds of a match (research 01 A2, 06 addendum D):
- *   drawn  — the per-match drawn set D (m.public drawnDisabledBonds): only operators whose EVERY bond is in D leave
- *            the pool, so these bonds stay activatable (multi-bond members, 变形同构体, 调和) — "部分盟约所含干员阵容不完整";
- *   off    — the mode's static inactive list (FUNNY): never activates this match — "本局禁用".
- * Older payloads without drawnDisabledBonds: disabledBonds minus the static list.
+ * Greyed bonds represent pool exclusions only: both the per-match draw and the mode's fixed list remove operators
+ * whose every bond is excluded, but the bond itself can still activate through any valid count source.
+ * Older payloads without drawnDisabledBonds carry the union in disabledBonds.
  * @param {any} pub m.public
  * @param {string[]} [staticInactive] config.modes[modeId].inactiveBondIds
  * @returns {{ drawn: Set<string>, off: Set<string> }}
  */
 export function disabledBondSets(pub, staticInactive = []) {
-  const off = new Set(Array.isArray(staticInactive) ? staticInactive : []);
   const src = Array.isArray(pub?.drawnDisabledBonds) ? pub.drawnDisabledBonds : Array.isArray(pub?.disabledBonds) ? pub.disabledBonds : [];
-  const drawn = new Set(src.filter((b) => typeof b === 'string' && !off.has(b)));
-  return { drawn, off };
+  const drawn = new Set([...src, ...(Array.isArray(staticInactive) ? staticInactive : [])].filter((b) => typeof b === 'string'));
+  return { drawn, off: new Set() };
 }
 
 /**
@@ -312,19 +323,14 @@ export function briefingBondTip(name, state, bannedN = 0) {
 }
 
 /**
- * The bonds a mode never activates (config.json modes[modeId].inactiveBondIds = the official modeDataDict
- * inactiveBondIdList: 标准模拟 leaves 拉特兰 阿戈尔 卡西米尔 灵巧 奥术 奇迹 投资人 突袭 独行 绝技 off). Operators that also carry an
- * enabled bond stay in the pool (server pool.js drawDisabledBonds) — 标准's 深靛 洛洛 阿罗玛 夕 圣聆初雪 still show 奥术 — and
- * the server left such a bond out of m.private.bonds, so without a mark a card read "奥术 0/2 未激活" with three 奥术
- * operators deployed (player report after 0.1.0: "奥术盟约不生效"). The shop / reward cards, the detail card's bond chips
- * and the bond popup mark these 本局禁用 (briefingBondTip 'off'); since 0.1.3 the server also lists such a bond the player
- * has members of (`off: true`, server/match/bondsMeta.js offBondCounts) and the strip shows it as a grey 本局禁用 disc.
+ * No mode currently switches off a bond's effect. inactiveBondIds removes eligible operators from the pool only;
+ * callers may keep using this empty set for optional visual handling of truly effect-disabled bonds in future.
  * @param {any} mode config.json modes[modeId] (data.js getMode), or null
  * @returns {Set<string>}
  */
 export function modeOffBonds(mode) {
-  const list = isObj(mode) && Array.isArray(mode.inactiveBondIds) ? mode.inactiveBondIds : [];
-  return new Set(list.filter((b) => typeof b === 'string'));
+  void mode;
+  return new Set();
 }
 
 /**

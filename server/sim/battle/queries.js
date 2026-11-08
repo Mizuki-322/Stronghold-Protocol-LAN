@@ -4,7 +4,7 @@
 // Installed on Battle.prototype by server/sim/Battle.js (a method container: never instantiated; `this` is the battle).
 
 import { ROWS, COLS, ENEMY_COLLIDER_RADIUS } from '../constants.js';
-import { absoluteRangeKeys, canTargetEnemy, extendedGrid, enemyStealthed } from '../targeting.js';
+import { battleRangeKeys, canTargetEnemy, extendedGrid, enemyStealthed } from '../targeting.js';
 import { bodyKeys, bodyInKeys, bodyInRadius, bodyInRange } from '../body.js';
 import { roundHalfEven } from '../detmath.js';
 
@@ -170,7 +170,7 @@ export class BattleQueries {
     const set = keys instanceof Set ? keys : (healer && healer.rangeKeys === keys && healer.rangeKeySet ? healer.rangeKeySet : new Set(keys));
     const through = healer && healer.profile && typeof healer.profile.healThrough === 'function' ? healer.profile.healThrough : null;
     for (const a of this.allyUnits) {
-      if (!a.alive || !a.deployed || a.hidden || a.kind === 'device') continue;
+      if (!a.alive || !a.deployed || a.hidden || a.kind === 'device' || a.mem.noHealing) continue;
       if (!set.has(a.tileR * COLS + a.tileC)) continue;
       if (a !== healer && ((a.s.flags.noHeal && !(through && through(healer, a))) || (a.profile && a.profile.noHeal))) continue;
       const injured = a.hp < a.s.maxHp - 1e-6;
@@ -191,7 +191,7 @@ export class BattleQueries {
    * overlaps one of its tiles (body.js bodyInRange), an ally on one of them.
    */
   unitsInGrid(unit, grid, { side = null, extend = 0 } = {}) {
-    const keys = absoluteRangeKeys(grid || unit.rangeGrid || [[0, 0]], Math.round(unit.y), Math.round(unit.x), unit.dir, extend);
+    const keys = battleRangeKeys(grid || unit.rangeGrid || [[0, 0]], Math.round(unit.y), Math.round(unit.x), unit.dir, extend);
     const want = side ?? (unit.side === 'ally' ? 'enemy' : 'ally');
     const set = new Set(keys);
     const out = [];
@@ -333,7 +333,7 @@ export class BattleQueries {
     const ext = (tg && tg.noRangeExtend ? 0 : u.s.rangeExtend) + ((tg && tg.rangeExtend) || 0);
     u._rangeExtend = u.s.rangeExtend;
     u._baseExtend = u.s.baseRangeExtend;
-    const keys = absoluteRangeKeys(grid, u.tileR, u.tileC, u.dir, ext);
+    const keys = battleRangeKeys(grid, u.tileR, u.tileC, u.dir, ext);
     const set = new Set(keys);
     const extra = u.extraRangeKeys;
     if (extra) for (const k of extra) if (!set.has(k)) { set.add(k); keys.push(k); }
@@ -342,7 +342,7 @@ export class BattleQueries {
     const own = !!(tg && tg.showOwnRange);
     const lg = own ? u.rangeGrid || [[0, 0]] : grid, le = own ? u.s.rangeExtend : ext;
     u.liveRangeGrid = le > 0 ? extendedGrid(lg, le) : lg;
-    if (u.kind !== 'device') u.baseRangeKeys = absoluteRangeKeys(u.rangeGrid || [[0, 0]], u.tileR, u.tileC, u.dir, u.s.baseRangeExtend);
+    if (u.kind !== 'device') u.baseRangeKeys = battleRangeKeys(u.rangeGrid || [[0, 0]], u.tileR, u.tileC, u.dir, u.s.baseRangeExtend);
     if (u.skill) u.skill._trigKeys = null; // CUSTOM_RANGE trigger grid is relative to the tile
   }
 

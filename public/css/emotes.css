@@ -61,6 +61,9 @@
 }
 .ewheel__panel.has-sprite { background: var(--ewheel-bg) center / 100% 100% no-repeat; }
 .ewheel__panel.has-sprite::before { content: none; }
+.ewheel__panel.with-text { height: 2.73rem; }
+.ewheel__panel.with-text.has-sprite { background-size: 100% 2.31rem; background-position: center top; }
+.ewheel__panel.with-text::after { content: ''; position: absolute; left: .15rem; right: .16rem; top: 2.12rem; bottom: .08rem; background: rgba(19, 19, 19, .94); border: 1px solid rgba(255,255,255,.1); border-top: 0; pointer-events: none; }
 .ewheel__viewport { position: absolute; left: .205rem; top: .19rem; width: 2.71rem; height: 1.78rem; overflow: hidden; touch-action: pan-y; cursor: grab; }
 .ewheel__viewport:active { cursor: grabbing; }
 .ewheel__page {
@@ -104,6 +107,16 @@
 .ewheel__nav.is-next { right: .7rem; }
 .ewheel__nav:hover:not(:disabled) { color: #fff; }
 .ewheel__nav:disabled { opacity: .18; cursor: default; }
+.ewheel__textrow { position: absolute; left: .2rem; right: .2rem; top: 2.2rem; height: .36rem; display: flex; align-items: center; gap: .04rem; z-index: 2; }
+.ewheel__textrow input { min-width: 0; flex: 1; height: .29rem; box-sizing: border-box; background: #0b1513; border: 1px solid #46665d; color: #e7f5ef; font-size: .14rem; padding: 0 .05rem; user-select: text; }
+.ewheel__textrow input::placeholder { color: #889c94; }
+.ewheel__count { flex: none; color: #91a49c; font-size: .1rem; }
+.ewheel__textrow button { flex: none; min-width: .38rem; height: .28rem; padding: 0 .04rem; background: #294a42; border: 1px solid #4b927e; color: #d5fff0; font-size: .12rem; }
+.ewheel__textrow button:disabled { opacity: .45; }
+.ewheel__chatlog { position: absolute; left: 0; bottom: calc(100% + .08rem); width: 3.8rem; max-height: 1.4rem; overflow: hidden; display: flex; flex-direction: column; gap: .02rem; pointer-events: none; }
+.ewheel.is-open .ewheel__chatlog { bottom: calc(100% + 2.8rem); }
+.ewheel__chatline { display: flex; gap: .07rem; align-items: baseline; padding: .04rem .08rem; background: rgba(6,16,14,.78); color: #e4f4ec; font-size: .12rem; line-height: 1.25; text-shadow: 0 1px 2px #000; overflow-wrap: anywhere; }
+.ewheel__chatline b { flex: none; color: #59d9bb; }
 
 /* ---- bubble beside the sender's avatar (picture only) ------------------------------------------------------ */
 /* emoji_bubble_bkg is 108×97: plate x 22–97, y 8–85, tail tip at x 9, y ≈ 46 (pointing left, toward the avatar). */

@@ -55,7 +55,7 @@
 //   (`trigger: 'SP_FULL'` — the owner's AUTO rule, kits/README.md checklist 5; skchr_doroth_* `_allowNoTarget`).
 
 import { num, talentBb, moduleBb, traitBb, up, toggleBuff, summonTileFree } from '../shared/tier1.js';
-import { absoluteRangeKeys, canTargetEnemy } from '../../../targeting.js';
+import { battleRangeKeys, canTargetEnemy } from '../../../targeting.js';
 import { bodyOnTile } from '../../../body.js';
 import { COLS } from '../../../constants.js';
 import { atPotential } from '../../../../../shared/potential.js';
@@ -124,7 +124,7 @@ export default {
 
     /** Free melee tiles of her range (or of `grid` around her) with no ground enemy: enemy paths first, then random. */
     function summonTiles(battle, unit, grid = null) {
-      const keys = grid ? absoluteRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, unit.s.rangeExtend || 0) : unit.rangeKeys || [];
+      const keys = grid ? battleRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, unit.s.rangeExtend || 0) : unit.rangeKeys || [];
       const path = battle.groundPathTiles();
       const out = [];
       for (const k of keys) {
@@ -190,7 +190,7 @@ export default {
         }
         battle.fx('explode', { x: t.x, y: t.y, r: S2_RADIUS, id: t.id, consumed: true, kind: 'doroth:quicksand' });
       } else if (s3) {
-        const keys = absoluteRangeKeys(sk?.rangeGrid ?? X6, t.tileR, t.tileC, t.dir, 0);
+        const keys = battleRangeKeys(sk?.rangeGrid ?? X6, t.tileR, t.tileC, t.dir, 0);
         for (const x of battle.enemiesOnTiles(keys, t, GROUND)) {
           battle.dealDamage(t, x, { amount: atk * num(tb2.atk_scale), type: 'arts', isSkill: true, tags });
           if (x.alive && num(tb2.sluggish) > 0) battle.applyStatus(x, 'sluggish', { duration: num(tb2.sluggish), source: t });

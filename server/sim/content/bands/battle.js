@@ -45,6 +45,7 @@ import {
 } from '../support/index.js';
 import { weaknessRetype, addShieldLayer, PRIO_RESPAWN, reviveNow } from '../items/battle.js';
 import { spawnMapChar } from '../tokens.js';
+import { installShu } from './shu.js';
 
 export const AMEDIC_BAND = 'band_amedic';
 /**
@@ -60,6 +61,7 @@ const deployedOps = (battle, pid) => playerOps(battle, pid, { fieldOnly: true })
 // band buff behaviours: (battle, ps, params, bandId)
 
 const BY_KEY = {
+  band_shu_field: installShu,
   // 阿米娅 众志合一
   act1autochess_band2_buff(battle, ps, p, bandId) {
     const n = activeBondIds(battle, ps.playerId).length;

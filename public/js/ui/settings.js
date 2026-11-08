@@ -223,18 +223,24 @@ function HotkeySection({ keys, touchUi }) {
   </section>`;
 }
 
-/** Where a report goes: the upstream issue tracker (shown as text the player can select; a link may open nothing). */
-export const ISSUES_URL = 'https://github.com/sganggs/Stronghold-Protocol/issues';
+/** Local test server's feedback address. The player reviews and sends the draft from their own mail app. */
+export const FEEDBACK_EMAIL = 'qq3241528307@gmail.com';
+
+function feedbackMailto() {
+  const subject = encodeURIComponent(t('卫戍协议：盟约 问题反馈'));
+  const body = encodeURIComponent(`${t('请描述问题及复现步骤，并在下方粘贴诊断信息：')}\n\n`);
+  return `mailto:${FEEDBACK_EMAIL}?subject=${subject}&body=${body}`;
+}
 
 /**
- * 问题反馈: copy the diagnostics of this page (diag.js) for a GitHub issue — the errors recorded since the page opened,
+ * 问题反馈: copy the diagnostics of this page (diag.js) into an email draft — the errors recorded since the page opened,
  * this browser and device, where the player is, and, switched on by default while a battle is on screen, that battle's
  * spec (the dev tools replay it). Player names, the room code and the token are replaced; nothing is uploaded. Laid out
  * like 快捷键 above it (a head with its button, a hint, the result line); the battle switch is the settings' Toggle, and
  * when the clipboard refuses (some in-app browsers), the report is shown selected in a box styled like 干员调配's 导出.
  */
 /** The result line of 复制诊断信息, by outcome (msgids: translated when shown, so a language switch reaches it). */
-const DIAG_NOTES = { copied: N_('已复制诊断信息，可以粘贴到 GitHub issue 中'), refused: N_('无法写入剪贴板，请手动复制下面的内容') };
+const DIAG_NOTES = { copied: N_('已复制诊断信息，请粘贴到邮件正文中'), refused: N_('无法写入剪贴板，请手动复制下面的内容') };
 
 function DiagSection() {
   const [attach, setAttach] = useState(true);
@@ -257,12 +263,15 @@ function DiagSection() {
   return html`<section class="set-diag" aria-labelledby="set-diag-title">
     <div class="set-keys__head">
       <span class="set-row__label" id="set-diag-title">${t('问题反馈')}<${MicroLabel}>DIAGNOSTICS<//></span>
-      <${Button} variant="ghost" size="sm" icon="copy" class="set-diag__copy" data-testid="diag-copy" onClick=${copy}>${t('复制诊断信息')}<//>
+      <span class="set-diag__actions">
+        <${Button} variant="ghost" size="sm" icon="copy" class="set-diag__copy" data-testid="diag-copy" onClick=${copy}>${t('复制诊断信息')}<//>
+        <a class="btn btn--ghost btn--sm set-diag__email" data-testid="diag-email" href=${feedbackMailto()}>${t('写邮件反馈')}</a>
+      </span>
     </div>
-    <p class="set-hint">${t('遇到问题时，复制诊断信息并粘贴到 GitHub issue 中，开发者就能看到出错时的情况。诊断信息只在本机生成，不会自动上传；玩家名和房间号会被替换。')}</p>
+    <p class="set-hint">${t('遇到问题时，先复制诊断信息，再点“写邮件反馈”并粘贴到邮件正文，由你确认发送。诊断信息只在本机生成，不会自动上传；玩家名和房间号会被替换。')}</p>
     <div class="set-diag__meta">
       <span class="set-diag__stat">${t('已记录的错误')}<b class=${cx('set-diag__count num', n > 0 && 'is-warn')} data-testid="diag-count">${n}</b></span>
-      <span class="set-diag__url">${ISSUES_URL.replace(/^https:\/\//, '')}</span>
+      <span class="set-diag__url">${FEEDBACK_EMAIL}</span>
     </div>
     ${battle ? html`<${Toggle} label=${t('附上本场战斗')} micro="BATTLE DATA" value=${attach} onChange=${setAttach} />
       <p class="set-hint set-diag__battle-hint">${t('开发者可以用附上的战斗数据重现这场战斗。')}</p>` : null}

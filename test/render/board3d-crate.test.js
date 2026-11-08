@@ -184,6 +184,18 @@ test('DeviceView uses model size and HP height immediately across 3D → 2D → 
   view.destroy(); board.destroy();
 });
 
+test('an off-field live turret fires from its authored tile without covering the static stage model', () => {
+  const ctx = fakeViewCtx(fake.P, {
+    fieldRect: () => ({ r0: 9, r1: 12, c0: 0, c1: 10 }),
+    createBox: () => { throw new Error('the static stage model already occupies this tile'); },
+  });
+  const view = new DeviceView(ctx, { id: 9, defId: 'trap_1104_aclasert', x: 9, y: 8, maxHp: 3000 });
+  assert.equal(view.staticStageTurret, true);
+  assert.equal(view.box, null);
+  assert.equal(view.gfx.visible, false);
+  view.destroy();
+});
+
 const localObj = new URL('../../public/assets/local/mesh/trap_110/trap_1105_accrate.obj', import.meta.url);
 test('extracted client model: 636 vertices, 344 triangles, original UVs and measured prefab bounds', { skip: !existsSync(localObj) && 'not extracted' }, () => {
   const p = pack(); p.meshes.crate = parseObj(readFileSync(localObj, 'utf8'));

@@ -28,7 +28,7 @@
 // shield {id} · overload {id} · takeoff {id} · sleep {id} · buff {id, kind} · reveal {id} · dodge (engine kind).
 
 import { COLS, TICK } from '../../../constants.js';
-import { absoluteRangeKeys, sortEnemyTargets } from '../../../targeting.js';
+import { battleRangeKeys, sortEnemyTargets } from '../../../targeting.js';
 import { offsetTile } from '../../../dir.js';
 import { bodyTileReach, bodyInRange } from '../../../body.js';
 import { isHpLoss } from '../../../damage.js';
@@ -125,7 +125,7 @@ export function holdProtect(battle, target, value, duration, source = null) {
 
 /** Targetable enemies inside `grid` (relative to the unit; null ⇒ current range), best targets first. */
 export function enemiesInGrid(battle, unit, grid, { n = 0, priority = null, canHitFly = true, groundOnly = false } = {}) {
-  const keys = grid ? absoluteRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0) : unit.rangeKeys;
+  const keys = grid ? battleRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0) : unit.rangeKeys;
   const list = battle.enemiesInKeys(keys, unit, { canHitFly, groundOnly });
   sortEnemyTargets(battle, unit, list, priority ?? unit.profile?.priority ?? null);
   return n > 0 && list.length > n ? list.slice(0, n) : list;
@@ -135,7 +135,7 @@ export function enemiesInGrid(battle, unit, grid, { n = 0, priority = null, canH
  * (炎佑: Battle.allySelectable), as Battle.alliesInGrid.
  */
 export function alliesInGridOf(battle, unit, grid = null) {
-  const set = grid ? new Set(absoluteRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0)) : (unit.rangeKeySet || new Set(unit.rangeKeys || []));
+  const set = grid ? new Set(battleRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0)) : (unit.rangeKeySet || new Set(unit.rangeKeys || []));
   return battle.allyUnits.filter((a) => a.alive && a.deployed && !a.hidden && a.kind !== 'device' && set.has(a.tileR * COLS + a.tileC) && battle.allySelectable(a, unit));
 }
 /** Any targetable enemy in the unit's current range. */

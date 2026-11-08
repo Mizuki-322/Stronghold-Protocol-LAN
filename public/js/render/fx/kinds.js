@@ -1,4 +1,5 @@
 // public/js/render/fx/kinds.js — sim fx kind table and the tile queries the effects use.
+import { EXTENDED_UNITE_COLS } from '../../../../shared/extendedUnite.js';
 
 /**
  * Sim fx kind → visual archetype (`a`), colour (`c`) and defaults (`r` radius, `dur` game s, `tex`, `smoke`).
@@ -153,5 +154,6 @@ export function wallTiles(x, y, axis, rect) {
     const [a, b] = ok ? [rect.r0, rect.r1] : [R - 4, R + 4];
     for (let r = a; r <= b; r++) out.push([r, C]);
   }
-  return out.filter(([r, c]) => r >= 0 && r <= 18 && c >= 0 && c <= 20);
+  const maxCol = ok ? Math.min(EXTENDED_UNITE_COLS - 1, rect.c1) : 20;
+  return out.filter(([r, c]) => r >= 0 && r <= 18 && c >= 0 && c <= maxCol);
 }

@@ -78,9 +78,9 @@ export class BattleSummons {
    * the tile impassable.
    */
   spawnDevice(key, row, col, opts = {}) {
-    // Devices are ally-side units on a field tile: never outside the rect, never on top of a living unit or of a
-    // knocked-out operator (downOn).
-    if (!Number.isInteger(row) || !Number.isInteger(col) || !this.grid.inRect(row, col)) return null;
+    // Stage turrets may sit just outside the combat rect while shooting into it. Other devices stay on field tiles.
+    if (!Number.isInteger(row) || !Number.isInteger(col) ||
+      !(opts.allowOutsideRect ? this.grid.inBounds(row, col) : this.grid.inRect(row, col))) return null;
     const occ = this._occ[row * COLS + col];
     if (occ && occ.alive) return null;
     if (this.downOn(row, col)) return null;

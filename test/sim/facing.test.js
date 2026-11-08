@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import {
   DIRS, DIR_VEC, normDir, rotateOffset, toLocal, hSign, mirrorDir, oppositeDir, perpendicular, dirFromDelta, frontOf, offsetTile,
 } from '../../server/sim/dir.js';
-import { absoluteRangeKeys } from '../../server/sim/targeting.js';
+import { battleRangeKeys } from '../../server/sim/targeting.js';
 import { COLS } from '../../server/sim/constants.js';
 import { makeBattle, chessRec, enemyRec, checkInvariants } from '../helpers/battleHarness.js';
 import { findSummonTile } from '../../server/sim/content/tokens.js';
@@ -51,19 +51,19 @@ test('dir.js: the DATA.md rotation RIGHT (dr,dc) · UP (dc,−dr) · LEFT (−dr
   assert.deepEqual(offsetTile(10, 5, 1, 0, 'UP'), [10, 4], 'the left hand of an UP unit is the left column');
 });
 
-test('absoluteRangeKeys rotates the facing-RIGHT grid; rangeExtend goes along +dCol before rotating', () => {
+test('battleRangeKeys rotates the facing-RIGHT grid; rangeExtend goes along +dCol before rotating', () => {
   const grid = [[0, 1], [1, 2]];
-  assert.deepEqual(tilesOf(absoluteRangeKeys(grid, 10, 5, 'RIGHT')), sorted([[10, 6], [11, 7]]));
-  assert.deepEqual(tilesOf(absoluteRangeKeys(grid, 10, 5, 'UP')), sorted([[11, 5], [12, 4]]));
-  assert.deepEqual(tilesOf(absoluteRangeKeys(grid, 10, 5, 'LEFT')), sorted([[10, 4], [9, 3]]));
-  assert.deepEqual(tilesOf(absoluteRangeKeys(grid, 10, 5, 'DOWN')), sorted([[9, 5], [8, 6]]));
+  assert.deepEqual(tilesOf(battleRangeKeys(grid, 10, 5, 'RIGHT')), sorted([[10, 6], [11, 7]]));
+  assert.deepEqual(tilesOf(battleRangeKeys(grid, 10, 5, 'UP')), sorted([[11, 5], [12, 4]]));
+  assert.deepEqual(tilesOf(battleRangeKeys(grid, 10, 5, 'LEFT')), sorted([[10, 4], [9, 3]]));
+  assert.deepEqual(tilesOf(battleRangeKeys(grid, 10, 5, 'DOWN')), sorted([[9, 5], [8, 6]]));
   // legacy facing signs still work (−1 = LEFT)
-  assert.deepEqual(absoluteRangeKeys(grid, 10, 5, -1), absoluteRangeKeys(grid, 10, 5, 'LEFT'));
+  assert.deepEqual(battleRangeKeys(grid, 10, 5, -1), battleRangeKeys(grid, 10, 5, 'LEFT'));
   // +1 forward tile per row, then rotated: a 2-tile line facing UP / DOWN becomes 3 tiles along the column
   const line = [[0, 0], [0, 1]];
-  assert.deepEqual(tilesOf(absoluteRangeKeys(line, 10, 5, 'UP', 1)), [[10, 5], [11, 5], [12, 5]]);
-  assert.deepEqual(tilesOf(absoluteRangeKeys(line, 10, 5, 'DOWN', 1)), [[8, 5], [9, 5], [10, 5]]);
-  assert.deepEqual(tilesOf(absoluteRangeKeys(line, 10, 5, 'LEFT', 2)), [[10, 2], [10, 3], [10, 4], [10, 5]]);
+  assert.deepEqual(tilesOf(battleRangeKeys(line, 10, 5, 'UP', 1)), [[10, 5], [11, 5], [12, 5]]);
+  assert.deepEqual(tilesOf(battleRangeKeys(line, 10, 5, 'DOWN', 1)), [[8, 5], [9, 5], [10, 5]]);
+  assert.deepEqual(tilesOf(battleRangeKeys(line, 10, 5, 'LEFT', 2)), [[10, 2], [10, 3], [10, 4], [10, 5]]);
 });
 
 test('units take `dir` from the battle input (default RIGHT): rotated rangeKeys, derived facing sign, UnitInfo.dir', () => {

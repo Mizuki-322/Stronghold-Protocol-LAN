@@ -62,7 +62,7 @@
 //   it ends when the bullets are spent ("棋子耗尽" [ASSUMED]); bullets left at another end return to the stock.
 
 import { num, talentBb, skillRec, up } from '../shared/tier1.js';
-import { absoluteRangeKeys, sortEnemyTargets } from '../../../targeting.js';
+import { battleRangeKeys, sortEnemyTargets } from '../../../targeting.js';
 import { bodyOnTile } from '../../../body.js';
 import { COLS, ROWS } from '../../../constants.js';
 
@@ -314,7 +314,7 @@ export default {
         const line = Math.max(0, Math.floor(num(tbb.tile_count, LINE_FALLBACK) / 2));
         const trigGrid = sid === S3 ? (tok?.skill?.rangeGrid ?? X6) : null;
         /** Trigger / damage tiles of a piece: its own tile, or S3's area around it. */
-        const trigKeys = (n) => (trigGrid ? absoluteRangeKeys(trigGrid, n.r, n.c, 'RIGHT', 0) : [keyOf(n.r, n.c)].filter((k) => k >= 0));
+        const trigKeys = (n) => (trigGrid ? battleRangeKeys(trigGrid, n.r, n.c, 'RIGHT', 0) : [keyOf(n.r, n.c)].filter((k) => k >= 0));
         /** 连星's lines of a piece: its tile ± `line` along each side it was connected on. */
         const lineKeys = (n) => {
           const out = new Set();

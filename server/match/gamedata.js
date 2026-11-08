@@ -72,13 +72,13 @@ export const COMBAT_TIME_SCALE = 2;
  * @param {number} [aliveCount] alive players at the Final Assault / Hidden Core start (co-op)
  * @returns {number}
  */
-export function bossPoolShareOf(modeScale, cfgScale, isSolo, aliveCount) {
+export function bossPoolShareOf(modeScale, cfgScale, isSolo, aliveCount, maxAlive = null) {
   const ms = modeScale && typeof modeScale === 'object' ? modeScale : {};
   const cs = cfgScale && typeof cfgScale === 'object' ? cfgScale : {};
   const pick = (k, d) => (Number.isFinite(ms[k]) && ms[k] > 0 ? ms[k] : Number.isFinite(cs[k]) && cs[k] > 0 ? cs[k] : d);
   const flag = (k, d) => (typeof ms[k] === 'boolean' ? ms[k] : typeof cs[k] === 'boolean' ? cs[k] : d);
   if (isSolo) return pick('solo', 1);
-  const full = Math.max(1, Math.floor(pick('aliveFull', 4)));
+  const full = Number.isInteger(maxAlive) && maxAlive > 0 ? maxAlive : Math.max(1, Math.floor(pick('aliveFull', 4)));
   const n = Number(aliveCount);
   const alive = Number.isFinite(n) && n >= 1 ? Math.min(full, Math.floor(n)) : full;
   if (flag('perPlayer', true)) return pick('coop', 1) * alive;
@@ -93,10 +93,12 @@ export class GameData {
    * @param {Readonly<Record<string, any>>} data server/data.js getData() (may be partial)
    * @param {string} modeId e.g. 'mode_multi_hard'
    */
-  constructor(data, modeId) {
+  constructor(data, modeId, { extendedSeats = 0 } = {}) {
     this.raw = data && typeof data === 'object' ? data : {};
     this.config = getConfig(this.raw) || {};
     this.modeId = modeId;
+    /** Number of seats in the separate 5–8 player room; zero keeps the original mode's rules. */
+    this.extendedSeats = Number.isInteger(extendedSeats) && extendedSeats >= 5 && extendedSeats <= 8 ? extendedSeats : 0;
     this.mode = getMode(modeId, this.raw) || {};
     // Mode-level globals inherit field by field; the vanilla mode never changes its config object.
     const overrides = Object.fromEntries(Object.keys(this.config).filter(k => k !== 'modes' && Object.hasOwn(this.mode, k)).map(k => [k, this.mode[k]]));
@@ -128,6 +130,7 @@ export class GameData {
     }
     for (const k of Object.keys(this.shopItemsByTier)) this.shopItemsByTier[k].sort();
     this.bondIds = Object.keys(this._bonds).sort((a, b) => (numOr(this._bonds[a].identifier, 99) - numOr(this._bonds[b].identifier, 99)) || (a < b ? -1 : 1));
+    // Despite the source field name, these ids exclude operators from the mode's pool; the bonds may still activate.
     this.modeInactiveBonds = new Set(Array.isArray(this.mode.inactiveBondIds) ? this.mode.inactiveBondIds : []);
     /** bandBondIds memo */
     this._bandBonds = new Map();
@@ -172,7 +175,7 @@ export class GameData {
    * @param {number} [aliveCount]
    */
   bossPoolShare(aliveCount) {
-    return bossPoolShareOf(this.mode.bossHpScale, this.config.bossHpScale, this.isSolo, aliveCount);
+    return bossPoolShareOf(this.mode.bossHpScale, this.config.bossHpScale, this.isSolo, aliveCount, this.extendedSeats ? 8 : null);
   }
 
   /** config.titles with the tuning overrides (stat / rule per title id) merged in. */
@@ -325,7 +328,8 @@ export class GameData {
     // size) and each player's private 自选 stock alike — the maintainer's decision of 2026-10-15 (GitHub #650): with
     // the shared pool doubled and the 自选 stock not, a 自选 operator was diluted in the copy-weighted rolls.
     const multiplier = this.isSolo ? 1 : posIntOr(this.economy.coopPoolMultiplier, 1);
-    return base * multiplier;
+    const original = base * multiplier;
+    return this.extendedSeats ? Math.round(original * (this.extendedSeats <= 6 ? 1.4 : 1.8)) : original;
   }
 
   /** Normal equipment copies in the shared pool; effect-only items have no shop stock limit. */
@@ -491,7 +495,7 @@ export class GameData {
   get unite() {
     const u = this.config.unite && typeof this.config.unite === 'object' ? this.config.unite : {};
     return {
-      maxHelpers: posIntOr(u.maxHelpers, DEFAULTS.unite.maxHelpers),
+      maxHelpers: this.extendedSeats ? 3 : posIntOr(u.maxHelpers, DEFAULTS.unite.maxHelpers),
       templates: u.templates && typeof u.templates === 'object' ? u.templates : DEFAULTS.unite.templates,
     };
   }
@@ -528,6 +532,7 @@ export class GameData {
   bandAllowed(bandId) {
     const b = this.band(bandId);
     if (!b) return false;
+    if (b.extendedOnly && !this.extendedSeats) return false;
     const list = Array.isArray(b.modeTypeList) ? b.modeTypeList : null;
     if (!list) return true;
     return list.includes(this.isSolo ? 'SINGLE' : 'MULTI');

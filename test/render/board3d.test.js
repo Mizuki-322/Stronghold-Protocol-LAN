@@ -20,6 +20,7 @@ import { loadBoardPack, loadThree, resetBoardPack, PACK_IMAGES } from '../../pub
 import { parseStage } from '../../public/js/render/tiles.js';
 import { TILE_H } from '../../public/js/render/style.js';
 import { presetCamera, syncThreeCamera } from '../../public/js/render/projection.js';
+import { extendedUniteStage } from '../../shared/extendedUnite.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const stages = JSON.parse(readFileSync(path.join(ROOT, 'data/stages.json'), 'utf8'));
@@ -100,6 +101,18 @@ describe('OBJ reader', () => {
 });
 
 describe('board geometry (layout.js)', () => {
+  test('extended 联防 builds all three sections in both renderers', () => {
+    const stage = extendedUniteStage(stages.act1autochess_m01);
+    const area = [{ r0: 6, r1: 13, c0: 0, c1: 28 }];
+    const board = buildBoard(stage, { area });
+    const pixi = parseStage(stage, [0, 18], [0, 28]);
+    assert.equal(board.grid[9].length, 29);
+    assert.equal(pixi[9].length, 29);
+    assert.ok(board.grid[9][24].drawn);
+    assert.equal(board.grid[9][24].glyph, pixi[9][24].glyph);
+    assert.ok(board.bounds.x1 > 26);
+  });
+
   test('heights agree with the Pixi tile field (units stand on the same tops) on every stage', () => {
     for (const st of Object.values(stages)) {
       const G = classifyStage(st, AREAS.all);

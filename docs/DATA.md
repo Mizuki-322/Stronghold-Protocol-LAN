@@ -66,7 +66,7 @@ Top level: `{ season, seasonName, modes, economy, lpCapPerRound, bossOvertimeAft
 | `color`, `iconId`, `backgroundId` | `"#ff0024"`, `"mode_abyss_icon"` | UI |
 | `desc`, `effectDescList`, `unlockText` | | official texts |
 | `specialPhaseTime` | `16` | official 机变 phase time field (multi 16 s per picker, solo 150) |
-| `activeBondIds` / `inactiveBondIds` | FUNNY: 13 / 10 | static bond availability |
+| `activeBondIds` / `inactiveBondIds` | FUNNY: 13 / 10 | fixed bond groups used for operator-pool exclusions; a bond can still activate if its count is met |
 | `inactiveEnemyKeys` | 18 keys (FUNNY/NORMAL) | enemies never used in this mode |
 | `lastRound` | `14` (solo FUNNY `9`) | last regular round (boss round) |
 | `bossRound` | `14` | round of the Final Assault |
@@ -334,7 +334,7 @@ full-rank build from the others; the build fails unless `atRank` rebuilds every 
 | `rangeGrid` | `[[0,0]]` | Arts area (画卷 `[[0,0],[0,1]]`) |
 | `flavor` | | |
 
-## 6. `bands.json` — `{ [bandId]: Band }` (40)
+## 6. `bands.json` — `{ [bandId]: Band }`（40 个官方策略及 6 个本地大型同盟策略）
 
 | Field | Example | Meaning |
 |---|---|---|

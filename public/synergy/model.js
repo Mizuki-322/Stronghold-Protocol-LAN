@@ -1,12 +1,14 @@
 // Read-only operator and alliance facets for the standalone attribute explorer.
-// The four timing categories use actual garrison.eventType, never words in a description.
+// Timing categories use actual garrison.eventType; battle effects are split by simulation keys.
 import { N_ } from '../../shared/i18n.js';
 
 export const MECHANISMS = Object.freeze([
   { id: 'gain', eventType: 'SERVER_GAIN', label: N_('获得时'), sourceChessId: 'chess_char_5_10_a' },
   { id: 'prep-start', eventType: 'SERVER_PREP_START', label: N_('进入休整期时'), sourceChessId: 'chess_char_4_21_a' },
   { id: 'prep-end', eventType: 'SERVER_PREP_FIN', label: N_('休整期结束时'), sourceChessId: 'chess_char_5_11_a' },
-  { id: 'battle', eventType: 'IN_BATTLE', label: N_('战斗中'), sourceChessId: 'chess_char_4_25_a' },
+  { id: 'battle', label: N_('战斗中'), sourceChessId: 'chess_char_4_25_a' },
+  { id: 'battle-benefit', label: N_('战斗中增益'), mark: '✦' },
+  { id: 'other', label: N_('其他'), mark: '…' },
 ]);
 
 // Battle trait roles relative to 魔王 (Theresa). A normal/elite operator is classified by the union of their own
@@ -17,13 +19,15 @@ const BATTLE_LAYER_GAIN_KEYS = new Set([
   'act1autochess_gar_event_enemy_abflag_inrange', 'act2autochess_gar_event_onstart',
   'act2autochess_gar_event_allyenemy_sleepstun_inrange',
 ]);
-const BATTLE_LAYER_READER_KEYS = new Set([
+const BATTLE_BENEFIT_KEYS = new Set([
   'act1autochess_gar_eff_attrByBond', 'act1autochess_gar_eff_respawnTimeByBond',
   'act2autochess_gar_eff_attrByBond_add_onstart', 'act2autochess_gar_eff_ab_damageScaleByBond',
+  'act1autochess_gar_eff_attack_enemy', 'attr_common_global_buff',
+  'act1autochess_gar_eff_chaos', 'GAIN_BUFF',
 ]);
 
 const values = (records) => Array.isArray(records) ? records : Object.values(records || {});
-const byId = (records, id, field) => Array.isArray(records)
+const byId = (records, id, field) => typeof records === 'function' ? records(id) : Array.isArray(records)
   ? records.find((record) => record?.[field] === id)
   : records?.[id];
 
@@ -38,7 +42,7 @@ export function battleRelation(forms, garrisonRecords) {
   if (records.some((garrison) => BATTLE_LAYER_GAIN_KEYS.has(garrison.effectKey))) role = 'direct';
   else if (grantsLayers) role = 'granter';
   else if (records.some((garrison) => garrison.effectKey === 'act1autochess_gar_event_addition_cnt')) role = 'amplifier';
-  else if (records.some((garrison) => BATTLE_LAYER_READER_KEYS.has(garrison.effectKey))) role = 'reader';
+  else if (records.some((garrison) => BATTLE_BENEFIT_KEYS.has(garrison.effectKey))) role = 'benefit';
   return { role, grantsLayers };
 }
 
@@ -52,10 +56,17 @@ export function buildExplorer(chessRecords, bondRecords, garrisonRecords) {
     const elite = normal.goldenId ? byId(chessRecords, normal.goldenId, 'chessId') : null;
     const forms = [normal, elite].filter(Boolean);
     const bondIds = [...new Set(forms.flatMap((form) => form.bonds || []))].filter((id) => bondMap.has(id));
-    const mechanismIds = MECHANISMS.filter((mechanism) => forms.some((form) =>
-      (form.garrisonIds || []).some((id) => byId(garrisonRecords, id, 'garrisonId')?.eventType === mechanism.eventType)))
-      .map((mechanism) => mechanism.id);
-    rows.push({ chessId: normal.chessId, normal, elite, bondIds, mechanismIds, battleRelation: battleRelation(forms, garrisonRecords) });
+    const garrisons = forms.flatMap((form) => (form.garrisonIds || [])
+      .map((id) => byId(garrisonRecords, id, 'garrisonId'))).filter(Boolean);
+    const relation = battleRelation(forms, garrisonRecords);
+    const mechanismIds = MECHANISMS.filter((mechanism) => {
+      if (mechanism.eventType) return garrisons.some((garrison) => garrison.eventType === mechanism.eventType);
+      if (mechanism.id === 'battle') return ['direct', 'granter', 'amplifier'].includes(relation?.role);
+      if (mechanism.id === 'battle-benefit') return relation?.role === 'benefit';
+      return relation?.role === 'other' || garrisons.some((garrison) =>
+        !['SERVER_GAIN', 'SERVER_PREP_START', 'SERVER_PREP_FIN', 'IN_BATTLE'].includes(garrison.eventType));
+    }).map((mechanism) => mechanism.id);
+    rows.push({ chessId: normal.chessId, normal, elite, bondIds, mechanismIds, battleRelation: relation });
   }
   rows.sort((a, b) => a.normal.tier - b.normal.tier || a.normal.shopSortId - b.normal.shopSortId || a.normal.name.localeCompare(b.normal.name));
   const ordered = bonds.slice().sort((a, b) => Number(b.isCore) - Number(a.isCore) || a.identifier - b.identifier || a.name.localeCompare(b.name));

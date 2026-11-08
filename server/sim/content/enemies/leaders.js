@@ -269,9 +269,8 @@ function kitLeaderMisc(key, ab, e) {
         tick(b, e2, a) { if (a.last != null && b.time - a.last >= (T(ab, 'checker.delay') ?? 4)) { a.last = null; b.removeBuff(e2, 'ab:axeStack'); } },
       }];
     case 'enemy_2008_flking': {
-      // 使全战场我方所有单位攻击力、防御力减半 (text; the blackboard's atkdown.atk_scale is not the halving),
-      // 部署费用回复速度减半，再部署时间加倍; 周期性地添加正比于自身最大生命值的伤害防护屏障. The halving is a map effect
-      // (PRTS “墓碑” "※文字描述中的削弱实际属于地图效果，不属于敌人本身的能力"): every ally, 隐匿 / airborne ones included
+      // Local balance change: remove the battlefield-wide ATK/DEF halving. Keep the doubled redeploy time,
+      // halved DP recovery and periodic shield.
       const s = ab.sk.refreshshield;
       // its attack — PRTS “墓碑” 天赋: "自身造成的远程途径伤害的攻击倍率降低至40%" (the blackboard's atkdown.atk_scale), "未被阻挡时会
       // 进行远程攻击，对目标及其周围八格内的所有我方单位造成物理伤害，不会攻击飞行单位" ("可溅射飞行单位"); blocked, a melee hit at
@@ -280,7 +279,6 @@ function kitLeaderMisc(key, ab, e) {
         iv: 0.5,
         tick(b) {
           for (const u of b.allies()) {
-            auraBuff(b, u, 'ab:tombstone', 0.5, { atkMul: 0.5, defMul: 0.5 }, null, true);
             // persistent so it still counts when the unit falls (the redeploy timer is set at death)
             b.addBuff(u, { key: 'ab:tombRedeploy', duration: 0.6, refresh: 'replace', persist: true, mods: { redeployMul: 2 } });
           }

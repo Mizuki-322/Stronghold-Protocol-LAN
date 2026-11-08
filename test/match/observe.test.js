@@ -57,6 +57,19 @@ test('cameraLayers: ‹ LEFT / 全景 / RIGHT › with "你自己" / name / "无
   assert.deepEqual(layerCamera(single, 'ALL', 'L'), { rect: unite.rect, side: 'L' });
 });
 
+test('three-helper 联防 exposes each teammate and frames the corresponding section', () => {
+  const pub = { players: [P('a', 0), P('b', 1), P('c', 2)] };
+  const field = { fieldId: 'u', kind: 'unite', rect: { r0: 9, r1: 12, c0: 0, c1: 28 },
+    players: ['a', 'b', 'c'], sides: { a: 'R', b: 'C', c: 'L' } };
+  assert.deepEqual(cameraLayers(field, pub, 'b').map(({ key, label }) => [key, label]),
+    [['L', 'C'], ['C', '你自己'], ['R', 'A']]);
+  assert.deepEqual(layerCamera(field, 'C', 'C'),
+    { rect: { r0: 9, r1: 12, c0: 8, c1: 20 }, side: 'C', fit: true });
+  assert.deepEqual(layerCamera(field, 'R', 'C'),
+    { rect: { r0: 9, r1: 12, c0: 16, c1: 28 }, side: 'R', fit: true });
+  assert.deepEqual(layerCamera(field, 'ALL', 'C'), { rect: field.rect, side: 'C' });
+});
+
 test('resumedWatch: a reload while watching a teammate\'s battle adopts the resent field once per battle (review, DESIGN §20.15)', () => {
   const players = [P('a', 0), P('b', 1), P('c', 2)];
   const pub = pubOf('COMBAT', [

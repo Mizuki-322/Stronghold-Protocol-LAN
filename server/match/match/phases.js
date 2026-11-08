@@ -39,7 +39,8 @@ export class MatchPhases {
    * m.public.deadline is the current turn's end (= draft.turnDeadline; the step header and the turn indicator show the
    * same number). No separate step cap: the turns bound the step (≤ (seats + skips) × turn). AI seats pick at once. A
    * turn that runs out takes the strategy the player has highlighted (g.bandFocus) while it is free, else the default
-   * (timeoutBand). Solo, and any single-human match (soloUntimed): untimed. Solo also keeps seat order and has no skip.
+   * (timeoutBand). A room AI waits for the connected host's choice; timeout or host absence makes it choose randomly.
+   * Solo, and any single-human match (soloUntimed): untimed. Solo also keeps seat order and has no skip.
    */
   enterBandDraft() {
     if (this.phase !== PHASE.INFO_CHECK) return;
@@ -105,7 +106,10 @@ export class MatchPhases {
       const expire = () => {
         if (this.phase !== PHASE.BAND_DRAFT || token !== this._turnToken) return;
         const pid = this.draftTurn();
-        if (pid) this._applyBand(this.players.get(pid), this.timeoutBand(pid));
+        if (pid) {
+          const ps = this.players.get(pid);
+          this._applyBand(ps, ps?.isBot ? this.randomBotBand(ps) : this.timeoutBand(pid));
+        }
       };
       if (this.test) { this.setDeadline(ms / 1000 / (this.timerScale || 1), expire); d.turnDeadline = this.deadline; }
       else this._turnTimer = this.later(ms, expire);
@@ -118,19 +122,36 @@ export class MatchPhases {
     this.markPublic();
   }
 
-  /** An AI seat's (or an AI 托管 seat's) turn: it picks at once (user playtest #4 item 4 — nobody waits on the AI). */
+  /** Room AI waits for the connected host; AI 托管 and absent-host fallback pick automatically. */
   scheduleBandBot() {
     const token = this._turnToken;
     this.later(0, () => {
       if (this.phase !== PHASE.BAND_DRAFT || token !== this._turnToken) return;
       const ps = this.players.get(this.draftTurn());
       if (!ps || !ps.botControlled) return;
-      // a strategy a teammate already took is not selectable (队友已选): the bot re-draws, else the first free one
-      let id = botPickBand(this, ps);
-      for (let k = 0; k < 8 && this.bandTaken(id, ps.playerId); k++) id = botPickBand(this, ps);
-      if (this.bandTaken(id, ps.playerId)) id = this.gd.bandIds().find((b) => !this.bandTaken(b, ps.playerId)) || id;
-      this._applyBand(ps, id, { dedupe: true });
+      const host = this.hostId ? this.players.get(this.hostId) : null;
+      if (ps.isBot && host && !host.left && host.connected) return;
+      this._applyBand(ps, this.randomBotBand(ps));
     });
+  }
+
+  /** A random available opening strategy, using the bot's existing weighted choice. */
+  randomBotBand(ps) {
+    let id = botPickBand(this, ps);
+    for (let k = 0; k < 8 && this.bandTaken(id, ps.playerId); k++) id = botPickBand(this, ps);
+    if (this.bandTaken(id, ps.playerId)) id = this.gd.bandIds().find((b) => !this.bandTaken(b, ps.playerId)) || id;
+    return id;
+  }
+
+  /** The connected host chooses for the current room-added AI. Null asks for a random choice. */
+  pickBotBand(host, bandId) {
+    if (this.phase !== PHASE.BAND_DRAFT || !this.draft) return fail(ERR.WRONG_PHASE);
+    if (host.playerId !== this.hostId || host.isBot || host.left || !host.connected) return fail(ERR.NOT_HOST);
+    const ps = this.players.get(this.draftTurn());
+    if (!ps?.isBot) return fail(ERR.NOT_YOUR_TURN);
+    if (bandId !== null && (!this.gd.bandAllowed(bandId) || this.bandTaken(bandId, ps.playerId))) return fail(ERR.BAD_TARGET);
+    this._applyBand(ps, bandId === null ? this.randomBotBand(ps) : bandId);
+    return OK;
   }
 
   /**

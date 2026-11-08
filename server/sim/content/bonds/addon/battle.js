@@ -272,7 +272,7 @@ function updateAura(battle, st) {
 
 /**
  * The member's attack range as offsets from its tile: its own grid + rangeExtend (targeting.js extendedGrid, the
- * relative form of absoluteRangeKeys) turned by its direction — flat [dRow, dCol, dRow, dCol, …].
+ * relative form of battleRangeKeys) turned by its direction — flat [dRow, dCol, dRow, dCol, …].
  */
 function raidReach(u) {
   const d = normDir(u.dir);
@@ -288,7 +288,7 @@ function raidBoard(battle, r, c) {
   if (battle.onFieldBoard(r, c)) return true;
   return battle.modeId?.startsWith('mode_multi_') && (battle.kind === 'boss' || battle.kind === 'hidden')
     && r >= GEO.FIELD.r0 + BOSS_ROW_OFFSET && r <= GEO.FIELD.r1 + BOSS_ROW_OFFSET
-    && c >= GEO.FIELD.c0 && c <= COLS - 1 - GEO.FIELD.c0;
+    && c >= GEO.FIELD.c0 && c <= GEO.BOSS_RECT.c1 - GEO.FIELD.c0;
 }
 
 /**

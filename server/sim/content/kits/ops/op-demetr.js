@@ -60,7 +60,7 @@
 import { num, talentBb, traitBb, skillRec, up, onHitBy, toggleBuff, once } from '../shared/tier1.js';
 import { stepOf, STEP_PER_TICK } from '../../../../../shared/plugins/steps.js';
 import { isElite } from '../shared/tier6.js';
-import { absoluteRangeKeys, sortEnemyTargets } from '../../../targeting.js';
+import { battleRangeKeys, sortEnemyTargets } from '../../../targeting.js';
 
 const S1 = 'skchr_demetr_1';
 const S2 = 'skchr_demetr_2';
@@ -151,7 +151,7 @@ export default {
     };
     /** The first ground enemy of the x-2 around his located tile standing on a tile he may take. */
     const pickTarget = (battle, unit, st) => {
-      const keys = absoluteRangeKeys(area, st.home[0], st.home[1], unit.dir, 0);
+      const keys = battleRangeKeys(area, st.home[0], st.home[1], unit.dir, 0);
       const list = battle.enemiesInKeys(keys, unit, { canHitFly: false, groundOnly: true })
         .filter((e) => !e.isFlying && tileOk(battle, unit, st, Math.round(e.y), Math.round(e.x)));
       sortEnemyTargets(battle, unit, list, unit.profile?.priority ?? null);

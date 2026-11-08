@@ -39,6 +39,7 @@ import { parsePenRect, PEN_RECT } from '../pen.js';
 
 export const ROWS = 19;
 export const COLS = 21;
+export const EXTENDED_COLS = 29;
 /** How far the island's cliff faces go down (tiles). */
 export const CLIFF = 0.75;
 /** Top bevel: inset (tiles) and drop (tiles) of low tiles and raised blocks. */
@@ -153,13 +154,14 @@ export function uvAt(uv, fx, fy) {
  */
 export function classifyStage(stage, area = null) {
   const rows = Array.isArray(stage?.rows) ? stage.rows : [];
+  const width = stage?._extendedUnite ? EXTENDED_COLS : COLS;
   const pen = parsePenRect(stage?.config?.enemy_place_rect) || PEN_RECT;
   const legend = stage && typeof stage.tiles === 'object' && stage.tiles ? stage.tiles : {};
   const grid = [];
   for (let r = 0; r < ROWS; r++) {
     const line = typeof rows[r] === 'string' ? rows[r] : '';
     const row = [];
-    for (let c = 0; c < COLS; c++) {
+    for (let c = 0; c < width; c++) {
       let g = line[c] || '#';
       if (!GLYPH[g]) g = TILEKEY_GLYPH[legend[g]?.tileKey] || (legend[g]?.height === 'HIGH' ? '#' : 'R');
       const def = GLYPH[g];
@@ -169,7 +171,7 @@ export function classifyStage(stage, area = null) {
     grid.push(row);
   }
   // the island: content tiles + the forbidden / separator ring around them (Chebyshev 1)
-  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < width; c++) {
     const t = grid[r][c];
     if (t.content) { t.drawn = true; continue; }
     if (!t.inArea) continue;
@@ -326,6 +328,7 @@ export function buildBoard(stage, opts = {}) {
   const uvTable = opts.uv || null;
   const UVT = uvTable || Object.fromEntries(Object.entries(SURFACES).map(([k, v]) => [k, { ...v, rect: [...v.rect] }]));
   const grid = classifyStage(stage, opts.area || null);
+  const width = grid[0].length;
   const at = (r, c) => grid[r]?.[c] || null;
   const topZ = (t) => (t.glyph === 'd' ? -BASIN : t.h);
   const board = new Geom(), decal = new Geom(), pipe = new Geom(), glass = new Geom();
@@ -333,7 +336,7 @@ export function buildBoard(stage, opts = {}) {
   const gates = [], terrain = { water: [], mire: [], smog: [], infection: [] };
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
 
-  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < width; c++) {
     const t = grid[r][c];
     if (!t.drawn) continue;
     minX = Math.min(minX, c - 0.5); maxX = Math.max(maxX, c + 0.5); minY = Math.min(minY, r - 0.5); maxY = Math.max(maxY, r + 0.5);
@@ -396,7 +399,7 @@ export function buildBoard(stage, opts = {}) {
   const fence = (r, c) => { const n = at(r, c); return !!n && n.drawn && n.glyph === 'b'; };
   const rail = { inset: 0.07, h: 0.26, rad: 0.032, post: 0.038 };
   const posts = new Set();
-  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < width; c++) {
     if (!fence(r, c)) continue;
     const e = rail.inset;
     const x0 = c - 0.5, x1 = c + 0.5, y0 = r - 0.5, y1 = r + 0.5;
@@ -424,7 +427,7 @@ export function buildBoard(stage, opts = {}) {
   // "outside": undrawn tiles and the forbidden / separator tiles connected to them (interior holes are not)
   const outside = new Set();
   const stack = [];
-  for (let r = -1; r <= ROWS; r++) for (let c = -1; c <= COLS; c++) {
+  for (let r = -1; r <= ROWS; r++) for (let c = -1; c <= width; c++) {
     const t = at(r, c);
     if (!t || !t.drawn) { outside.add(`${r},${c}`); stack.push([r, c]); }
   }
@@ -437,7 +440,7 @@ export function buildBoard(stage, opts = {}) {
       stack.push([rr, cc]);
     }
   }
-  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < width; c++) {
     const t = grid[r][c];
     if (!zone(t)) continue;
     for (const [dir, dx, dy] of DIRS) {

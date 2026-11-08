@@ -1,7 +1,7 @@
 // server/sim/content/kits/ops/standin-acpion.js — 郁金香 (char_608_acpion) 补位 stand-in kit: 3 瑕光 (S3), 4 焰尾 (S2),
 // 5 凛御银灰 / 6 圣聆初雪 / 缪尔赛思 / 耀骑士临光 (S3 + module SOL-X on the elite). Stand-in contract: ../README.md.
 
-import { absoluteRangeKeys, sortEnemyTargets } from '../../../targeting.js';
+import { battleRangeKeys, sortEnemyTargets } from '../../../targeting.js';
 import { num, talentBb, traitBb, skillRec, statBuff, toggleBuff, up } from '../shared/tier1.js';
 import { bbCap } from '../../../../../shared/plugins/officialBounds.js';
 
@@ -87,7 +87,7 @@ export default {
       const grid = r3.rangeGrid?.length ? r3.rangeGrid : null;
       const lastAt = SLASH_FIRST + (times - 1) * SLASH_GAP;
       const slash = (battle, unit) => {
-        const keys = grid ? absoluteRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0) : unit.rangeKeys || [];
+        const keys = grid ? battleRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0) : unit.rangeKeys || [];
         const v = battle.enemiesInKeys(keys, unit, SLASH_PROFILE);
         if (v.length) battle.fx('slash', { x: unit.x, y: unit.y, id: unit.id, n: v.length });
         for (const e of v) battle.dealDamage(unit, e, { amount: unit.s.atk * scale, type: 'phys', defIgnorePct: pen, isSkill: true, tags: ['skill', 'slash'] });

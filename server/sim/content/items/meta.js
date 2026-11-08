@@ -92,7 +92,7 @@ export function registerMeta(registry) {
   wrap(registry, 'chess_item_4_01_e', () => ({
     onEquip(ctx, ev) {
       const p = buffP(ctx, ev.item && ev.item.id, 'use_equip_reward_special_goods_char_chess') || {};
-      const n = Math.max(1, int(p.refresh_cnt, 3));
+      const n = ctx.extendedCoop ? 4 : Math.max(1, int(p.refresh_cnt, 3));
       const bonds = new Set(ctx.pieceBonds(ev.target.uid));
       const maxTier = ctx.shopLevel();
       const shares = (id) => { const c = ctx.gd.chess(id); return !!(c && Array.isArray(c.bonds) && c.bonds.some((b) => bonds.has(b))); };

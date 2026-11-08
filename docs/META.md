@@ -5,6 +5,10 @@ the **UI owner** consuming `m.public` / `m.private` / `m.result`, and anyone dri
 Normative contracts stay in DESIGN.md §6 and §8 ([design/match.md](design/match.md),
 [design/network.md](design/network.md)); this file documents the implementation and every assumption it makes.
 
+The local `coop8` room uses [its own rule contract](design/extended-coop.md): eight available seats, at least five occupied to start, scaled card stock and boss HP, and up to three helpers in 联防.
+
+During BAND_DRAFT, `g.botBand { bandId }` lets the connected room host assign a free strategy to the current built-in AI seat; `bandId: null` requests its weighted random choice. An absent host and a timed-out AI turn also choose randomly. Human seats under AI control continue to choose automatically.
+
 ```
 server/match/
   Match.js         state machine, timers, round loop, co-op orchestration, views (the lobby⇄match interface is at the top)
@@ -83,7 +87,7 @@ legal from R14 into R15. The client mirrors it
 | band draft turn | `Match.BAND_TURN_SECONDS` 50 (owner official-play report, 2026-10-10) (= `timers.bandTurn`), the step's only countdown: `m.public.deadline` = the current turn's end, no step cap (`timers.bandDraft` 50 = the official whole step, informational) (co-op; solo / single human untimed) |
 | BATTLE_CHECK | `battleCheck` 3 |
 | 机变 first / other pickers | `spFirst` 30 / `spTurn` 16 (co-op; solo / single human untimed) |
-| PREP | `modes[m].rounds[r].prepTime` (co-op; solo / single human untimed) |
+| PREP | `modes[m].rounds[r].prepTime` (co-op by default; solo / single human untimed; this local fork's private co-op `prepUntimed` option also removes only this deadline) |
 | COMBAT / 联防 | `modes[m].rounds[r].combatTimeLimit` (= the level's `maxPlayTime`) real seconds = 2× that in game seconds |
 | 最终攻势 / 隐秘核心 | no hard stop: countdown `rounds[r].levelMaxPlayTime` 120 real s; overtime drain at 120 real s for all-human teams, configured 150 real s with a non-departed AI teammate; 1 team LP per real s (§3) |
 | ROUND_START / after combat / SETTLE | 2 / 1.5 / 3 (presentation delays, `Match.DELAYS`) |
@@ -93,6 +97,13 @@ A match with a single human seat at the start (独立模拟, or a 同盟 room st
 `Match.loneHuman` → `Match.soloUntimed`, user playtest #4 item 3) times nothing outside its battles: no INFO_CHECK /
 band draft / 机变 / PREP deadline, and BATTLE_CHECK / ROUND_START / SETTLE run silently (deadline 0); the co-op rules
 (draft order and skip, 6 机变 cards, 联防) stay.
+In this local fork, the host may enable `room.setPrepUntimed` before a private co-op match. The room announces the choice
+and clears other humans' Ready state. When the host starts, every real player must answer the `room.confirmPrepUntimed`
+dialog within 60 seconds; external AI and built-in AI seats do not vote. A refusal, timeout, disconnect, or roster change
+cancels the start, turns off the option, and clears every human Ready state. Only unanimous confirmation creates the match.
+The match copies the option once, suppresses only PREP deadlines, and still advances when all alive players are ready.
+INFO_CHECK, drafts, combat and presentation timers keep their usual rules. The room setting resets after the match.
+This build has no automatic teammate matchmaking.
 `m.public.deadline` is the absolute end of the current timer (ms epoch, 0 = untimed; combat: estimated end at 2×;
 最终攻势 / 隐秘核心: the boss level's `levelMaxPlayTime` countdown, 120 real s — the battle goes on past it — with
 `m.public.overtimeAt` = when the overtime drain starts: 120 real s for all-human teams, 150 real s with an AI teammate at fight start; both on the field clock).
@@ -114,9 +125,8 @@ random order, 30 s first / 16 s others, timeout ⇒ a random remaining card), so
 untimed. The UI picks a card with two taps (select → 确认选择, DESIGN §18.2). A 驰援 tactic card
 (`single_special_choice_gain_bond_chess`) is only offered while its bond still has chess in this match's pool
 (`Match.bondInPool`; a bond whose every member is banned would grant nothing); more generally a 驰援 or 盟誓
-(`global_special_choice_bond_addlayer`) card is offered only while one of its bonds is live (`Match.bondLive`: not in
-the mode's static `inactiveBondIds` — 标准 has no 拉特兰 / 阿戈尔 / 卡西米尔 / 奥术 … — and with chess in the pool), so
-玛恩纳的盟誓 / 莫斯提马的盟誓 / 卡西米尔驰援 never show up in 标准. Card generation and the
+(`global_special_choice_bond_addlayer`) card is offered only while one of its bonds has a natural member in the pool
+(`Match.bondLive`). 标准模式的固定排除名单只影响干员卡池，因此只要目标盟约仍有成员，盟誓 / 驰援也可出现。Card generation and the
 family defaults are documented in `choices.js` (bounty / supply / shop / tactic). 机密商店 cards are **free** (official
 text "无需消耗资金") and follow the 4 official 机密商店 (choices.json `shopDraft`, build-data `SHOP_DRAFT`; the user:
 "机密商店按官方改成可以重复吧"): six slots drawn with replacement — VI, VI, V, 盟约之币 and twice V / IV / III / 盟约之币,
@@ -235,10 +245,8 @@ The rest of this section is the legacy server-run mode
 
 ### 1.5 AI player (bot.js)
 **Strategy** (`botPickBand`): weighted by starting LP among the offered bands (alone, 老鲤's withheld first-round funds
-× 0.02); a band whose mechanic rides on a bond the mode switches off weighs 0 — `GameData.bandBondIds` (bands.json
-`bondIds`, built by shared/bandBonds.js: the bond names in <…> of its text, the bond ids / bond pools of its blackboards)
-∩ `modeInactiveBonds`: 标准's 潘格尼尼, 克莱门莎, 玛恩纳 — and with every offered band excluded it takes the default band;
-one rng draw per pick (DESIGN §21.26). The strategy draft marks the same bands 本局禁用 for humans (still selectable).
+× 0.02). Pool exclusions do not switch off the bonds named by a strategy; the bot may pick 潘格尼尼、克莱门莎、玛恩纳 in 标准模拟.
+One rng draw per pick. The draft does not mark these strategies as effect-disabled.
 Buys toward a full board first (the cap is 8 from R1; leftover funds are lost), completes the merges it can afford,
 then levels on a curve (L2 ≈ R3, L3 ≈ R5, L4 ≈ R7, L5 ≈ R10, L6 ≈ R12 — the competent curve of docs/BALANCE.md; free
 levels always), then spends the rest (a band that keeps its leftover funds — 坎诺特 利滚利 — holds its interest capital
@@ -271,7 +279,8 @@ deadline would; the operator a transformation gains waits on the bench and the n
 like any owned unit — AI 托管 too; the buy loop's bench shed, which sells by piece value while the bench is crowded,
 never sells a piece gained since the bot's last prep ended, `rememberOwned`), 身份牌 / 通讯机 / 寻呼模块 on a focus
 member; 画卷 copies the most
-valuable deployed operator; 教鞭 / “神秘顾客” are used after a perfect battle and otherwise kept in the hand — a bot drops
+valuable deployed operator; 教鞭 / “神秘顾客” are used after a perfect battle and otherwise kept in the hand, except that
+杜宾 strategy AI uses its 教鞭 with at least 10 LP even after a leaky battle — a bot drops
 a kept one only when it needs the hand slot (“神秘顾客” then pays its fund), a human's seat under AI 托管 never; 教鞭's three
 cards are scored like a 机变 bounty draft (§2.5). 机变: a
 bounty card is scored by its expected payout minus its expected leaks × the value of an LP (2 + 20 / LP), the kill

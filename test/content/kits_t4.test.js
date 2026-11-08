@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { makeBattle, enemyRec, checkInvariants } from '../helpers/battleHarness.js';
 import { getDefaultSource } from '../../server/sim/simdata.js';
 import { TIER_KITS } from '../../server/sim/content/kits/index.js';
-import { absoluteRangeKeys } from '../../server/sim/targeting.js';
+import { battleRangeKeys } from '../../server/sim/targeting.js';
 
 const kits = TIER_KITS[3];
 
@@ -312,8 +312,8 @@ test('瑰盐 / 白面鸮 / 莱恩哈特 elite modules extend the range — the i
     const u = h.unit(id);
     const modGrid = D(id).raw.modules.find((m) => m.isDefault).talentChanges.find((t) => t.rangeGrid).rangeGrid;
     assert.equal(u.s.rangeExtend, 0, `${id}: no forward extension`);
-    const own = absoluteRangeKeys(D(id).rangeGrid, u.tileR, u.tileC, u.facing, 0);
-    const mod = absoluteRangeKeys(modGrid, u.tileR, u.tileC, u.facing, 0);
+    const own = battleRangeKeys(D(id).rangeGrid, u.tileR, u.tileC, u.facing, 0);
+    const mod = battleRangeKeys(modGrid, u.tileR, u.tileC, u.facing, 0);
     assert.equal(mod.length, own.length + 1, `${id}: one tile more`);
     assert.deepEqual([...u.baseRangeKeys].sort((x, y) => x - y), [...mod].sort((x, y) => x - y), `${id}: module range = initial range`);
     assert.deepEqual([...u.rangeKeys].sort((x, y) => x - y), [...mod].sort((x, y) => x - y), `${id}: module range = range`);
@@ -333,7 +333,7 @@ test('瑰盐 / 白面鸮 / 莱恩哈特 elite modules extend the range — the i
   const h = makeBattle({ defs: { enemies: { enemy_dummy: dummy() } }, units: [{ chessId: id, row: 10, col: 3, carryState: { sp: 99 } }], timeLimit: 20, hooks: [] });
   h.step();
   const u = h.unit(id);
-  const own = absoluteRangeKeys(D(id).rangeGrid, u.tileR, u.tileC, u.facing, 0);
+  const own = battleRangeKeys(D(id).rangeGrid, u.tileR, u.tileC, u.facing, 0);
   const extra = u.baseRangeKeys.find((k) => !own.includes(k) && Math.floor(k / 21) === 10);
   h.spawn('enemy_dummy', { pos: [Math.floor(extra / 21), extra % 21] });
   assert.ok(h.runUntil(() => u.skill.activations >= 1, 3), 'DEFAULT trigger from the module tile');

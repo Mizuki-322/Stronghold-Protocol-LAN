@@ -288,7 +288,7 @@ function setPhase(phase, variant) {
   applyGapVariants();
   const pub = S.pub;
   pub.phase = phase;
-  store.set({ match: emptyMatch(), ticker: [], emotes: [] });
+  store.set({ match: emptyMatch(), ticker: [], emotes: [], chats: [] });
   awayStore.set({ away: false });
   const solo = VARIANTS.has('solo');
   if (solo) {
@@ -296,7 +296,7 @@ function setPhase(phase, variant) {
     pub.modeId = 'mode_single_hard';
     store.set({ room: { ...store.get().room, mode: 'solo' } });
   } else {
-    store.set({ room: { ...store.get().room, mode: 'coop' } });
+    store.set({ room: { ...store.get().room, mode: VARIANTS.has('extended') ? 'coop8' : 'coop' } });
   }
   switch (phase) {
     case PHASE.INFO_CHECK:
@@ -321,14 +321,15 @@ function setPhase(phase, variant) {
       const fam = VARIANTS.has('supply') ? 'supply' : VARIANTS.has('shop') ? 'shop' : VARIANTS.has('tactic') ? 'tactic' : 'bounty';
       const ch = data.get('choices');
       let cards;
-      if (fam === 'supply') cards = shuffle(shopItems().filter((i) => i.tier >= 3)).slice(0, 6).map((i) => ({ itemId: i.id }));
+      if (fam === 'supply') cards = shuffle(shopItems().filter((i) => i.tier >= 3)).slice(0, VARIANTS.has('extended') ? 12 : 6).map((i) => ({ itemId: i.id }));
       // the official 机密商店 of match 8 R11 (test/fixtures/official-bounty-drafts.json): the same item twice
       else if (fam === 'shop') cards = ['变形同构体', '盟约之币', '商业包装方案', '变形同构体', '天马之盔', '双模机械臂'].map((n) => ({ itemId: shopItems().find((i) => i.name === n).id }));
       // the official 战术决策 of match 7 R11 (test/fixtures/official-bounty-drafts.json): the same card twice
       else if (fam === 'tactic') cards = ['补给', '补给', '谢拉格驰援', '列装', '莫斯提马的盟誓', '升华'].map((n) => ({ effectId: ch.cards.tactic.find((t) => t.name === n).effectId }));
-      else cards = shuffle(ch.cards.bounty.filter((b) => b.draft !== false)).slice(0, 6).map((b) => ({ effectId: b.effectId }));
+      else cards = shuffle(ch.cards.bounty.filter((b) => b.draft !== false)).slice(0, VARIANTS.has('extended') ? 12 : 6).map((b) => ({ effectId: b.effectId }));
+      if (VARIANTS.has('extended') && cards.length < 12) cards = [...cards, ...cards.map((c) => ({ ...c }))];
       if (solo) { cards = cards.slice(0, 3); pub.deadline = 0; }
-      pub.sp = { family: fam, cards, order: solo ? ['p1'] : ['p4', 'p1', 'ai_2', 'p3'], turn: solo ? 'p1' : 'p1', picks: solo ? {} : { p4: 2 }, untimed: solo };
+      pub.sp = { family: fam, cards, extended: VARIANTS.has('extended'), order: solo ? ['p1'] : ['p4', 'p1', 'ai_2', 'p3'], turn: solo ? 'p1' : 'p1', picks: solo ? {} : { p4: 2 }, untimed: solo };
       pub.players.forEach((p) => { p.status = p.playerId === 'p4' ? 'ready' : 'deciding'; });
       break;
     }
@@ -721,6 +722,11 @@ async function mockRequest(t, f = {}) {
     }
     case 'g.emote': {
       store.set((s) => ({ emotes: [...s.emotes.slice(-19), { seq: Date.now(), playerId: ME, id: f.id, at: Date.now() }] }));
+      return {};
+    }
+    case 'g.chat': {
+      if ([...String(f.text || '')].length > 20) fail('BAD_MSG');
+      store.set((s) => ({ chats: [...s.chats.slice(-39), { seq: Date.now(), playerId: ME, text: f.text, at: Date.now() }] }));
       return {};
     }
     case 'g.watch': {

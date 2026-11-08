@@ -69,9 +69,8 @@
 //   6. resolve the temp slots (a 突变细胞 left there — it comes back after every transformation — gets a hand slot made
 //      for it, makeHandRoom, instead of being destroyed), keep one hand slot free (freeHandSlot: a kept bounty Art goes
 //      before a chess on a bot's own seat, never on a human's seat under AI 托管), then Ready.
-// Strategy (botPickBand): weighted by starting LP among the offered bands; never one whose mechanic rides on a bond the
-// mode switches off (gd.bandBondIds = bands.json bondIds: the bond its text names in <…> or its blackboards name — 标准's
-// 潘格尼尼, 克莱门莎, 玛恩纳; DESIGN §21.26); alone, 老鲤's withheld first-round funds only rarely (× 0.02).
+// Strategy (botPickBand): weighted by starting LP among the offered bands. Pool exclusions do not suppress their bond
+// effects; alone, 老鲤's withheld first-round funds are selected only rarely (× 0.02).
 // 机变 (botPickCard): a bounty by its expected payout minus the expected LP lost — bountyKillChance runs the exposure
 // model for that one enemy against the own board; a card the board is unlikely to beat wins only when nothing better
 // is offered or it pays much more —; tactic cards by what they act on (a 盟誓 / 驰援 card on the own bonds, 升华 …);
@@ -139,9 +138,9 @@ const DEFAULT_MELEE_RANGE = [[0, 0], [0, 1]];
 /**
  * Band pick among the strategies the mode offers (gd.bandIds): weighted by starting LP (sturdier strategies are
  * preferred). Alone, a band that withholds the first rounds' funds (老鲤 "资金暂存": no operator in R1–R2, every enemy
- * leaks) is avoided — only 联防 teammates cover that. A band whose mechanic rides on a bond the mode switches off
- * (gd.bandBondIds ∩ gd.modeInactiveBonds — 标准: 潘格尼尼 <拉特兰>, 克莱门莎 <阿戈尔>, 玛恩纳 <卡西米尔>) weighs 0, never taken
- * (DESIGN §21.26). [ASSUMED] A living teammate's opening strategy soft-reserves those bonds before anyone is deployed:
+ * leaks) is avoided — only 联防 teammates cover that. A bond whose natural members are absent from the pool is still
+ * activatable by other count sources, so mode pool exclusions do not remove its strategy from the draft.
+ * [ASSUMED] A living teammate's opening strategy soft-reserves those bonds before anyone is deployed:
  * the weight stays positive, at a quarter of the unreserved weight, so the strategy can still be drawn, and the
  * reservation ends when that teammate is eliminated (alivePlayers). With every band excluded, the default band. One
  * rng draw per call (deterministic per seed); a solo match has no teammate to reserve against.
@@ -155,9 +154,7 @@ export function botPickBand(m, ps) {
   const reserved = new Set(ps && typeof m.alivePlayers === 'function'
     ? m.alivePlayers().filter((p) => p !== ps).flatMap((p) => gd.bandBondIds(p.bandId))
     : []);
-  const inactive = (id) => gd.bandBondIds(id).some((b) => gd.modeInactiveBonds.has(b));
   const pairs = ids.map((id) => {
-    if (inactive(id)) return [id, 0];
     const w = Math.max(1, (gd.startLp(id) - 18) ** 2) * (m.isSolo && lateFunds(id) ? 0.02 : 1);
     return [id, gd.bandBondIds(id).some((b) => reserved.has(b)) ? w * SOFT_BAND_RESERVE : w];
   });
@@ -383,7 +380,7 @@ export function bondPlan(m, ps, owned = ownedBonds(m, ps)) {
   const pool = bondPoolStats(m, ps, owned);
   for (const id of m.gd.bondIds) {
     const b = m.gd.bond(id);
-    if (!b || !b.isCore || m.gd.modeInactiveBonds.has(id)) continue;
+    if (!b || !b.isCore) continue;
     const k = owned.counts.get(id) || 0;
     if (!k) continue;
     const s = k * 10 + Math.min(4, pool.reach.get(id) || 0) + Math.min(6, (ps.layers[id] || 0) / 10)
@@ -393,7 +390,7 @@ export function bondPlan(m, ps, owned = ownedBonds(m, ps)) {
   let second = null;
   let bestK = 0;
   for (const id of m.gd.bondIds) {
-    if (id === focus || m.gd.modeInactiveBonds.has(id)) continue;
+    if (id === focus) continue;
     const b = m.gd.bond(id);
     if (!b || b.thresholdTemplate === 'count_threshold_downward' || !Array.isArray(b.thresholds) || !b.thresholds.length) continue;
     const k = owned.counts.get(id) || 0;
@@ -451,7 +448,7 @@ function bondValue(m, c, owned, focus, second = null) {
   const committed = focus && (owned.counts.get(focus) || 0) >= 3;
   for (const b of (c && c.bonds) || []) {
     const bond = m.gd.bond(b);
-    if (!bond || m.gd.modeInactiveBonds.has(b)) continue;
+    if (!bond) continue;
     const n = owned.counts.get(b) || 0;
     const th = Array.isArray(bond.thresholds) && bond.thresholds.length ? bond.thresholds : [bond.activeCount || 2];
     const w = bond.isCore ? 1.4 : 1;
@@ -625,7 +622,7 @@ function buyScore(m, ps, id, ctx) {
   // Leave high-tier shared chess to living teammates whose opening strategy needs its faction.
   // Humans and bots count equally; a single soft penalty still allows valuable own merges.
   if (c.tier >= 5 && !c.isGolden && !c.diyFor && m.pool.has(base) && m.alivePlayers().some((mate) =>
-    mate !== ps && gd.bandBondIds(mate.bandId).some((b) => !gd.modeInactiveBonds.has(b) && c.bonds.includes(b)))) s -= 18;
+    mate !== ps && gd.bandBondIds(mate.bandId).some((b) => c.bonds.includes(b)))) s -= 18;
   return s;
 }
 
@@ -1930,7 +1927,8 @@ const isBountyArt = (gd, itemId) => { const rec = gd.item(itemId); return !!rec 
 /**
  * Use an Art: 画卷 copies the operator on its tile (its range is the tile + the one in front) — the most valuable
  * deployed operator, with a free hand slot for the copy; 教鞭 offers a scored personal bounty choice, “神秘顾客” adds a
- * random bounty — only after a perfect battle with LP to spare, else the Art stays in the hand for a later round
+ * random bounty — normally only after a perfect battle with LP to spare; Dobermann's own whip can be used after
+ * a leaky battle with at least 10 LP, while other bounty Arts stay in the hand for a later round
  * (destroying 教鞭 gives nothing; a full hand at the prep end: freeHandSlot).
  */
 function useArt(m, ps, item, ctx) {
@@ -1945,7 +1943,9 @@ function useArt(m, ps, item, ctx) {
     return;
   }
   if (keys.includes('trap_create_self_choice')) {
-    if (!lastPerfect(m, ps) || ps.lp < 10) return; // kept
+    // 杜宾 generates a 教鞭 every two rounds; do not hold all of them after a difficult battle.
+    const dobermWhip = ps.bandId === 'band_doberm' && item.id === 'chess_item_6_03_m';
+    if ((!lastPerfect(m, ps) && !dobermWhip) || ps.lp < 10) return; // kept
     const [key] = [...ps.board.keys()];
     if (key) {
       const [r, c] = parseKey(key);

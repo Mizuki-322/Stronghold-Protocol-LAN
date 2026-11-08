@@ -14,6 +14,14 @@ const medic = (id = 'char_613_acmedc', extra = {}) => renderInfo({ id: 71, defId
 const args = (unit, extra = {}) => ({ target: { kind: 'unit', unit }, detail: { type: 'token', token: tokens[unit.defId] },
   getChess, field: { prep: true }, ...extra });
 
+test('selecting an attacking device exposes its exact board tiles', () => {
+  const tiles = [[8, 9], [9, 7], [9, 8], [9, 9], [9, 10], [9, 11]];
+  const target = { kind: 'device' };
+  assert.deepEqual(inspectRange({ target, detail: { type: 'device', device: { key: 'turret', rangeTiles: tiles } } }), { tiles });
+  assert.equal(inspectRange({ target, detail: { type: 'device', device: { key: 'crate', rangeTiles: tiles } } }), null);
+  assert.equal(inspectRange({ target, detail: { type: 'device', device: { key: 'turret' } } }), null);
+});
+
 test('user Given Jessica inspected beside her shield When it expires Then her open range turns back with her', () => {
   const h = makeBattle({ autoFinish: false, units: [
     { uid: 1, diy: { slot: 'chess_char_5_diy1_a', charId: 'char_1034_jesca2', skillIndex: 0 }, row: 10, col: 4 },

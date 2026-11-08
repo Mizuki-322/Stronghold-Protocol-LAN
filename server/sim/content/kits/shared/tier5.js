@@ -37,7 +37,7 @@
 //   'meltdown', 'soul', 'sleepGuard', 'weightless'; engine kinds used: 'dodge'.
 
 import { bodyInRange } from '../../../body.js';
-import { absoluteRangeKeys, sortEnemyTargets } from '../../../targeting.js';
+import { battleRangeKeys, sortEnemyTargets } from '../../../targeting.js';
 import { hypot } from '../../../detmath.js';
 
 // ---- text-only constants (the official blackboards carry no key for these) --------------------------------------
@@ -189,7 +189,7 @@ function permBuff(battle, unit, key, m) {
 
 /** Enemies inside an absolute-key grid of `grid` offsets around `unit` (best targets first). */
 function enemiesInGrid(battle, unit, grid, n = 0, { ignoreStealth = false } = {}) {
-  const keys = absoluteRangeKeys(grid || unit.rangeGrid || [[0, 0]], unit.tileR, unit.tileC, unit.dir, 0);
+  const keys = battleRangeKeys(grid || unit.rangeGrid || [[0, 0]], unit.tileR, unit.tileC, unit.dir, 0);
   let list;
   if (ignoreStealth) {
     const set = new Set(keys);

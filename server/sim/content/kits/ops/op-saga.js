@@ -48,7 +48,7 @@
 
 import { num, talentBb, moduleBb, traitBb, skillRec, toggleBuff, batMod, giveSp, up } from '../shared/tier1.js';
 import { stepOf, STEP_PER_TICK } from '../../../../../shared/plugins/steps.js';
-import { absoluteRangeKeys, canTargetEnemy, sortEnemyTargets } from '../../../targeting.js';
+import { battleRangeKeys, canTargetEnemy, sortEnemyTargets } from '../../../targeting.js';
 
 const S1 = 'skcom_charge_cost[3]';
 const S2 = 'skchr_saga_2';
@@ -116,7 +116,7 @@ export default {
             const n = num(b2.cost);
             battle.addDp(unit.ownerId, n);
             battle.fx('dp', { x: unit.x, y: unit.y, n, id: unit.id });
-            const keys = absoluteRangeKeys(s2?.rangeGrid ?? X6, unit.tileR, unit.tileC, unit.dir, 0);
+            const keys = battleRangeKeys(s2?.rangeGrid ?? X6, unit.tileR, unit.tileC, unit.dir, 0);
             const list = battle.enemiesInKeys(keys, unit, GROUND);
             sortEnemyTargets(battle, unit, list, unit.profile?.priority ?? null);
             const hit = list.slice(0, maxHit);

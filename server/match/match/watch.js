@@ -54,10 +54,14 @@ export class MatchWatch {
     if (this.clientCombat && this.fields.length && this.fields.some((x) => x.cc)) return this._watchClient(ps, fieldId, playerId);
     const f = this.fields.find((x) => x.fieldId === fieldId);
     if (f) {
+      // An external agent has no battle renderer to leave running in the background. Let it scout other normal
+      // fields only after its own field finishes, exactly as the client-combat watch path does for players.
+      const own = this.fields.find((x) => x.players.includes(ps.playerId));
+      if (ps.isAgent && f.kind === 'normal' && own && own !== f && own.live) return fail(ERR.WRONG_PHASE, 'own battle running');
       // 最终攻势 / 隐秘核心: "两名参与者会处于同一个战场，但无法查看另一组队友的战场情况" — a fighting player sees its own
       // boss field only (eliminated / departed players spectate freely)
-      const own = this.fieldOf(ps);
-      if ((f.kind === 'boss' || f.kind === 'hidden') && own && own !== f.fieldId) return fail(ERR.BAD_TARGET, 'other group hidden');
+      const ownId = this.fieldOf(ps);
+      if ((f.kind === 'boss' || f.kind === 'hidden') && ownId && ownId !== f.fieldId) return fail(ERR.BAD_TARGET, 'other group hidden');
       this.watchers.set(ps.playerId, fieldId);
       this._watchPrefSet(ps, f, playerId);
       this._sendField(ps.playerId, fieldId);

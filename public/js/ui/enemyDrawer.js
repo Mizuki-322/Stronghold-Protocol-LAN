@@ -1,8 +1,8 @@
 // 本局信息 dialog under the top bar (opened by the left 🔍, official btn_check_player / autochess_hud_player_info_dialog,
 // research 09 §2.1) with two tabs:
-//   本局信息 — own strategy, stage, disabled bonds with banned-member counts and the banned operator list (default) —
-//              the same bonds, states and banned operators (by tier) as the briefing and the strategy draft's 本局信息
-//              dialog: ui/matchInfo.js matchInfoModel, drawn here as compact chips and avatars;
+//   本局信息 — own strategy, stage, bonds affected by bans and the banned operator list (default) —
+//              the same bonds and banned operators (by tier) as the briefing and the strategy draft's 本局信息
+//              dialog: ui/matchInfo.js matchInfoModel, drawn here as muted compact chips and avatars;
 //   敌方情报 — the secondary enemy list: m.private.nextEnemies (icons, names, counts, tags, 特训 faction tags) + this
 //              match's factions and the enemy leader on boss rounds. The primary enemy preview is the pen on the board
 //              (the right 🔍▶▶ pans the camera there; tapping an enemy in the pen opens its detail card) — research 09 §6.2.
@@ -60,7 +60,7 @@ function EnemiesTab({ pub, priv, onEnemy }) {
   </div>`;
 }
 
-function InfoTab({ pub, priv, onChess, bandId = null, bandOwner = null }) {
+function InfoTab({ pub, priv, onChess, onBond, trackedBonds, trackedOperators, onOpenOperatorTracking, bandId = null, bandOwner = null }) {
   const model = matchInfoModel(pub, {
     bonds: data.list('bonds'), chess: (id) => data.lookup('chess', id), mode: data.get('config')?.modes?.[pub?.modeId],
     // the own 自选 pieces this match leaves out of the shop (m.private.diyBanned) — not while scouting a teammate
@@ -80,12 +80,22 @@ function InfoTab({ pub, priv, onChess, bandId = null, bandOwner = null }) {
         <${RichText} text=${band.descRaw || band.desc} class="iband__desc" /></div>
     </div>` : null}
     ${stage ? html`<p class="istage"><${Icon} name="rook" />${t('战场：')}<b>${stage.name || stage.id}</b></p>` : null}
+    <h4 class="ihead">${t('可用核心盟约')} <small class="num">${model.availableCore.length}</small></h4>
+    <div class="ibonds ibonds--available">
+      ${model.availableCore.map((b) => html`<button key=${b.bondId} type="button" data-bond=${b.bondId} class=${cx('ibond', 'ibond--available', (perBond.get(b.bondId) || 0) > 0 && 'is-muted', trackedBonds?.has(b.bondId) && 'is-tracked')}
+          title=${t('查看{bond}盟约详情', { bond: b.name })} onClick=${() => onBond?.(b.bondId)}>
+        <${BondGlyph} bondId=${b.bondId} /><span>${b.name}</span><small class="num">${model.availableCount.get(b.bondId)}</small>
+      </button>`)}
+    </div>
+    <button type="button" class="itrack-open" onClick=${onOpenOperatorTracking}>
+      <${Icon} name="search" /><span>${t('选择追踪干员')}</span><small class="num">${trackedOperators?.size || 0}</small>
+    </button>
     <h4 class="ihead">${t('本局禁用干员情况')} <small class="num">${banned.length}</small></h4>
     <div class="ibonds">
-      ${withBans.length ? withBans.map((b) => html`<span key=${b.bondId} class=${cx('ibond', disabled.has(b.bondId) && 'is-off')} title=${briefingBondTip(b.name, stateOf(b.bondId), perBond.get(b.bondId) || 0)}>
+      ${withBans.length ? withBans.map((b) => html`<span key=${b.bondId} class="ibond is-muted"
+          title=${briefingBondTip(b.name, stateOf(b.bondId), perBond.get(b.bondId) || 0)}>
         <${BondGlyph} bondId=${b.bondId} /><span>${b.name}</span>
-        ${perBond.get(b.bondId) ? html`<span class="ibond__ban num" title=${t('该盟约中被禁用的干员数')}><${Icon} name="user" />${perBond.get(b.bondId)}</span>` : null}
-      </span>`) : html`<span class="t-dim">${t('本局没有禁用盟约')}</span>`}
+      </span>`) : html`<span class="t-dim">${t('本局没有禁用干员')}</span>`}
     </div>
     ${banned.length ? html`<div class="ibanned">${banned.map((id) => html`<button key=${id} type="button" class="ibanned__one" onClick=${() => onChess(id)}>
       <${UnitThumb} kind="chess" id=${id} size="sm" dim=${true} /></button>`)}</div>` : null}
@@ -95,16 +105,18 @@ function InfoTab({ pub, priv, onChess, bandId = null, bandOwner = null }) {
 
 /**
  * @param {{ tab:'enemies'|'info', onTab:(t:string)=>void, pub:any, priv:any, onClose:Function, onEnemy:(key:string, count:number)=>void, onChess:(id:string)=>void,
+ *   onBond?:(id:string)=>void, trackedBonds?:Set<string>, trackedOperators?:Set<string>, onOpenOperatorTracking?:()=>void,
  *   bandId?: string|null, bandOwner?: string|null }} props
  *   bandId / bandOwner: while scouting a teammate's prep board, the watched player's 策略 (m.public players[].bandId)
  *   replaces one's own in the 本局信息 tab (game.js scoutBandId; user playtest #2 item 2)
  */
-export function EnemyDrawer({ tab, onTab, pub, priv, onClose, onEnemy, onChess, bandId = null, bandOwner = null }) {
+export function EnemyDrawer({ tab, onTab, pub, priv, onClose, onEnemy, onChess, onBond, trackedBonds, trackedOperators, onOpenOperatorTracking, bandId = null, bandOwner = null }) {
   return html`<div class="edrawer brackets" role="dialog" aria-label=${tab === 'info' ? t('本局信息') : t('敌方情报')}>
     <div class="edrawer__top">
       <${Tabs} size="sm" value=${tab} onChange=${onTab} items=${[{ id: 'info', label: t('本局信息') }, { id: 'enemies', label: t('敌方情报') }]} />
       <button type="button" class="edrawer__close tapx" aria-label=${t('关闭')} onClick=${onClose}><${Icon} name="close" /></button>
     </div>
-    ${tab === 'info' ? html`<${InfoTab} pub=${pub} priv=${priv} onChess=${onChess} bandId=${bandId} bandOwner=${bandOwner} />` : html`<${EnemiesTab} pub=${pub} priv=${priv} onEnemy=${onEnemy} />`}
+    ${tab === 'info' ? html`<${InfoTab} pub=${pub} priv=${priv} onChess=${onChess} onBond=${onBond} trackedBonds=${trackedBonds}
+      trackedOperators=${trackedOperators} onOpenOperatorTracking=${onOpenOperatorTracking} bandId=${bandId} bandOwner=${bandOwner} />` : html`<${EnemiesTab} pub=${pub} priv=${priv} onEnemy=${onEnemy} />`}
   </div>`;
 }

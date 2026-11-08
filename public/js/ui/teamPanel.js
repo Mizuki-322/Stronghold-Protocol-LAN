@@ -116,8 +116,9 @@ export function rowLpTip(lp, cap = 10) {
  *   observe?: null | { canObserve: (p:any) => { fieldId?: string, reason?: string|null, back?: boolean }, observing: boolean, onBack: () => void } }} props
  *   uniteLocal: the local 联防 replica's per-leaker counts while it is on screen (battle runner state().uniteLeft), else null
  */
-export function TeamPanel({ pub, myId, watching, bubbles, onWatch, compact = false, observe = null, self: selfLive = null, cap = 10, uniteLocal = null, spMarks = null }) {
+export function TeamPanel({ pub, myId, watching, bubbles, chats = [], roster = false, onWatch, compact = false, observe = null, self: selfLive = null, cap = 10, uniteLocal = null, spMarks = null }) {
   const [openPid, setOpenPid] = useState(null);
+  const [rosterOpen, setRosterOpen] = useState(false);
   // the playerId whose avatar just called onWatch, so the other click of a double-click does not open the view again
   const askedAt = useRef(/** @type {{ id: string|null, at: number }} */ ({ id: null, at: 0 }));
   const phaseKey = `${pub?.phase}:${pub?.round}`;
@@ -155,7 +156,16 @@ export function TeamPanel({ pub, myId, watching, bubbles, onWatch, compact = fal
     noteAsked(p);
     onWatch(p);
   };
-  return html`<aside class=${cx('team', compact && 'team--compact')} aria-label=${t('同盟成员')}>
+  const latestEmote = [...(bubbles?.entries() || [])].map(([playerId, e]) => ({ ...e, playerId, kind: 'emote' })).sort((a, b) => b.at - a.at)[0];
+  const latestChat = chats.length ? chats[chats.length - 1] : null;
+  const now = Date.now();
+  const popup = latestChat && now - latestChat.at < 3000 && (!latestEmote || latestChat.at >= latestEmote.at)
+    ? { ...latestChat, kind: 'chat' } : latestEmote;
+  const popupName = popup ? players.find((p) => p.playerId === popup.playerId)?.name || t('博士') : '';
+  return html`<aside class=${cx('team', compact && 'team--compact', roster && 'team--roster')} aria-label=${t('同盟成员')}>
+    ${roster ? html`<button type="button" class="team__roster-toggle" aria-expanded=${rosterOpen} onClick=${() => setRosterOpen(!rosterOpen)}>${t('同盟成员')} ${players.length} ${rosterOpen ? '▴' : '▾'}</button>` : null}
+    ${roster && popup ? html`<div class="team__popup" role="status"><b>${popupName}</b>${popup.kind === 'chat' ? html`<span>${popup.text}</span>` : html`<${EmoteBubble} id=${popup.id} />`}</div>` : null}
+    <div class="team__roster-rows" hidden=${roster && !rosterOpen}>
     ${players.map((p) => {
       const self = p.playerId === myId;
       const status = p.alive === false ? 'dead' : p.status;
@@ -198,8 +208,9 @@ export function TeamPanel({ pub, myId, watching, bubbles, onWatch, compact = fal
           ${back ? html`<button type="button" class="btn btn--secondary btn--sm team__back"
             onClick=${() => observe.onBack()}><span class="btn__label">${t('返回战场')}</span></button>` : null}
         </div>
-        ${bubble ? html`<${EmoteBubble} key=${bubble.seq} id=${bubble.id} class="team__bubble" />` : null}
+        ${bubble && !roster ? html`<${EmoteBubble} key=${bubble.seq} id=${bubble.id} class="team__bubble" />` : null}
       </div>`;
     })}
+    </div>
   </aside>`;
 }

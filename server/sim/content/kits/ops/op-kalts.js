@@ -53,7 +53,7 @@
 //   emptied and recovers no more (阻回 flag `noSp`) until it is back (kalts_s_2_3[sp_cond]).
 
 import { num, talentBb, traitBb, moduleOn, skillRec, up } from '../shared/tier1.js';
-import { absoluteRangeKeys } from '../../../targeting.js';
+import { battleRangeKeys } from '../../../targeting.js';
 import { COLS } from '../../../constants.js';
 import { acquireTargets } from '../../../ai.js';
 
@@ -90,7 +90,7 @@ function holdBuff(battle, u, key, want, mods) {
 /** 不毁重构's blast from Mon3tr's tile: `value` true damage (溅射) + `stun` s on every selectable enemy of its 3×3. */
 function rattle(battle, m, { value, stun, grid }) {
   battle.fx('aoe', { x: m.x, y: m.y, radius: 1.5, id: m.id, skill: TAG_RATTLE });
-  const keys = absoluteRangeKeys(grid, m.tileR, m.tileC, m.dir, 0);
+  const keys = battleRangeKeys(grid, m.tileR, m.tileC, m.dir, 0);
   for (const e of battle.enemiesInKeys(keys, m, { canHitFly: true })) {
     if (!e.alive) continue;
     battle.dealDamage(m, e, { amount: value, type: 'true', isSplash: true, canDodge: false, tags: [TAG_RATTLE] });

@@ -35,6 +35,18 @@ const loss = (u) => u.s.maxHp - u.hp;
 const stonesOn = (h, e, u) => h.hooksOf('damaged').filter((c) => c.source === e && c.target === u && c.dmg && c.dmg.isAttack);
 const done = (h) => { checkInvariants(h.b); assert.equal(h.b.errors.length, 0); };
 
+test('catapult may target a newly deployed higher-taunt operator while blocked', () => {
+  const { h, e } = field([
+    { uid: 1, id: 'blocker', row: 10, col: 8, stats: { blockCnt: 3 } },
+    { uid: 2, id: 'new', row: 10, col: 6, stats: { tauntLevel: 5 } },
+  ]);
+  assert.ok(h.runUntil(() => e.blockedBy, 5));
+  assert.equal(e.blockedBy.uid, 1);
+  assert.ok(h.runUntil(() => e.mem.catapultAim?.target, 5));
+  assert.equal(e.mem.catapultAim.target.uid, 2, 'its special targeting ignores the blocker');
+  done(h);
+});
+
 test('three physical stones land 0.3 s apart; DEF and a one-hit shield each apply per stone; splash is 1.5', () => {
   const { h, e } = field([
     { uid: 1, id: 'pri', row: 10, col: 5, stats: { def: 400, tauntLevel: 5 } },

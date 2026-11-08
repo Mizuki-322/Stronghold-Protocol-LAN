@@ -25,7 +25,7 @@
 // page of the parts the built areas show (load.js mergeSceneChunks). Devices, gates, edges and terrain stay.
 // The key light's shadow map is rendered only when the geometry changes (autoUpdate off).
 
-import { buildBoard, objToBoard, boxProjectUV, ROWS, COLS, DEVICE_H, AREAS } from './layout.js';
+import { buildBoard, objToBoard, boxProjectUV, ROWS, COLS, EXTENDED_COLS, DEVICE_H, AREAS } from './layout.js';
 import { surfaceUV } from './atlas.js';
 import {
   focusUniforms, makeTexture, boardMaterial, glassMaterial, decalMaterial, pipeMaterial, unlitMaterial, gateMaterial, glowMaterial,
@@ -349,7 +349,7 @@ export class BoardScene {
   /** Rebuild everything for a stage (no-op when the same stage object/grid is set again). */
   setStage(stage) {
     if (this.destroyed) return;
-    const official = stage ? this.scenePacks.get(stage.id) || null : null;
+    const official = stage && !stage._extendedUnite ? this.scenePacks.get(stage.id) || null : null;
     const key = stage ? `${stage.id || ''}|${official ? official.key : ''}|${(stage.rows || []).join('/')}|${JSON.stringify((stage.devices || []).map((d) => [d.key, d.pos, d.active, d.dir]))}` : '';
     if (key === this.stageKey) return;
     this.stageKey = key;
@@ -609,7 +609,7 @@ export class BoardScene {
   _buildBackground(board) {
     const T = this.THREE;
     const B = LIGHTING.bg;
-    const cx = (COLS - 1) / 2, cy = (ROWS - 1) / 2;
+    const cx = ((this.stage?._extendedUnite ? EXTENDED_COLS : COLS) - 1) / 2, cy = (ROWS - 1) / 2;
     let plane = null;
     const obj = this.pack?.meshes?.bgPlane;
     if (obj) plane = objToBoard(obj, B.size / 100);

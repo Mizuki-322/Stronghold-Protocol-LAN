@@ -56,7 +56,7 @@ export class BattleLifecycle {
     if (this.kind === 'unite') for (const u of this.allyUnits) {
       const cs = u.carry;
       if (!cs || cs.down || !u.alive || !u.deployed || u.deploySeq <= seq0) continue;
-      if (u.kind === 'op' && Number.isFinite(cs.hpPct) && cs.hpPct > 0) u.hp = u.s.maxHp * Math.min(1, cs.hpPct);
+      if ((u.kind === 'op' || u.defId === 'token_shu_field') && Number.isFinite(cs.hpPct) && cs.hpPct > 0) u.hp = u.s.maxHp * Math.min(1, cs.hpPct);
       if (Number.isFinite(cs.sp) && u.skill) u.skill.setSpTotal(cs.sp);
     }
     // redeploy-time effects that start with the battle (机变 征召 "所有干员的再部署时间-50%", added by a battleStart
@@ -90,6 +90,7 @@ export class BattleLifecycle {
         for (let i = 0, n = list.length; i < n && !this._endReq; i++) {
           const e = list[i];
           if (!e.alive) continue;
+          this._uniteAntiStall(e);
           try { updateEnemy(this, e, dt); } catch (err) { this._internalError('updateEnemy', err); }
           this._clampPos(e);
         }

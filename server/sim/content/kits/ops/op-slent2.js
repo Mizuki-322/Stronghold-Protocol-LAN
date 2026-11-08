@@ -62,7 +62,7 @@
 import { num, up, traitBb, moduleBb, talentBb, skillRec, once, holdProtect } from '../shared/tier1.js';
 import { releaseSkillSummon } from '../../tokens.js';
 import { holdsUndying, PRIO_UNDYING_HELD, PRIO_REVIVE } from '../../items/battle.js';
-import { absoluteRangeKeys } from '../../../targeting.js';
+import { battleRangeKeys } from '../../../targeting.js';
 import { COLS } from '../../../constants.js';
 
 const S1 = 'skchr_slent2_1';
@@ -130,7 +130,7 @@ function lampKit(t, owner, t1) {
     install(battle, lamp) {
       battle.every(TALENT_IV, () => {
         if (!up(lamp)) return;
-        const keys = new Set(absoluteRangeKeys(grid, lamp.tileR, lamp.tileC, lamp.dir, 0));
+        const keys = new Set(battleRangeKeys(grid, lamp.tileR, lamp.tileC, lamp.dir, 0));
         for (const a of alliesOn(battle, lamp, keys)) {
           const v = shelterOf(tb, a, scale);
           holdProtect(battle, a, v, HOLD, lamp);   // 庇护 (the client's damage_resistance[inf]): the shared effect

@@ -70,6 +70,7 @@ function ClientHud({ hud, myDone, spectating, spectator = false, client }) {
   };
   const observing = client.observing;
   const halves = layers.length > 0;
+  const threeHelpers = layers.length === 3 && !layers.some((entry) => entry.key === 'ALL');
   return html`<div class="chud">
     <${DpCounter} dp=${hud?.dp} />
     <div class="chud__bottom">
@@ -82,7 +83,15 @@ function ClientHud({ hud, myDone, spectating, spectator = false, client }) {
         ${client.onBack ? html`<button type="button" class="btn btn--secondary btn--sm chud__back" onClick=${() => client.onBack()}>
           <span class="btn__label">${t('返回战场')}</span></button>` : null}
       </div>` : null}
-      ${halves ? html`<div class=${cx('vswitch', 'chud__layers', observing && 'is-observing')}>
+      ${threeHelpers ? html`<div class=${cx('vswitch', 'chud__layers', 'chud__layers--three', observing && 'is-observing')}>
+        ${layers.map((entry, i) => html`<button type="button" class=${cx('chud__helper', client.layer === entry.key && 'is-active')}
+          aria-label=${t('查看联防队友 {name}，再次点击返回全景', { name: entry.label })}
+          aria-pressed=${client.layer === entry.key}
+          onClick=${() => client.onLayer?.(client.layer === entry.key ? 'ALL' : entry.key)}>
+          <small>${i + 1}</small><span>${entry.label}</span></button>`)}
+        ${observing && client.onBack ? html`<button type="button" class="btn btn--secondary btn--sm chud__back" onClick=${() => client.onBack()}>
+          <span class="btn__label">${t('返回战场')}</span></button>` : null}
+      </div>` : halves ? html`<div class=${cx('vswitch', 'chud__layers', observing && 'is-observing')}>
         <button type="button" class="vswitch__arrow" disabled=${idx <= 0} aria-label=${t('左侧战场')} onClick=${() => step(-1)}><${Icon} name="chevronLeft" /></button>
         <span class="vswitch__label">
           ${cur && cur.watch ? html`<${GIcon} name="eye" />` : null}<span>${cur ? cur.label : t('全景')}</span></span>

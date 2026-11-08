@@ -8,7 +8,7 @@
 // These pending confirmations are listed in DESIGN §28.1; keep each assumption local to this kit.
 
 import { num, talentBb, skillRec, up } from '../shared/tier1.js';
-import { absoluteRangeKeys, canTargetEnemy } from '../../../targeting.js';
+import { battleRangeKeys, canTargetEnemy } from '../../../targeting.js';
 import { bodyInKeys, hitRect } from '../../../body.js';
 import { dirVec } from '../../../dir.js';
 import { COLS } from '../../../constants.js';
@@ -217,7 +217,7 @@ export default {
           // [ASSUMED] No mode footage establishes a separate auto-cast shape for this new operator; use the expanded
           // skill attack grid with permanent extensions, retaining shared operation cooldown/control checks.
           unit.skill.addTriggerRange(() => [{
-            keys: absoluteRangeKeys(skillRec(raw, S2)?.rangeGrid, unit.tileR, unit.tileC, unit.dir, unit.s.baseRangeExtend || 0),
+            keys: battleRangeKeys(skillRec(raw, S2)?.rangeGrid, unit.tileR, unit.tileC, unit.dir, unit.s.baseRangeExtend || 0),
             profile: AIR,
           }]);
         }

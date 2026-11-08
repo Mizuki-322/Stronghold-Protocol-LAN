@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeBattle, enemyRec, chessRec, checkInvariants } from '../helpers/battleHarness.js';
 import { getDefaultSource } from '../../server/sim/simdata.js';
-import { absoluteRangeKeys } from '../../server/sim/targeting.js';
+import { battleRangeKeys } from '../../server/sim/targeting.js';
 import { loadoutOptions } from '../../shared/protocol.js';
 import { kitCoverage } from '../../tools/kit-coverage.mjs';
 
@@ -416,7 +416,7 @@ test('1_17 深靛 S1 灯塔守卫者: skill range, attack interval ×0.2 (−80 
     const u = sel(h, id, s.skillId);
     assert.ok(h.runUntil(() => u.skill.active, 5));
     const st = h.b.time;
-    assert.deepEqual([...u.rangeKeys].sort((x, y) => x - y), absoluteRangeKeys(s.rangeGrid, u.tileR, u.tileC, u.dir, 0).sort((x, y) => x - y), 'skill range');
+    assert.deepEqual([...u.rangeKeys].sort((x, y) => x - y), battleRangeKeys(s.rangeGrid, u.tileR, u.tileC, u.dir, 0).sort((x, y) => x - y), 'skill range');
     approx(u.s.interval, u.base.bat * (1 + bb.base_attack_time) * 100 / u.s.aspd, `${id} interval ×0.2`);
     h.runUntil(() => !u.skill.active, 10);
     within(h.b.time - st, s.duration, 0.05, 'duration');

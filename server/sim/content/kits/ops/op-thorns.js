@@ -56,7 +56,7 @@
 //   PRTS "每次部署棘刺时，重新计算该技能的使用次数": the count restarts with every deployment.
 
 import { num, talentBb, traitBb, skillRec, up } from '../shared/tier1.js';
-import { absoluteRangeKeys, sortEnemyTargets } from '../../../targeting.js';
+import { battleRangeKeys, sortEnemyTargets } from '../../../targeting.js';
 import { hasHp, isHpLoss } from '../../../damage.js';
 
 const S1 = 'skcom_atk_up[3]';
@@ -211,7 +211,7 @@ export default {
           const seq = unit.deploySeq, act = sk.activations;
           battle.after(SPIKE_DELAY, () => {
             if (!up(unit) || unit.deploySeq !== seq || !unit.canAct || !unit.skill?.active || unit.skill.activations !== act) return;
-            const list = battle.enemiesInKeys(absoluteRangeKeys(grid2, unit.tileR, unit.tileC, unit.dir, 0), unit, AIR);
+            const list = battle.enemiesInKeys(battleRangeKeys(grid2, unit.tileR, unit.tileC, unit.dir, 0), unit, AIR);
             sortEnemyTargets(battle, unit, list, null);
             const targets = list.slice(0, n);
             if (!targets.length) return;

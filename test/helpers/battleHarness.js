@@ -349,7 +349,7 @@ export function checkInvariants(b) {
         if (sk.active && sk.kind === 'ammo' && !Number.isFinite(sk.ammoLeft)) bad(`skill ammoLeft ${sk.ammoLeft}`, u);
       }
       // occupancy map consistency: a living deployed ally is what its tile says it is
-      if (u.side === 'ally' && u.deployed && b._occ[u.tileR * 21 + u.tileC] !== u) bad(`occupancy map out of sync at ${u.tileR},${u.tileC}`, u);
+      if (u.side === 'ally' && u.deployed && b._occ[u.tileR * b.grid.cols + u.tileC] !== u) bad(`occupancy map out of sync at ${u.tileR},${u.tileC}`, u);
     } else if (u.removeReason === 'killed' && u.hp !== 0 && !u.bossPool) bad(`killed with hp ${u.hp}`, u);
     else if (u.hp < 0) bad(`negative hp ${u.hp}`, u);
     if (u.side === 'enemy' && u.blockedBy && !u.blockedBy.blocking.includes(u)) bad('block link broken', u);

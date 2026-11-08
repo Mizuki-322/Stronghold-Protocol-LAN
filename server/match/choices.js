@@ -41,8 +41,7 @@
 //                     weights]; other rounds (标准 / 险境, no screenshot) every card uniform, terrain cards only for
 //                     the match stage [ASSUMED]; a 驰援 card (single_special_choice_gain_bond_chess) or a 盟誓 card
 //                     (global_special_choice_bond_addlayer) only while at least one of its bonds is live in this match
-//                     (opts.bondAvailable = Match.bondLive: not in the mode's static inactive list — 标准 turns off
-//                     拉特兰 / 阿戈尔 / 卡西米尔 / 奥术 … — and still with chess in the pool); a card acting only on dead
+//                     (opts.bondAvailable = Match.bondLive: at least one natural member remains in the pool); a card acting only on dead
 //                     bonds would do nothing. Two identical cards are two cards: picks, `taken` and the client go by
 //                     the card's `idx`, and each pick applies its own card once (two picks of one team card stack)
 // Application (applyCard): a registered `choice:<effectId>` handler (content) wins; otherwise the family default:
@@ -141,7 +140,7 @@ export function generateDraft(gd, rng, round, { stageId = null, bondAvailable = 
   const sch = scheduleFor(gd, round);
   const fams = Array.isArray(sch.families) && sch.families.length ? sch.families.map((f) => [f.family, f.weight]) : [['supply', 1]];
   let family = weightedPick(rng, fams) || 'supply';
-  const n = Number.isInteger(sch.cards) && sch.cards > 0 ? Math.min(sch.cards, 6) : formatCount(gd);
+  const n = gd.extendedSeats ? 12 : Number.isInteger(sch.cards) && sch.cards > 0 ? Math.min(sch.cards, 6) : formatCount(gd);
   const opts = { stageId, bondAvailable, round, itemAvailable };
   let cards = buildCards(gd, rng, family, n, sch, opts);
   if (!cards.length && family !== 'supply') { family = 'supply'; cards = buildCards(gd, rng, family, n, sch, opts); }
@@ -342,7 +341,10 @@ export function shopDraftCards(gd, rng, n, round = null, itemAvailable = null) {
     return free(eligibleItems(gd, 1, 6));
   };
   const out = [];
-  for (const slot of slots) {
+  // A large alliance gets a second pass through the six-slot distribution. Each
+  // slot is drawn independently, just like duplicate cards in the original draft.
+  for (let i = 0; i < Math.max(n, slots.length); i++) {
+    const slot = slots[i % slots.length];
     const kinds = Object.entries(slot).filter(([k]) => k === 'coin' ? !!coin : Number.isInteger(Number(k)));
     const kind = weightedPick(rng, kinds);
     if (kind == null) continue;
@@ -362,7 +364,7 @@ export function tacticCard(c) {
  * The 战术决策 cards (module header): `n` cards, each drawn on its own — with replacement, so one card can fill two places
  * (official R11 of match 7: 补给 ×2). At the rounds of choices.json `tacticDraft` (`rounds`; R11) only the cards of its
  * `kinds` (ally), each by `weights` (1 when unlisted); elsewhere — or when those kinds leave nothing — every card, uniform.
- * Terrain cards only for the match stage; a card whose every target bond is dead in this match (mode-inactive, or no
+ * Terrain cards only for the match stage; a card whose every target bond has no natural member in the pool (or no
  * chess left in the pool: `bondAvailable`) is never offered.
  */
 export function tacticDraftCards(gd, rng, n, { stageId = null, bondAvailable = null, round = null } = {}) {

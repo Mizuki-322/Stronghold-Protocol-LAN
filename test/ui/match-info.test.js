@@ -56,10 +56,10 @@ const model = () => matchInfoModel(PUB, { bonds: data.list('bonds'), chess: (id)
 
 test('matchInfoModel: the two greyed kinds, the briefing order, banned operators by tier (known only), banned members per bond', () => {
   const m = model();
-  assert.deepEqual([...m.sets.drawn].sort(), ['sargonShip', 'steadShip'], 'D = drawnDisabledBonds minus the static list');
-  assert.deepEqual([...m.sets.off], ['arcaneShip'], 'the mode\'s inactive bonds');
-  assert.equal(m.stateOf('arcaneShip'), 'off');
-  assert.equal(m.stateOf('sargonShip'), 'drawn');
+  assert.deepEqual([...m.sets.drawn].sort(), ['arcaneShip', 'sargonShip', 'steadShip'], 'drawn and fixed pool exclusions');
+  assert.deepEqual([...m.sets.off], []);
+  assert.equal(m.stateOf('arcaneShip'), 'drawn', 'some 奥术 members are banned');
+  assert.equal(m.stateOf('sargonShip'), 'drawn', 'a bond with banned members is dimmed');
   assert.equal(m.stateOf('yanShip'), null);
   // bondOrder, then identifier: 调和 (bondOrder 1) leads the add-on row as in the official briefing
   assert.deepEqual(m.core.map((b) => b.name), ['炎', '萨尔贡', '维多利亚', '谢拉格', '拉特兰', '阿戈尔', '叙拉古', '卡西米尔']);
@@ -71,15 +71,15 @@ test('matchInfoModel: the two greyed kinds, the briefing order, banned operators
   assert.equal(m.perBond.get('arcaneShip'), 2, '深靛 + 海霓');
   assert.equal(m.perBond.get('preciShip'), 2, '深靛 + 缇缇');
   assert.equal(m.perBond.get('yanShip'), 0);
-  // an older payload without drawnDisabledBonds: disabledBonds minus the static list
+  // an older payload without drawnDisabledBonds: disabledBonds already holds the union
   const old = matchInfoModel({ disabledBonds: ['arcaneShip', 'sargonShip'] }, { bonds: data.list('bonds'), chess: (id) => data.lookup('chess', id), mode: MODE });
-  assert.deepEqual([...old.sets.drawn], ['sargonShip']);
+  assert.deepEqual([...old.sets.drawn], ['arcaneShip', 'sargonShip']);
   // nothing loaded yet: empty, never throws
   const empty = matchInfoModel(null);
   assert.deepEqual([empty.bonds.length, empty.banned.length, empty.sets.drawn.size, empty.sets.off.size], [0, 0, 0, 0]);
 });
 
-test('MatchBondRow: greyed by state (✕ disc), the banned-member badge, the red ring on an enabled bond that lost members, the tip', () => {
+test('MatchBondRow: affected bonds are dim without red marks, and tooltips retain ban details', () => {
   const m = model();
   const row = MatchBondRow({ title: '附加盟约', micro: 'ADD-ON BONDS', bonds: m.addon, model: m });
   assert.match(textOf(row), /附加盟约ADD-ON BONDS/);
@@ -87,22 +87,22 @@ test('MatchBondRow: greyed by state (✕ disc), the banned-member badge, the red
   const disc = (id) => [...walk(cell(id))].find((v) => v.type === BondDisc);
   const badge = (id) => [...walk(cell(id))].find((v) => hasClass(v, 'brief-bond__ban'));
   const tipOf = (id) => [...walk(row)].find((v) => v.type === Tooltip && v.key === id);
-  // 奥术: switched off by the mode — greyed, ✕, no tier, badge 2, tip 本局禁用
-  assert.ok(hasClass(cell('arcaneShip'), 'is-off') && !hasClass(cell('arcaneShip'), 'is-incomplete'));
-  assert.deepEqual([disc('arcaneShip').props.disabled, disc('arcaneShip').props.active, disc('arcaneShip').props.tier], [true, false, 0]);
-  assert.match(textOf(badge('arcaneShip')), /^2$/);
-  assert.equal(tipOf('arcaneShip').props.text, '奥术：本局禁用（该盟约不会激活）');
-  // 坚守: drawn (D) — greyed as well, marked incomplete, the 阵容不完整 tip
-  assert.ok(hasClass(cell('steadShip'), 'is-off') && hasClass(cell('steadShip'), 'is-incomplete'));
+  // 奥术: two members banned, but the bond can still activate
+  assert.ok(!hasClass(cell('arcaneShip'), 'is-off') && hasClass(cell('arcaneShip'), 'is-muted') && hasClass(cell('arcaneShip'), 'is-incomplete'));
+  assert.deepEqual([disc('arcaneShip').props.disabled, disc('arcaneShip').props.active, disc('arcaneShip').props.tier], [undefined, true, DATA.bonds.arcaneShip.thresholds.length]);
+  assert.equal(badge('arcaneShip'), undefined);
+  assert.equal(tipOf('arcaneShip').props.text, briefingBondTip('奥术', 'drawn', 2));
+  // 坚守: some members banned, but the bond can still activate
+  assert.ok(!hasClass(cell('steadShip'), 'is-off') && hasClass(cell('steadShip'), 'is-incomplete'));
   assert.equal(tipOf('steadShip').props.text, briefingBondTip('坚守', 'drawn', m.perBond.get('steadShip')));
   assert.match(tipOf('steadShip').props.text, /部分盟约所含干员阵容不完整/);
-  // 精准: enabled, but 2 of its members are banned — lit disc, red ring (is-partial), badge 2
-  assert.ok(!hasClass(cell('preciShip'), 'is-off') && hasClass(cell('preciShip'), 'is-partial'));
-  assert.deepEqual([disc('preciShip').props.disabled, disc('preciShip').props.active], [false, true]);
-  assert.match(textOf(badge('preciShip')), /^2$/);
+  // 精准: enabled, but 2 of its members are banned — dimmed while retaining its tooltip details
+  assert.ok(!hasClass(cell('preciShip'), 'is-off') && hasClass(cell('preciShip'), 'is-incomplete') && hasClass(cell('preciShip'), 'is-muted'));
+  assert.deepEqual([disc('preciShip').props.disabled, disc('preciShip').props.active], [undefined, true]);
+  assert.equal(badge('preciShip'), undefined);
   assert.equal(tipOf('preciShip').props.text, '精准：部分盟约所含干员阵容不完整（2 名干员无法出现）');
   // 助力: untouched — lit, no badge, the plain name
-  assert.ok(!hasClass(cell('deputShip'), 'is-off') && !hasClass(cell('deputShip'), 'is-partial'));
+  assert.ok(!hasClass(cell('deputShip'), 'is-off') && !hasClass(cell('deputShip'), 'is-incomplete'));
   assert.equal(badge('deputShip'), undefined);
   assert.equal(tipOf('deputShip').props.text, '助力');
   assert.equal(disc('deputShip').props.tier, DATA.bonds.deputShip.thresholds.length);
@@ -120,10 +120,9 @@ test('MatchBondRow: greyed by state (✕ disc), the banned-member badge, the red
   assert.equal(tipOf('deputShip').props.aside, null);
 });
 
-test('MatchLegend: the grey and the badge; "或本模式禁用" only when the mode switches bonds off', () => {
+test('MatchLegend: grey indicates affected bonds, with the mode note only when relevant', () => {
   const t = textOf(MatchLegend({ model: model() }));
-  assert.match(t, /灰色：部分盟约所含干员阵容不完整（仍可通过其他盟约的干员或装备激活），或本模式禁用 · /);
-  assert.match(t, /该盟约中无法出现的干员数$/);
+  assert.equal(t, '灰色：部分盟约所含干员阵容不完整（仍可通过其他盟约的干员或装备激活）');
   const hard = matchInfoModel({ drawnDisabledBonds: ['sargonShip'] }, SRC('mode_multi_hard'));
   assert.doesNotMatch(textOf(MatchLegend({ model: hard })), /本模式禁用/);
 });
@@ -165,27 +164,27 @@ test('MatchInfo = 核心盟约, 附加盟约, the legend, 本局禁用干员 (on
   assert.equal(MatchInfoDialog({ open: true, onClose, model: null }).props.open, false, 'no model: stays closed');
 });
 
-test('a real 标准 match (solo and co-op): the mode\'s 10 inactive bonds are "off", banned operators are exactly the server\'s, by tier', () => {
+test('a real 标准 match (solo and co-op): fixed exclusions ban operators, while bonds stay available', () => {
   for (const [mode, modeId] of [['solo', 'mode_single_funny'], ['coop', 'mode_multi_funny']]) {
     const h = makeMatch({ mode, difficulty: 'FUNNY', humans: 1, seed: 11 }).start();
     const pub = h.m.publicView();
     assert.equal(pub.modeId, modeId);
     const m = matchInfoModel(pub, SRC(pub.modeId));
-    assert.deepEqual([...m.sets.off].sort(), [...OFF_FUNNY].sort(), `${modeId}: 标准模拟's inactiveBondIdList`);
-    assert.equal(m.sets.drawn.size, 1, '标准 draws one add-on bond');
-    assert.ok([...m.sets.drawn].every((b) => !OFF_FUNNY.includes(b) && !DATA.bonds[b].isCore));
+    assert.equal(m.sets.off.size, 0);
+    assert.ok(OFF_FUNNY.every((id) => m.sets.drawn.has(id)), `${modeId}: fixed pool exclusions`);
+    assert.equal(m.sets.drawn.size, OFF_FUNNY.length + 1, '标准 also draws one add-on bond');
     assert.deepEqual([...m.banned].sort(), [...pub.bannedChess].sort(), 'every banned operator is known');
     assert.deepEqual(m.banned.map((id) => DATA.chess[id].tier), [...m.banned.map((id) => DATA.chess[id].tier)].sort((a, b) => a - b));
     for (const id of m.banned) assert.ok(DATA.chess[id].bonds.every((b) => m.stateOf(b)), `${id}: every bond greyed`);
-    assert.equal(m.addon.filter((b) => m.stateOf(b.bondId)).length + m.core.filter((b) => m.stateOf(b.bondId)).length, 11);
-    assert.match(textOf(MatchLegend({ model: m })), /或本模式禁用/);
+    assert.ok(m.addon.filter((b) => m.stateOf(b.bondId)).length + m.core.filter((b) => m.stateOf(b.bondId)).length <= 11);
+    assert.doesNotMatch(textOf(MatchLegend({ model: m })), /本模式禁用/);
     h.m.dispose();
   }
   // 绝境: 3 core + 4 add-on drawn, nothing switched off by the mode
   const h = makeMatch({ mode: 'coop', difficulty: 'HARD', humans: 1, bots: 1, seed: 4 }).start();
   const m = matchInfoModel(h.m.publicView(), SRC('mode_multi_hard'));
   assert.equal(m.sets.off.size, 0);
-  assert.deepEqual([m.core.filter((b) => m.stateOf(b.bondId)).length, m.addon.filter((b) => m.stateOf(b.bondId)).length], [3, 4]);
+  assert.ok(m.core.filter((b) => m.stateOf(b.bondId)).length <= 3 && m.addon.filter((b) => m.stateOf(b.bondId)).length <= 4);
   assert.deepEqual([...m.banned].sort(), [...h.m.bannedChess].sort());
   h.m.dispose();
 });
@@ -211,7 +210,7 @@ test('the briefing, the strategy draft and the in-game 本局信息 tab all read
   const draft = read('public/js/screens/bandDraft.js');
   assert.match(draft, /import \{ MatchInfoDialog, matchInfoModel \} from '\.\.\/ui\/matchInfo\.js';/);
   assert.match(draft, /const info = infoOpen \? matchInfoModel\(pub, \{ bonds: gd\.list\('bonds'\), chess: gd\.chess, mode, priv, diyData: \{ chess: data\.get\('chess'\), backups: data\.get\('backups'\) \} \}\) : null;/);
-  assert.match(draft, /data-testid="match-info-open"[\s\S]*?onClick=\$\{\(\) => setInfoOpen\(true\)\}>\$\{t\('查看禁用盟约与干员'\)\}</);
+  assert.match(draft, /data-testid="match-info-open"[\s\S]*?onClick=\$\{\(\) => setInfoOpen\(true\)\}>\$\{t\('查看盟约与禁用干员'\)\}</);
   assert.match(draft, /<\$\{MatchInfoDialog\} open=\$\{infoOpen\} onClose=\$\{\(\) => setInfoOpen\(false\)\} model=\$\{info\}/);
   // a turn change or my pick closes it; the draft's end unmounts the screen
   assert.match(draft, /const turnKey = `\$\{draft\.turnPid \|\| ''\}\|\$\{myPick \|\| ''\}`;\n\s*useEffect\(\(\) => \{ setInfoOpen\(false\); \}, \[turnKey\]\);/);

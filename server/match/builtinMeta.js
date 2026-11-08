@@ -149,7 +149,8 @@ const ITEM_HANDLERS = {
     onEquip(ctx, ev) {
       const base = ctx.gd.baseIdOf(ev.target.id);
       const owned = [...ctx.board(), ...ctx.hand(), ...ctx.temp()].filter((p) => p && p.kind === 'chess' && !p.golden && ctx.gd.baseIdOf(p.id) === base).length;
-      if (owned >= 2) {
+      // 技术传承的隐藏赠送干员不能由拟态物质复制；其他既有干员的规则保持原样。
+      if (owned >= 2 && base !== 'chess_char_1_21_a') {
         if (!ctx.grantChess(base, { requirePool: false })) toastNothing(ctx, ev);
         return;
       }

@@ -11,13 +11,19 @@ import { uniteLeft } from '../../sim/spec.js';
 import { FLOW_TICKER_PRIORITY, DELAYS } from './common.js';
 import { msg } from '../../../shared/i18n.js';
 import { onStartUnite } from '../botEmotes.js';
+import { EXTENDED_UNITE_RECT } from '../../../shared/extendedUnite.js';
+
+export const uniteTimeLimit = (match, plan) => {
+  const base = match.wave ? match.wave.timeLimit : 60;
+  return match.mode === 'coop8' ? Math.round(base * (plan.helpers.length >= 3 ? 1.75 : 1.3)) : base;
+};
 
 export class MatchUnite {
   startUnite(plan) {
     if (this.clientCombat) { this._startUniteClient(plan); return; }
     this.phase = PHASE.UNITE;
     this.unitePlan = plan;
-    const limit = this.wave ? this.wave.timeLimit : 60;
+    const limit = uniteTimeLimit(this, plan);
     const battle = this.newBattle(this._uniteOpts(plan, limit));
     this.fields = [{ fieldId: 'u', kind: 'unite', players: plan.helpers.map((p) => p.playerId), battle, live: true }];
     this.deadline = this.sched.instant ? 0 : this.sched.now() + Math.round((limit / this.gameSpeed) * 1000);
@@ -55,13 +61,13 @@ export class MatchUnite {
       modeId: this.modeId,
       round: this.round,
       stageId: this.stageId,
-      rect: { ...GEO.UNITE_RECT },
+      rect: { ...(plan.helpers.length >= 3 ? EXTENDED_UNITE_RECT : GEO.UNITE_RECT) },
       timeLimit: limit,
       players,
       spawns: this._sanitizeSpawns(wave.spawns),
       routes: wave.routes,
       sharedBoss: null,
-      flags: { layerGainsEnabled: false, ...this.gd.dp },
+      flags: { layerGainsEnabled: false, ...this.gd.dp, enemyScale: this.gd.enemyScale(this.round), extendedUnite: this.mode === 'coop8' && plan.helpers.length >= 3, uniteAntiStall: this.mode === 'coop8', eunectesTurrets: this.teamTurretGranted() },
       fieldId: 'u',
       // leaked enemies re-enter with the stats they had: the round template's stat overrides apply again
       enemyOverrides: this.wave && this.wave.overrides ? this.wave.overrides : {},
@@ -72,7 +78,7 @@ export class MatchUnite {
   _startUniteClient(plan) {
     this.phase = PHASE.UNITE;
     this.unitePlan = plan;
-    const limit = this.wave ? this.wave.timeLimit : 60;
+    const limit = uniteTimeLimit(this, plan);
     const f = this._ccField({ fieldId: 'u', kind: 'unite', players: plan.helpers.map((p) => p.playerId), opts: this._uniteOpts(plan, limit) });
     this.deadline = this.sched.instant ? 0 : this.sched.now() + Math.round((limit / this.gameSpeed) * 1000);
     this.watchers.clear();

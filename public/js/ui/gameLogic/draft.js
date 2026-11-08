@@ -47,7 +47,8 @@ export function normalizeSp(sp, players = []) {
   if (!isObj(sp)) return null;
   const ids = (Array.isArray(players) ? players : []).filter(isObj).map((p) => p.playerId);
   const order = Array.isArray(sp.order) && sp.order.length ? sp.order.filter((x) => typeof x === 'string') : ids;
-  const cards = (Array.isArray(sp.cards) ? sp.cards : []).slice(0, 6).map((c, idx) => {
+  const extended = sp.extended === true;
+  const cards = (Array.isArray(sp.cards) ? sp.cards : []).slice(0, extended ? 12 : 6).map((c, idx) => {
     const card = typeof c === 'string' ? { id: c } : isObj(c) ? { ...c } : {};
     return { ...card, idx, takenBy: typeof card.takenBy === 'string' ? card.takenBy : null };
   });
@@ -68,6 +69,7 @@ export function normalizeSp(sp, players = []) {
   if (typeof sp.turn === 'string') turnPid = sp.turn;
   else if (Number.isInteger(sp.turn) && sp.turn >= 0 && sp.turn < order.length) turnPid = order[sp.turn];
   return {
+    extended,
     family: typeof sp.family === 'string' ? sp.family : null,
     name: typeof sp.name === 'string' && sp.name ? sp.name : null,
     desc: typeof sp.desc === 'string' && sp.desc ? sp.desc : null,
@@ -82,8 +84,8 @@ export function normalizePersonalChoice(pub, priv, myId) {
   if (pub?.phase !== PHASE.PREP || !priv || priv.playerId !== myId || priv.alive === false
     || !choice || choice.round !== pub.round) return null;
   return {
-    ...normalizeSp({ family: 'bounty', name: t('教鞭 · 战术特训'), desc: t('请选择一项战术特训'),
-      cards: choice.cards, turn: myId, order: [myId], picks: {} }),
+    ...normalizeSp({ family: 'bounty', name: t('教鞭 · 战术特训'),
+      desc: t('请选择一项战术特训'), cards: choice.cards, turn: myId, order: [myId], picks: {} }),
     id: choice.id,
   };
 }

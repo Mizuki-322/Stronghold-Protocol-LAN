@@ -4,20 +4,19 @@
 //   * the strategy draft's 本局信息 dialog (screens/bandDraft.js; GitHub issue #8 item 1 "选策略时没法返回查看禁用的干员和盟约":
 //     players choose a strategy partly by the bonds and operators the match leaves them);
 //   * the data of the in-game 本局信息 tab (ui/enemyDrawer.js InfoTab, its own compact chips and avatars).
-// matchInfoModel (pure) derives everything from m.public and the static data: the two kinds of greyed bonds
-// (gameLogic disabledBondSets over config.modes[modeId].inactiveBondIds — the drawn set D "部分盟约所含干员阵容不完整",
-// still activatable through other bonds' operators or items, and the mode's static inactive bonds "本局禁用", e.g.
-// 标准模拟's 10), every bond in the briefing order (bondOrder, then identifier) split into 核心 / 附加, the banned
+// matchInfoModel (pure) derives everything from m.public and the static data: bonds with banned members are dimmed,
+// regardless of whether those members left through the per-match draw or the mode's fixed pool exclusions. Every
+// bond remains activatable through valid count sources. The briefing order splits bonds into 核心 / 附加, and the banned
 // operators (m.public bannedChess, known chess only) sorted by tier, the banned-member count per bond (gameLogic
 // bannedPerBond) and — from the viewer's own m.private — its slotted 自选 pieces left out of the shop because all their
-// bonds are off (gameLogic diyBannedPieces; 0.2.0). The blocks are hookless (unit-tested by calling them): the 核心盟约 /
+// bonds are excluded from the pool (gameLogic diyBannedPieces; 0.2.0). The blocks are hookless (unit-tested by calling them): the 核心盟约 /
 // 附加盟约 rows of bond discs —
-// greyed with the ✕, the red banned-member badge, the briefingBondTip tooltip — the legend and the 本局禁用干员 grid.
+// dimmed without crosses or red badges, with a briefingBondTip tooltip — the legend and the 本局禁用干员 grid.
 // MatchInfoDialog shows the same blocks read-only in a components.js Modal (关闭, a tap outside or Esc close it) with a
 // status line from its caller (the draft's turn and countdown, so the running clock stays in view).
 // Styles: css/screens/briefing.css (.brief-*), css/screens/draft.css (.minfo-dlg).
 
-import { html, Button, Icon, MicroLabel, BondDisc, Tooltip, Modal } from './components.js';
+import { html, Button, MicroLabel, BondDisc, Tooltip, Modal } from './components.js';
 import { UnitThumb } from './gameComponents.js';
 import { bannedPerBond, disabledBondSets, briefingBondTip, diyBannedPieces } from './gameLogic.js';
 import { bondIconUrl } from './assetUrls.js';
@@ -27,8 +26,8 @@ import { t, dn } from '../../../shared/i18n.js';
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
 /**
- * @typedef {{ sets: { drawn: Set<string>, off: Set<string> }, stateOf: (bondId: string) => 'off'|'drawn'|null,
- *   bonds: any[], core: any[], addon: any[], banned: string[], perBond: Map<string, number>,
+ * @typedef {{ sets: { drawn: Set<string>, off: Set<string> }, stateOf: (bondId: string) => 'drawn'|null,
+ *   bonds: any[], core: any[], addon: any[], availableCore: any[], availableCount: Map<string, number>, banned: string[], perBond: Map<string, number>,
  *   diyBanned: Array<{ slotId: string, charId: string, name: string }> }} MatchInfoModel
  */
 
@@ -40,20 +39,26 @@ const cx = (...p) => p.flat().filter(Boolean).join(' ');
  *   viewer's m.private (its 自选 pieces out of the shop, diyBanned) with diyData (`{ chess, backups }`: data.get('chess') /
  *   data.get('backups')) to name them
  * @returns {MatchInfoModel}
- *   stateOf: 'off' = the mode never activates the bond (本局禁用), 'drawn' = in the drawn set D (阵容不完整), null = normal;
+ *   stateOf: 'drawn' = at least one member is banned (阵容不完整), null = no banned member;
  *   banned: the banned chess ids the data knows, by tier (ties keep the server's order); perBond: bondId → banned members
  */
 export function matchInfoModel(pub, { bonds = [], chess = () => null, mode = null, priv = null, diyData = null } = {}) {
   const sets = disabledBondSets(pub, mode?.inactiveBondIds);
-  const stateOf = (id) => (sets.off.has(id) ? 'off' : sets.drawn.has(id) ? 'drawn' : null);
   const list = (Array.isArray(bonds) ? bonds : []).filter((b) => !!b && typeof b === 'object' && typeof b.bondId === 'string')
     .sort((a, b) => (a.bondOrder ?? 0) - (b.bondOrder ?? 0) || (a.identifier ?? 0) - (b.identifier ?? 0));
   const tierOf = (id) => chess(id)?.tier ?? 0;
   const banned = (Array.isArray(pub?.bannedChess) ? pub.bannedChess : []).filter((id) => typeof id === 'string' && !!chess(id))
     .sort((a, b) => tierOf(a) - tierOf(b));
+  const bannedSet = new Set(banned);
+  const availableCount = new Map(list.map((b) => [b.bondId,
+    (Array.isArray(b.visibleMembers) ? b.visibleMembers : []).filter((id) => !!chess(id) && !bannedSet.has(id)).length]));
+  const perBond = bannedPerBond(list, banned);
+  const stateOf = (id) => (perBond.get(id) || 0) > 0 ? 'drawn' : null;
   return {
     sets, stateOf, bonds: list, core: list.filter((b) => b.isCore), addon: list.filter((b) => !b.isCore),
-    banned, perBond: bannedPerBond(list, banned),
+    availableCore: list.filter((b) => b.isCore && (availableCount.get(b.bondId) || 0) > 0),
+    availableCount,
+    banned, perBond,
     diyBanned: priv && diyData ? diyBannedPieces(priv, chess, diyData) : [],
   };
 }
@@ -66,7 +71,7 @@ export function DiyBannedLine({ model, class: cls = 'brief-banned__diy' }) {
   const list = model?.diyBanned || [];
   if (!list.length) return null;
   return html`<p class=${cls} data-testid="diy-banned"><span class="diybanned__tag">${t('自选')}</span>
-    ${t('{names}的盟约本局全部禁用，不会出现在你的商店', { names: list.map((x) => dn(x.name)) })}</p>`;
+    ${t('{names}不会出现在你的商店（所属盟约均在本局缺席名单中）', { names: list.map((x) => dn(x.name)) })}</p>`;
 }
 
 /**
@@ -93,9 +98,8 @@ function BondBannedAside(bond, model, banned) {
 }
 
 /**
- * One row of bond discs (核心盟约 / 附加盟约): a greyed disc (✕) for a bond in the drawn set D or one the mode never
- * activates, the red badge with its banned members, a red ring on an enabled bond that lost members; the tooltip says
- * which (briefingBondTip). A bond with banned members lists them in a second box beside the tooltip (BondBannedAside).
+ * One row of bond discs (核心盟约 / 附加盟约): dimmed text and icons only when listed members are banned.
+ * The tooltip explains which (briefingBondTip); banned members appear beside the tooltip (BondBannedAside).
  * @param {{ title: string, micro: string, bonds: any[], model: MatchInfoModel }} props
  */
 export function MatchBondRow({ title, micro, bonds, model }) {
@@ -106,14 +110,13 @@ export function MatchBondRow({ title, micro, bonds, model }) {
     <div class="brief-bonds__row">
       ${bonds.map((b) => {
         const state = model.stateOf(b.bondId);
-        const off = !!state;
+        const affected = !!state;
         const bannedN = model.perBond.get(b.bondId) || 0;
         return html`<${Tooltip} key=${b.bondId} text=${briefingBondTip(b.name, state, bannedN)}
           aside=${bannedN > 0 ? BondBannedAside(b, model, banned) : null}>
-          <div class=${cx('brief-bond', off && 'is-off', state === 'drawn' && 'is-incomplete', !off && bannedN > 0 && 'is-partial')} data-bond=${b.bondId}>
-            <${BondDisc} name=${b.name} icon=${bondIconUrl(m, b.bondId)} active=${!off} disabled=${off} tier=${off ? 0 : (b.thresholds?.length || 1)}
+          <div class=${cx('brief-bond', affected && 'is-muted', affected && 'is-incomplete')} data-bond=${b.bondId}>
+            <${BondDisc} name=${b.name} icon=${bondIconUrl(m, b.bondId)} active=${true} tier=${b.thresholds?.length || 1}
               maxTier=${Math.max(1, b.thresholds?.length || 1)} size="md" />
-            ${bannedN > 0 ? html`<span class="brief-bond__ban num"><${Icon} name="user" />${bannedN}</span>` : null}
           </div>
         <//>`;
       })}
@@ -122,11 +125,12 @@ export function MatchBondRow({ title, micro, bonds, model }) {
 }
 
 /**
- * The legend under the bond rows ("或本模式禁用" only when the mode switches bonds off).
+ * The legend under the bond rows.
  * @param {{ model: MatchInfoModel }} props
  */
 export function MatchLegend({ model }) {
-  return html`<p class="brief-legend"><span class="brief-legend__off"></span>${t('灰色：部分盟约所含干员阵容不完整（仍可通过其他盟约的干员或装备激活）')}${model.sets.off.size ? t('，或本模式禁用') : ''} · <span class="brief-legend__ban"><${Icon} name="user" /></span>${t('该盟约中无法出现的干员数')}</p>`;
+  void model;
+  return html`<p class="brief-legend"><span class="brief-legend__off"></span>${t('灰色：部分盟约所含干员阵容不完整（仍可通过其他盟约的干员或装备激活）')}</p>`;
 }
 
 /**

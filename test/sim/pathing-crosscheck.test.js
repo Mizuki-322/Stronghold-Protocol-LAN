@@ -18,6 +18,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Grid } from '../../server/sim/grid.js';
+import { COLS } from '../../server/sim/constants.js';
 import { getDefaultSource, hasGeneratedData } from '../../server/sim/simdata.js';
 import { GEO } from '../../shared/constants.js';
 
@@ -258,7 +259,7 @@ test('vs the PURE official algorithm: same route length from every tile, never m
         for (let r = rect.r0; r <= rect.r1; r++) {
           for (let c = rect.c0; c <= rect.c1; c++) {
             if (!g.walkable(r, c) || p.dist([r, c]) < 0) continue;
-            assert.equal(f.dist[r * 21 + c], p.dist([r, c]), `${sid} (${r},${c}) → (${dest}): official length`);
+            assert.equal(f.dist[r * COLS + c], p.dist([r, c]), `${sid} (${r},${c}) → (${dest}): official length`);
             const a = p.crossedNb([r, c]), b = o.crossedNb([r, c]);
             assert.ok(b <= a, `${sid} (${r},${c}) → (${dest}): ${b} non-blockable tiles vs official ${a}`);
             if (b < a) fewer++;

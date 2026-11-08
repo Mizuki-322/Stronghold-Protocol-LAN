@@ -16,10 +16,8 @@
 //   助力 (deputShip): tier 1 needs `thresholds[0]` distinct operators; the upper tiers count operators that differ
 //                    in name OR elite state (PRTS 修正).
 //   独行 (soloShip, count_threshold_downward): active iff 1 ≤ count ≤ maxCount (distinct 独行 operators).
-//   Bonds in the mode's static inactive list (FUNNY) never activate and are omitted from computeBonds (the battle
-//                    input never sees them); the views list the ones the player has members of as `off: true`
-//                    (offBondCounts → bondList: count only, never active, after the others) so the strip can say
-//                    本局禁用 (community reports 「投资人…不生效」 / 「…不会触发斯卡蒂与异德的突袭」, 0.1.3).
+//   The mode's inactiveBondIds affect which operators enter the pool, not whether a bond can activate. A surviving
+//                    member, 变形同构体 or another count source can still meet its threshold.
 // `tier` = number of thresholds reached (downward: 1 when active); `active = tier ≥ 1`.
 // Layers (`ps.layers[bondId]`) persist the whole match; they are reported for every bond but only matter while active.
 
@@ -48,7 +46,7 @@ export function pieceBonds(gd, piece, rules = null) {
 }
 
 /**
- * Who carries which bond (computeBonds' and offBondCounts' shared first step): bondId → Set(baseId) on the board / in
+ * Who carries which bond: bondId → Set(baseId) on the board / in
  * the hand (the 5 temporary slots never count), bondId → Set(baseId|golden) on the board, and the elite chess on the board.
  */
 function membership(gd, ps) {
@@ -111,7 +109,6 @@ export function computeBonds(gd, ps) {
   // first pass: raw counts
   const raw = {};
   for (const id of gd.bondIds) {
-    if (gd.modeInactiveBonds.has(id)) continue;
     raw[id] = rawCount(gd, id, mem, ps);
   }
   // 调和: +1 to core bonds with ≥ 1 real board member while it is active
@@ -137,25 +134,15 @@ export function computeBonds(gd, ps) {
 }
 
 /**
- * The bonds this mode never activates (the static inactive list — 标准模拟's 拉特兰 阿戈尔 卡西米尔 灵巧 奥术 奇迹 投资人 突袭
- * 独行 绝技) that the player has members of, counted like computeBonds would (投资人 / 奇迹 with the hand): { [bondId]:
- * { count, layers } }, null when the mode switches nothing off. Only the views use it (bondList `off`) — the strip shows
- * such a bond as a grey 本局禁用 disc instead of leaving the player to wonder why it does nothing (0.1.3).
+ * Retained for older view callers. Mode pool exclusions do not switch off bond effects, so there are no off entries.
  * @param {import('./gamedata.js').GameData} gd
  * @param {{ board: Map<string, any>, hand: Array<any>, layers: Record<string, number>, bondCountBonus?: Record<string, number> }} ps
  * @returns {Record<string, { count: number, layers: number }>|null}
  */
 export function offBondCounts(gd, ps) {
-  if (!gd.modeInactiveBonds || !gd.modeInactiveBonds.size) return null;
-  const mem = membership(gd, ps);
-  let out = null;
-  for (const id of gd.bondIds) {
-    if (!gd.modeInactiveBonds.has(id)) continue;
-    const count = rawCount(gd, id, mem, ps);
-    if (!(count > 0)) continue;
-    (out ??= {})[id] = { count, layers: layersIn(ps, id) };
-  }
-  return out;
+  void gd;
+  void ps;
+  return null;
 }
 
 /** Ascending member-count thresholds of a bond (fallback: activeCount). */
@@ -186,9 +173,8 @@ export function activatedLayers(bonds) {
 
 /**
  * View list for m.private / m.public: bonds with members or layers, active first, then layers desc, then data order.
- * An entry whose count includes 调和's +1 carries `harmony: 1` (both views; absent otherwise). `off` (offBondCounts): the
- * mode-off bonds the player has members of follow, in data order, as `{ bondId, count, active: false, tier: 0, layers,
- * off: true }` — the strip's grey 本局禁用 discs; never in computeBonds, so never in the battle input.
+ * An entry whose count includes 调和's +1 carries `harmony: 1` (both views; absent otherwise). The optional `off`
+ * parameter is retained for older callers; current modes never produce off entries.
  * @param {import('./gamedata.js').GameData} gd
  * @param {ReturnType<typeof computeBonds>} bonds
  * @param {{ full?: boolean, off?: ReturnType<typeof offBondCounts> }} [opts] full → include thresholds/countsHand (m.private)

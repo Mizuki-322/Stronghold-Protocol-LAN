@@ -21,6 +21,7 @@ export class MatchIntents {
         return OK;
       case 'g.rerollVote': return this.voteSetupReroll(ps, msg.voteId, msg.agree);
       case 'g.band': return this.pickBand(ps, msg.bandId);
+      case 'g.botBand': return this.pickBotBand(ps, msg.bandId);
       case 'g.bandSkip': return this.skipBand(ps);
       // the strategy highlighted in the draft screen (what a timed-out turn takes, timeoutBand)
       case 'g.bandFocus': return this.bandFocus(ps, msg.bandId ?? null);
@@ -45,6 +46,8 @@ export class MatchIntents {
       case 'g.offerRefresh': return this.requestOfferRefresh(ps, msg.offerId, msg.idx, msg);
       case 'g.ready': return ps.setReady(!!msg.ready);
       case 'g.emote': return this.emote(ps, msg.id);
+      case 'g.chat': return this.chat(ps, msg.text);
+      case 'g.battleStats': return this.battleStats(ps);
       // playerId: the player tapped (a shared field names two) — the watch preference (item 56)
       case 'g.watch': return this.watch(ps, msg.fieldId, msg.playerId ?? null);
       case 'g.autoplay': return this.setAutoplay(ps, !!msg.on);
@@ -70,6 +73,33 @@ export class MatchIntents {
     this.broadcast({ t: 'm.emote', playerId: ps.playerId, id });
     // an AI teammate can react to a human's emote (enabled by default: server/match/botEmotes.js, SP_BOT_EMOTES=0 silences it)
     onHumanEmote(this, ps.playerId, id);
+    return OK;
+  }
+
+  chat(ps, raw) {
+    const text = typeof raw === 'string' ? raw.trim() : '';
+    const limit = ps.isAgent ? 80 : 20;
+    if (!text || [...text].length > limit || /[\u0000-\u001f\u007f]/u.test(text)) return fail(ERR.BAD_MSG, `chat must be 1-${limit} characters on one line`);
+    const now = this.sched.now();
+    if (now - ps.lastChatAt < 3000) return fail(ERR.RATE, 'chat cooldown: 3 seconds');
+    ps.lastChatAt = now;
+    this.broadcast({ t: 'm.chat', playerId: ps.playerId, text });
+    return OK;
+  }
+
+  /** Player-visible own-field combat totals. A client-run field can report only after its result arrives. */
+  battleStats(ps) {
+    const now = this.sched.now();
+    if (now - ps.lastBattleStatsAt < 1000) return fail(ERR.RATE);
+    const f = this.fields.find((x) => x.players.includes(ps.playerId));
+    if (!f) return fail(ERR.WRONG_PHASE, 'no own battle field');
+    ps.lastBattleStatsAt = now;
+    const live = f.battle?._perPlayer?.[ps.playerId] || null;
+    const final = f.result?.perPlayer?.[ps.playerId] || this.lastResults.get(ps.playerId) || null;
+    const pp = f.live ? live : final || live;
+    this.sendTo(ps.playerId, { t: 'm.battleStats', round: this.round, fieldId: f.fieldId,
+      available: !!pp, done: !f.live, damageDealt: pp ? Math.round(Number(pp.damageDealt) || 0) : null,
+      killed: pp ? Math.max(0, Math.trunc(Number(pp.killed) || 0)) : null });
     return OK;
   }
 

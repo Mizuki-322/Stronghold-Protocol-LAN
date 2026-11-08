@@ -118,7 +118,7 @@ export class BattlePlayers {
     let r = row;
     if (ps.rowOffset != null) r = row + ps.rowOffset;
     else if (bossLike && row >= 7) r = row + BOSS_ROW_OFFSET;
-    const c = ps.mirror ? (col <= 10 ? COLS - 1 - col : col) : col + ps.colOffset;
+    const c = ps.mirror ? (col <= 10 ? GEO.BOSS_RECT.c1 - col : col) : col + ps.colOffset;
     return [r, c];
   }
 

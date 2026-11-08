@@ -75,10 +75,11 @@ const hasKeys = (o) => isObj(o) && Object.keys(o).length > 0;
 export function stageOverrides(priv, getEffect = () => null) {
   const deviceOverrides = {};
   const tileOverrides = {};
+  const eunectesTurrets = priv?.eunectesTurrets === true;
   if (isObj(priv?.deviceOverrides) || isObj(priv?.tileOverrides)) {
     for (const [k, v] of Object.entries(isObj(priv.deviceOverrides) ? priv.deviceOverrides : {})) deviceOverrides[k] = !!v;
     for (const [k, v] of Object.entries(isObj(priv.tileOverrides) ? priv.tileOverrides : {})) if (typeof v === 'string') tileOverrides[k] = v;
-    return { deviceOverrides, tileOverrides };
+    return { deviceOverrides, tileOverrides, ...(eunectesTurrets ? { eunectesTurrets } : {}) };
   }
   for (const e of Array.isArray(priv?.effects) ? priv.effects : []) {
     // picked 机变 cards: 'choice:<effectId>#<n>' (sim/content/choices.js refIdFor) or '<effectId>#<n>' (choices.js
@@ -91,7 +92,7 @@ export function stageOverrides(priv, getEffect = () => null) {
       for (const [alias, v] of Object.entries(b.bb)) if (alias.includes('#')) deviceOverrides[alias] = Number(v) !== 0;
     }
   }
-  return { deviceOverrides, tileOverrides };
+  return { deviceOverrides, tileOverrides, ...(eunectesTurrets ? { eunectesTurrets } : {}) };
 }
 
 /**
@@ -156,7 +157,8 @@ export function deployMap(stage, { deviceOverrides = {}, tileOverrides = {}, fie
 export function effectiveStage(stage, overrides = {}) {
   const dev = isObj(overrides?.deviceOverrides) ? overrides.deviceOverrides : {};
   const tiles = isObj(overrides?.tileOverrides) ? overrides.tileOverrides : {};
-  if (!isObj(stage) || (!hasKeys(dev) && !hasKeys(tiles))) return stage;
+  const eunectesTurrets = overrides?.eunectesTurrets === true;
+  if (!isObj(stage) || (!hasKeys(dev) && !hasKeys(tiles) && !eunectesTurrets)) return stage;
   const devices = (Array.isArray(stage.devices) ? stage.devices : []).map((d) => (
     isObj(d) && d.alias != null && Object.hasOwn(dev, d.alias) ? { ...d, active: !!dev[d.alias] } : d));
   const map = deployMap(stage, { deviceOverrides: dev, tileOverrides: tiles });
@@ -167,7 +169,7 @@ export function effectiveStage(stage, overrides = {}) {
     (cls === 'melee' ? melee : rangedOnly).push([r, c]);
   }
   const deployTiles = { ...(isObj(stage.deployTiles) ? stage.deployTiles : {}), normal: { melee, rangedOnly } };
-  return { ...stage, devices, deployTiles };
+  return { ...stage, devices, deployTiles, ...(eunectesTurrets ? { eunectesTurrets } : {}) };
 }
 
 /**

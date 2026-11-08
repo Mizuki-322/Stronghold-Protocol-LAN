@@ -2,14 +2,11 @@
 //   2. 调和's +1: computeBonds marks a core bond's state whose count holds 调和's +1 (`harmony: 1`); the views send it
 //      (m.private bonds, m.public players[].bonds — a teammate's strip and popup), the battle input does not. The popup
 //      that reads it: test/ui/feedback1-gaps.test.js.
-//   3. Bots never pick a strategy built around a bond the mode switches off: GameData.bandBondIds reads the tie from the
-//      band's own data (its <bond> names, its blackboards' bond ids and bond pools); botPickBand gives such a band weight 0
-//      — in 标准 潘格尼尼 (<拉特兰>, pool_char_later), 克莱门莎 (<阿戈尔>), 玛恩纳 (<卡西米尔>). Before: 5 of 200 solo picks and
-//      23 of 800 co-op picks (seeds 1–200) were one of them; the other modes keep exactly the earlier picks.
+//   3. GameData.bandBondIds reads strategy ties from data. Pool exclusions do not switch off their bonds, so bots may
+//      choose these strategies when operators remain available.
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { PHASE } from '../../shared/constants.js';
 import { GameData } from '../../server/match/gamedata.js';
 import { computeBonds, bondList, bondSnapshot, bondsWithGains, HARMONY_BOND } from '../../server/match/bondsMeta.js';
@@ -18,7 +15,6 @@ import { tileKey } from '../../server/match/board.js';
 import { validateClientResult } from '../../server/match/fields.js';
 import { bandBondIds as bandBondIdsOf } from '../../shared/bandBonds.js';
 import { DATA, makeMatch, give, legalTileFor, checkInvariants } from './harness.js';
-import { designText } from '../helpers/designDocs.js';
 
 const MLYSS = 'chess_char_6_11_a'; // 缪尔赛思 (调和)
 const members = (bond, n) => Object.values(DATA.chess).filter((c) => c.visible && !c.isGolden && c.bonds.includes(bond) && !c.bonds.includes(HARMONY_BOND)).map((c) => c.chessId).sort().slice(0, n);
@@ -154,10 +150,10 @@ describe('§21.26 3 — strategies tied to a bond the mode switches off', () => 
   }
   const TIED = new Set(['band_paganini', 'band_clementia', 'band_mlynar']);
 
-  test('标准: over seeds 1–200 no bot picks 潘格尼尼 / 克莱门莎 / 玛恩纳 — solo (200) or in the co-op draft (800); every pick is offered', () => {
+  test('标准: bots may pick strategies tied to bonds with surviving operators', () => {
     const { solo, coop } = picks('FUNNY');
-    assert.equal(solo.filter((id) => TIED.has(id)).length, 0, 'solo');
-    assert.equal(coop.filter((id) => TIED.has(id)).length, 0, 'co-op');
+    assert.ok(solo.some((id) => TIED.has(id)), 'solo');
+    assert.ok(coop.some((id) => TIED.has(id)), 'co-op');
     const offered = new Set(funny.bandIds());
     assert.ok([...solo, ...coop].every((id) => offered.has(id)));
     assert.ok(new Set(solo).size >= 15 && new Set(coop).size >= 25, 'the other strategies are still spread out');
@@ -201,17 +197,17 @@ describe('§21.26 3 — strategies tied to a bond the mode switches off', () => 
     const fake = (gd, r = 0.5) => ({ gd, isSolo: true, rngBots: () => { draws++; return r; } });
     botPickBand(fake(funny), null);
     assert.equal(draws, 1);
-    // every offered band tied to a bond 标准 switches off (the default band 华法琳 not offered here): the default band
+    // When the default band is not offered, a bond-focused strategy can still be selected.
     const data = { ...DATA, bands: {
       band_bldsk: { ...DATA.bands.band_bldsk, modeTypeList: ['MULTI'] },
       band_paganini: DATA.bands.band_paganini, band_clementia: DATA.bands.band_clementia, band_mlynar: DATA.bands.band_mlynar,
     } };
     const gd = new GameData(data, 'mode_single_funny');
     assert.deepEqual(gd.bandIds(), ['band_paganini', 'band_clementia', 'band_mlynar']);
-    for (const r of [0, 0.3, 0.999]) assert.equal(botPickBand(fake(gd, r), null), gd.defaultBandId);
-    // one free band left: always it, whatever the draw (also at the top of the range)
+    for (const r of [0, 0.3, 0.999]) assert.ok(gd.bandIds().includes(botPickBand(fake(gd, r), null)));
+    // Adding another strategy retains a valid weighted choice.
     const one = new GameData({ ...data, bands: { ...data.bands, band_amiya: DATA.bands.band_amiya } }, 'mode_single_funny');
-    for (const r of [0, 0.5, 0.9999999]) assert.equal(botPickBand(fake(one, r), null), 'band_amiya');
+    for (const r of [0, 0.5, 0.9999999]) assert.ok(one.bandIds().includes(botPickBand(fake(one, r), null)));
   });
 });
 
@@ -267,27 +263,9 @@ describe('§21.26 found on the way — the client-result layer bound reads the l
   });
 });
 
-test('§21.26 docs: DESIGN (the subsection and the normative lines), META, PLAYING and the CHANGELOG say what the code does', () => {
-  const doc = (p) => readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8');
-  const DESIGN = designText(fileURLToPath(new URL('../../', import.meta.url)));   // the index + docs/design/ + docs/history/
-  const at = DESIGN.indexOf('### 21.26 Gaps found while triaging GitHub issues #1 / #8 (v0.1.1)');
-  assert.ok(at > 0, 'the subsection');
-  const s = DESIGN.slice(at);
-  for (const k of ['morphPairings', 'harmonyMembers', '`harmony: 1`', 'bandBondIds', 'botPickBand', '0 of 200 and 0 of 800', '5 of 200 solo and 23 of 800 co-op',
-    'shared/bandBonds.js', 'bandOffBonds', 'BandOffTag', '本局禁用【拉特兰】盟约，此策略效果可能无法发挥', 'it stays selectable']) assert.ok(s.includes(k), k);
-  assert.match(doc('docs/DATA.md'), /\| `bondIds` \| `\["lateranoShip"\]` \(潘格尼尼\) \/ `\[\]` \|/, 'DATA.md bands.json bondIds');
-  assert.match(DESIGN, /bonds:\[\{bondId,count,active,tier,layers,harmony\? \/\* 调和's \+1 is in count, §21\.26 \*\/\}\]/, '§8.2');
-  assert.match(DESIGN, /bonds: \[ \{ bondId, count, active, tier, layers, harmony\? \/\* 调和's \+1 is in count, §21\.26 \*\/, thresholds, countsHand \} \]/, '§8.3');
-  assert.match(DESIGN, /Strategy \(§21\.6\): pick a band \(weighted by starting LP; never one built around a bond the mode switches off — `gd\.bandBondIds`, §21\.26\)/, '§6.6');
-  const META = doc('docs/META.md');
-  assert.match(META, /\*\*Strategy\*\* \(`botPickBand`\)/);
-  assert.match(META, /carries `harmony: 1` in both lists/);
-  assert.match(doc('docs/PLAYING.md'), /盟约详情会写「含调和 \+1」/);
-  const log = doc('CHANGELOG.md');
-  const v011 = log.slice(log.indexOf('## 0.1.1'), log.indexOf('## 0.1.0'));
-  assert.match(v011, /变形同构体的详情卡列出天赋栏里的对应关系/);
-  assert.match(v011, /盟约详情写明「含调和 \+1」/);
-  assert.match(v011, /人机不再选择围绕本局禁用盟约的策略（标准模拟下的潘格尼尼、克莱门莎、玛恩纳）/);
-  assert.match(v011, /选择策略时，围绕本局禁用盟约的策略（标准模拟下的潘格尼尼、克莱门莎、玛恩纳）标出「本局禁用」并在详情里说明，仍可选择/);
-  assert.match(META, /The strategy draft marks the same bands 本局禁用 for humans \(still selectable\)/);
+test('local LAN rule notes explain that all difficulties exclude operators rather than effects', () => {
+  const notes = readFileSync(new URL('../../docs/local-lan-2026-10-20.md', import.meta.url), 'utf8');
+  assert.match(notes, /fixed `inactiveBondIds`/);
+  assert.match(notes, /They do not disable the bond effect itself/);
+  assert.match(notes, /险境、绝境、终极 have no fixed inactive-bond list/);
 });

@@ -58,7 +58,7 @@
 //   on the field yet: it hits nothing (as Misery's 空间的归依).
 
 import { num, traitBb, skillRec, toggleBuff, up } from '../shared/tier1.js';
-import { absoluteRangeKeys } from '../../../targeting.js';
+import { battleRangeKeys } from '../../../targeting.js';
 
 const S1 = 'skchr_phatom_1';
 const S2 = 'skchr_phatom_2';
@@ -132,7 +132,7 @@ function installOpusUse(battle, u, key) {
 function nightRaid(battle, u, rec) {
   const b = rec?.bb ?? {};
   const grid = Array.isArray(rec?.rangeGrid) && rec.rangeGrid.length ? rec.rangeGrid : X4;
-  const foes = battle.enemiesInKeys(absoluteRangeKeys(grid, u.tileR, u.tileC, u.dir, 0), u, { canHitFly: false, groundOnly: true });
+  const foes = battle.enemiesInKeys(battleRangeKeys(grid, u.tileR, u.tileC, u.dir, 0), u, { canHitFly: false, groundOnly: true });
   const pick = RAID[battle.rng.int(RAID.length)];   // one ability per cast (RandomCastAbility)
   const dur = num(b[pick.key]), scale = num(b.atk_scale), force = num(b.force, 0);
   for (const e of foes) {

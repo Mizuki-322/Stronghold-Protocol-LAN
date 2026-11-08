@@ -152,5 +152,6 @@ export class MatchRehearsal {
     if (next === this.hostId) return;
     this.hostId = next;
     this._rehearsalHostChanged();
+    if (this.phase === 'BAND_DRAFT' && this.players.get(this.draftTurn())?.isBot) this.scheduleBandBot();
   }
 }

@@ -35,7 +35,7 @@
 //     co-op 1200) and team LP > minTeamLpExclusive (1, so at least 2 left: PRTS's user-contributed 「剩余生命值 > 1」,
 //     which the community's measurement 路标月报#2 matches — GitHub #645).
 
-import { BOSS_ROW_OFFSET, COLS, BOSS_POOL_MIN_HP } from '../sim/constants.js';
+import { BOSS_ROW_OFFSET, BOSS_POOL_MIN_HP } from '../sim/constants.js';
 import { mirrorDir, normDir } from '../sim/dir.js';
 import { bossPoolShareOf } from './gamedata.js';
 
@@ -54,7 +54,7 @@ export const BOSS_HIT_STEPS = [0.2, 0.5, 0.8];
 export function bossFieldPlacement(side, row, col, dir = 'RIGHT') {
   const d = normDir(dir);
   const r = row >= 7 ? row + BOSS_ROW_OFFSET : row;
-  return side === 'R' ? { row: r, col: COLS - 1 - col, dir: mirrorDir(d) } : { row: r, col, dir: d };
+  return side === 'R' ? { row: r, col: 20 - col, dir: mirrorDir(d) } : { row: r, col, dir: d };
 }
 
 /** Seeded initial pairing; `previous` carries player-id pairs through prep, combat and Hidden Core. */

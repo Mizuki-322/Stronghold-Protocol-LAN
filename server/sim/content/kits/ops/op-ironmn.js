@@ -74,7 +74,7 @@
 // max_deploy_count 1 — E2 "最多可部署2个"; tools/build-data.mjs tokenTalentDeckBonus, 0.2.0).
 
 import { num, talentBb, talentGrid, traitBb, skillRec, up, giveSp } from '../shared/tier1.js';
-import { absoluteRangeKeys, sortEnemyTargets } from '../../../targeting.js';
+import { battleRangeKeys, sortEnemyTargets } from '../../../targeting.js';
 import { COLS } from '../../../constants.js';
 import { frontOf } from '../../../dir.js';
 
@@ -214,7 +214,7 @@ export default {
       const tb = sk?.bb ?? {};
       const aspd = num(tokBb(def, 'attack_speed').attack_speed);        // CRA-Y stage 2+ (the token's module talent)
       const grid = dev.rangeGrid ?? def.rangeGrid ?? FRONT1;
-      const keys = () => absoluteRangeKeys(grid, dev.tileR, dev.tileC, dev.dir, 0);
+      const keys = () => battleRangeKeys(grid, dev.tileR, dev.tileC, dev.dir, 0);
       const s1On = () => up(owner) && !!owner.skill?.active && owner.skill.id === S1;
       const s2On = () => up(owner) && !!owner.skill?.active && owner.skill.id === S2;
       const common = (battle) => {
@@ -290,7 +290,7 @@ export default {
           onStart({ battle, unit }) {
             // 技能开启时自身流失2.5%的生命 (PURE DamageViaMaxHpRatio, `_skipModifierEvent`: a 流失 its trait does not cancel)
             const atk = up(owner) ? owner.s.atk : 0;
-            const keysNow = absoluteRangeKeys(skillGrid, unit.tileR, unit.tileC, unit.dir, 0);
+            const keysNow = battleRangeKeys(skillGrid, unit.tileR, unit.tileC, unit.dir, 0);
             const list = battle.enemiesInKeys(keysNow, unit, { canHitFly: true });
             sortEnemyTargets(battle, unit, list, null);
             const target = list[0] ?? null;
@@ -372,7 +372,7 @@ export default {
           const prob = num(t1.prob), gain = num(t1.cnt, 1);
           // 节约经费: a device of his leaving his x-4 ⇒ prob ⇒ +cnt
           const onLeave = (dev) => {
-            if (!up(unit) || !absoluteRangeKeys(grid1, unit.tileR, unit.tileC, unit.dir, 0).includes(dev.tileR * COLS + dev.tileC)) return;
+            if (!up(unit) || !battleRangeKeys(grid1, unit.tileR, unit.tileC, unit.dir, 0).includes(dev.tileR * COLS + dev.tileC)) return;
             if (!(prob > 0) || !battle.rng.chance(prob)) return;
             rechargeDevices(unit, gain);
             battle.fx('spGift', { x: unit.x, y: unit.y, id: unit.id, from: dev.id });
@@ -394,7 +394,7 @@ export default {
           if (!(spDef > 0)) return;
           const key = 'talent:ironmn:spRecover';
           battle.on('tick', () => {
-            const area = new Set(absoluteRangeKeys(grid1, unit.tileR, unit.tileC, unit.dir, 0));
+            const area = new Set(battleRangeKeys(grid1, unit.tileR, unit.tileC, unit.dir, 0));
             const want = up(unit) && devicesUp(unit).some((d) => area.has(d.tileR * COLS + d.tileC));
             const has = unit.findBuff(key);
             if (want && !has) battle.addBuff(unit, { key, mods: { spRecoveryFlat: spDef }, tags: ['talent'] });

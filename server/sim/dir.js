@@ -6,7 +6,7 @@
 // Range grids / relative offsets `[dRow, dCol]` are authored facing RIGHT and rotated:
 //   RIGHT (dr, dc) · UP (dc, −dr) · LEFT (−dr, −dc) · DOWN (−dc, dr)
 // (a quarter turn per step: the "up" side of a right-facing unit — its left hand — becomes the left side when it faces
-// UP). `rangeExtend` is applied along +dCol BEFORE rotating (targeting.absoluteRangeKeys). The right-hand Final
+// UP). `rangeExtend` is applied along +dCol BEFORE rotating (targeting.battleRangeKeys). The right-hand Final
 // Assault player is mirrored: col c → 20 − c with RIGHT ↔ LEFT (UP / DOWN unchanged) — `mirrorDir`.
 // The legacy scalar facing (+1 / −1) survives only as the derived horizontal sign `hSign(dir)` (sprite flip).
 

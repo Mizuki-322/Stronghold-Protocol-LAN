@@ -518,6 +518,7 @@ export function makeCtx(m, ps, source, hook, ev = null, preview = null) {
     difficulty: m.difficulty,
     isSolo: m.isSolo,
     isCoop: !m.isSolo,
+    extendedCoop: m.mode === 'coop8',
     data: gd.raw,
     gd,
     rng,

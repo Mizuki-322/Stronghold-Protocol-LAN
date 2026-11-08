@@ -17,8 +17,6 @@ const BATTLE_GROUPS = Object.freeze([
   { role: 'direct', label: N_('自身特质可触发魔王加层'), note: N_('站在魔王身前一格，满足各自的战斗叠层条件时，魔王可追加层数。') },
   { role: 'granter', label: N_('赋予队友叠层特质'), note: N_('受赠干员触发叠层；受赠者站在魔王身前时才可能被放大。') },
   { role: 'amplifier', label: N_('魔王自身'), note: N_('魔王放大身前干员因特质获得的战斗层数。') },
-  { role: 'reader', label: N_('读取层数获得收益'), note: N_('这些特质会利用盟约层数，但本身不会触发魔王加层。') },
-  { role: 'other', label: N_('其他战斗特质'), note: N_('这些干员的自身特质不产生战斗中的盟约层数。') },
 ]);
 
 function node(tag, className = '', text = '') {
@@ -73,7 +71,7 @@ function mechanismFacet(mechanism, count) {
   choose.setAttribute('aria-pressed', String(active));
   const source = explorer.rows.find((row) => row.chessId === mechanism.sourceChessId)?.normal;
   const avatar = avatarUrl(assets, source?.assets?.avatar || source?.charId);
-  choose.append(avatar ? image(avatar, 'mechanism-avatar', source?.name || '') : node('span', 'mechanism-mark', '◆'));
+  choose.append(avatar ? image(avatar, 'mechanism-avatar', source?.name || '') : node('span', 'mechanism-mark', mechanism.mark || '◆'));
   choose.append(node('span', 'mechanism-label', t(mechanism.label)), node('span', 'facet-count', String(count)));
   choose.addEventListener('click', () => toggle(state.mechanisms, mechanism.id));
   return choose;
@@ -98,7 +96,7 @@ function renderFilters(sidebar) {
   const grid = node('div', 'mechanism-grid');
   for (const mechanism of MECHANISMS) grid.append(mechanismFacet(mechanism, explorer.rows.filter((row) => row.mechanismIds.includes(mechanism.id)).length));
   section.append(grid);
-  const note = node('p', 'filter-note', t('铃兰会在进入休整期时再次触发前方干员的「获得时」效果。此处按干员自身特质的触发时机筛选。'));
+  const note = node('p', 'filter-note', t('铃兰会在进入休整期时再次触发前方干员的「获得时」效果。此处按干员自身特质的触发时机或效果筛选。'));
   section.append(note);
   sidebar.append(section);
   const options = node('div', 'filter-options');
@@ -145,7 +143,7 @@ function operatorCard(row) {
     const preset = MECHANISMS.find((mechanism) => mechanism.id === id);
     mechanisms.append(node('span', 'tiny-mechanism', t(preset.label)));
   }
-  if (!row.mechanismIds.length) mechanisms.append(node('span', 'no-mechanism', t('暂无这四类特质')));
+  if (!row.mechanismIds.length) mechanisms.append(node('span', 'no-mechanism', t('暂无对应特质分类')));
   body.append(mechanisms);
   card.append(art, body);
   card.addEventListener('click', () => openDetail({ type: 'operator', chessId: row.chessId }));
@@ -195,6 +193,10 @@ function render() {
   });
   top.append(title, search);
   main.append(top);
+  if (state.mechanisms.size === 1 && state.mechanisms.has('battle-benefit'))
+    main.append(node('p', 'group-note', t('这些特质提升战斗能力或利用已有盟约层数，但本身不会触发魔王加层。')));
+  if (state.mechanisms.size === 1 && state.mechanisms.has('other'))
+    main.append(node('p', 'group-note', t('包括售出时、刷新时、购买价格及暂未归入前五类的特质。')));
   if (!found.length) main.append(node('div', 'empty', t('没有符合条件的干员，请调整筛选。')));
   else if (state.mechanisms.size === 1 && state.mechanisms.has('battle')) {
     for (const group of BATTLE_GROUPS) {

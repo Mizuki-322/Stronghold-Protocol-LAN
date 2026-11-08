@@ -66,7 +66,7 @@
 // widens its x-5 too (the attribute ABILITY_RANGE_FORWARD_EXTEND); the S3 strikes are skill damage (no normal-attack procs).
 
 import { num, talentBb, traitBb, skillRec, moduleOn, up, batMod } from '../shared/tier1.js';
-import { absoluteRangeKeys, sortEnemyTargets, aggroCmp } from '../../../targeting.js';
+import { battleRangeKeys, sortEnemyTargets, aggroCmp } from '../../../targeting.js';
 import { bodyInRange } from '../../../body.js';
 import { COLS } from '../../../constants.js';
 
@@ -93,7 +93,7 @@ function activeModule(chess) {
 const stateOf = (unit) => unit.mem.necras ?? (unit.mem.necras = { queue: [], skels: [], dragon: null, timer: null });
 const skelsUp = (unit) => stateOf(unit).skels.filter((s) => up(s));
 /** Her own attack range (no extra keys): the live grid behind her rangeKeys. */
-const ownRange = (unit) => new Set(absoluteRangeKeys(unit.liveRangeGrid ?? unit.rangeGrid ?? [[0, 0]], unit.tileR, unit.tileC, unit.dir, 0));
+const ownRange = (unit) => new Set(battleRangeKeys(unit.liveRangeGrid ?? unit.rangeGrid ?? [[0, 0]], unit.tileR, unit.tileC, unit.dir, 0));
 
 export default {
   char_450_necras: (bb, chess) => {
@@ -229,7 +229,7 @@ export default {
           const seq = me.skill.activations;
           const hit = () => {
             if (!me.skill.active || me.skill.activations !== seq || !up(me)) return false;
-            const keys = absoluteRangeKeys(grid, me.tileR, me.tileC, me.dir, me.s.rangeExtend || 0);
+            const keys = battleRangeKeys(grid, me.tileR, me.tileC, me.dir, me.s.rangeExtend || 0);
             for (const e of b.enemiesInKeys(keys, me, { canHitFly: false })) b.dealDamage(me, e, { amount: me.s.atk * scale, type: 'arts', isSkill: true, tags: ['summon', 'skill'] });
             b.fx('aoe', { x: me.x, y: me.y, radius: 1, id: me.id, skill: 'necras:dragon' });
             return true;

@@ -251,6 +251,30 @@ describe('§20.15 the ‹ › pill of a shared field watched with 前往查看 (
   });
 });
 
+test('three-helper 联防 buttons select each helper and repeat-click restores panorama', () => {
+  const picked = [];
+  const layers = [
+    { key: 'L', label: '左侧队友' }, { key: 'C', label: '中间队友' }, { key: 'R', label: '右侧队友' },
+  ];
+  const show = (layer) => CombatHud({ pub: {}, myId: ME, watching: null, hud: null, myDone: false,
+    client: { layers, layer, onLayer: (key) => picked.push(key) } });
+  const buttons = (layer) => [...walk(show(layer))].filter((v) => hasClass(v, 'chud__helper'));
+  assert.equal(buttons('ALL').length, 3);
+  buttons('ALL')[1].props.onClick();
+  buttons('C')[1].props.onClick();
+  buttons('ALL')[2].props.onClick();
+  assert.deepEqual(picked, ['C', 'ALL', 'R']);
+  assert.equal(buttons('C')[1].props['aria-pressed'], true);
+});
+
+test('three-helper middle view follows the middle player’s bonds', () => {
+  const pub = PUB({ fields: [{ fieldId: 'u', kind: 'unite', players: ['p1', 'p2', 'p3'] }] });
+  const field = { fieldId: 'u', kind: 'unite', rect: { r0: 9, r1: 12, c0: 0, c1: 28 },
+    players: ['p1', 'p2', 'p3'], sides: { p1: 'R', p2: 'C', p3: 'L' } };
+  assert.equal(playerLayer(field, pub, ME, 'p2'), 'C');
+  assert.equal(bondOwnerId({ pub, myId: ME, fieldId: 'u', field, layer: 'C', halves: true }), 'p2');
+});
+
 describe('§20.15 the bonds: views + live layers', () => {
   test('ownerBonds: your m.private list, a teammate\'s m.public list', () => {
     assert.equal(ownerBonds({ pub: PUB(), priv: PRIV, myId: ME, ownerId: ME }), PRIV.bonds);
@@ -378,7 +402,8 @@ describe('§20.15 the strip and the popup say whose bonds they show', () => {
 test('§20.15 wiring: the game screen feeds the strip, the popup and the detail card from screenStrip (no viewer data for a teammate)', () => {
   const src = read('public/js/screens/game.js');
   assert.match(src, /const strip = screenStrip\(\{[^}]*field, layers, layer, who: watchWho, bondLayers:/, 'the field on screen, the ‹ › layers, the picked teammate');
-  assert.match(src, /<\$\{BondStrip\} bonds=\$\{stripBonds\}[^>]*owner=\$\{strip\.name\}/);
+  assert.match(src, /const shownBonds = strip\.self \? addTrackedBonds\(stripBonds, trackedBonds, gd\.bond\) : stripBonds/, 'tracked entries augment only the local player strip');
+  assert.match(src, /<\$\{BondStrip\} bonds=\$\{shownBonds\}[^>]*owner=\$\{strip\.name\}/);
   // the popup carries the player it was opened for: the strip's owner from the strip, the unit owner from a card's chip
   assert.match(src, /const bondPop = popupView\(\{ open: bondOpen, pub, priv, myId, field, units: popOps, live: liveLayers \}\)/);
   assert.match(src, /battleRunner\.ownerOps\(bondOpen\.ownerId, field\.fieldId\)/, 'a teammate\'s members in play: the battle on screen\'s operators');

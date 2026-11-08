@@ -56,7 +56,7 @@
 
 import { num, talentBb, moduleBb, traitBb, moduleOn, skillRec, up } from '../shared/tier1.js';
 import { stepOf, STEP_PER_TICK } from '../../../../../shared/plugins/steps.js';
-import { absoluteRangeKeys, sortEnemyTargets } from '../../../targeting.js';
+import { battleRangeKeys, sortEnemyTargets } from '../../../targeting.js';
 import { offsetTile } from '../../../dir.js';
 import { COLS } from '../../../constants.js';
 import { hypot } from '../../../detmath.js';
@@ -93,7 +93,7 @@ function flagTile(unit) {
   const f = unit.mem.sleachFlag;
   return f ? [f.r, f.c] : [unit.tileR, unit.tileC];
 }
-const areaKeys = (unit, r, c) => new Set(absoluteRangeKeys(X4, r, c, unit.dir, 0));
+const areaKeys = (unit, r, c) => new Set(battleRangeKeys(X4, r, c, unit.dir, 0));
 
 /**
  * A skill's DP over time: `step` DP every `iv` s from `first` s on, `total` in all; a skill that runs its full duration pays
@@ -132,7 +132,7 @@ function dpOverTime({ total, step = 1, iv, first = iv }) {
  * own effects, does not ignore 孤立), else her own tile.
  */
 function s2Tile(battle, unit, grid) {
-  const keys = new Set(absoluteRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0));
+  const keys = new Set(battleRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0));
   const cands = battle.allyUnits.filter((a) => isOp(a) && a !== unit && battle.allySelectable(a, unit) && keys.has(tileKey(a.tileR, a.tileC)));
   cands.sort((a, b) => a.hpRatio - b.hpRatio || a.deploySeq - b.deploySeq || a.id - b.id);
   const t = cands[0];
@@ -144,7 +144,7 @@ function s2Tile(battle, unit, grid) {
  * (her targeting order: the highest 仇恨), else the free ground tile of the range nearest to it, else her own tile.
  */
 function s3Tile(battle, unit, grid) {
-  const keys = absoluteRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0);
+  const keys = battleRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0);
   const ground = (r, c) => battle.grid.inRect(r, c) && battle.grid.isLow(r, c);
   const foes = battle.enemiesInKeys(keys, unit, GROUND).filter((e) => !e.isFlying);
   if (!foes.length) return [unit.tileR, unit.tileC];

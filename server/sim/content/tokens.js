@@ -89,7 +89,7 @@
 // kits/ops/standin-acmedc.js).
 
 import { COLS, ROWS, MOVE_SCALE, FORCED_EXIT } from '../constants.js';
-import { absoluteRangeKeys, sortEnemyTargets, canTargetEnemy } from '../targeting.js';
+import { battleRangeKeys, sortEnemyTargets, canTargetEnemy } from '../targeting.js';
 import { bodyOnTile, bodyInRange } from '../body.js';
 import { hasHp } from '../damage.js';
 import { textCount } from '../../../shared/plugins/textNumber.js';
@@ -262,7 +262,7 @@ function enemiesOnKeys(battle, keys) {
  * ("对自身攻击范围内的敌人造成晕眩"), “耀阳”, 纸偶 (风丸 折纸生花) — so a stun here also drops a hovering 掠海漂移体.
  */
 function burst(battle, unit, { grid, amount = 0, type = 'phys', stun = 0, hits = 1, source = unit, fx = 'summonBurst' }) {
-  const keys = absoluteRangeKeys(grid || GRID_3X3, unit.tileR, unit.tileC, unit.dir, 0);
+  const keys = battleRangeKeys(grid || GRID_3X3, unit.tileR, unit.tileC, unit.dir, 0);
   const victims = enemiesOnKeys(battle, keys);
   for (const e of victims) {
     for (let i = 0; i < hits && e.alive && amount > 0; i++) battle.dealDamage(source, e, { amount, type, isSkill: true, canDodge: false, tags: ['summon', 'burst'] });
@@ -439,9 +439,9 @@ function countNear(list, r, c, rad = 1) {
 export function findSummonTile(battle, owner, placement = 'melee', opts = {}) {
   if (!owner || owner.tileR == null) return null;
   let keys;
-  if (placement === 'adjacent') keys = absoluteRangeKeys(GRID_3X3, owner.tileR, owner.tileC, owner.dir, 0);
-  else if (placement === 'plus') keys = absoluteRangeKeys(GRID_PLUS, owner.tileR, owner.tileC, owner.dir, 0);
-  else if (opts.grid) keys = absoluteRangeKeys(opts.grid, owner.tileR, owner.tileC, owner.dir, 0);
+  if (placement === 'adjacent') keys = battleRangeKeys(GRID_3X3, owner.tileR, owner.tileC, owner.dir, 0);
+  else if (placement === 'plus') keys = battleRangeKeys(GRID_PLUS, owner.tileR, owner.tileC, owner.dir, 0);
+  else if (opts.grid) keys = battleRangeKeys(opts.grid, owner.tileR, owner.tileC, owner.dir, 0);
   else keys = owner.rangeKeys || [];
   const melee = opts.melee ?? (placement === 'melee' || placement === 'adjacent' || placement === 'plus');
   const enemies = battle.enemies.filter((e) => e.alive && !e.hidden);
@@ -1380,7 +1380,11 @@ function airTile(battle, playerId, taken) {
   const R = battle.rect;
   const ps = battle.getPlayer(playerId);
   let c0 = R.c0, c1 = R.c1;
-  if (battle.players.length > 1 && ps) { if (ps.half === 'R') c0 = Math.max(c0, 11); else c1 = Math.min(c1, 10); }
+  if (battle.kind === 'unite' && battle.players.length >= 3 && ps) {
+    const offset = ps.colOffset || 0;
+    c0 = Math.max(c0, offset === 0 ? 0 : offset + 3);
+    c1 = Math.min(c1, offset === 16 ? 28 : offset + 10);
+  } else if (battle.players.length > 1 && ps) { if (ps.half === 'R') c0 = Math.max(c0, 11); else c1 = Math.min(c1, 10); }
   const cr = (R.r0 + R.r1) / 2, cc = (c0 + c1) / 2;
   const held = mapCharKeys(battle);
   let best = null, bs = null;

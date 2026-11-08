@@ -39,7 +39,7 @@
 //   counts unselectable ones, "无视其不可选中", so a stealthed ground enemy alone opens it and it ends with nobody to cut].
 
 import { num, talentBb, traitBb, moduleOn, skillRec, statBuff, giveSp, onHitBy } from '../shared/tier1.js';
-import { absoluteRangeKeys, sortEnemyTargets } from '../../../targeting.js';
+import { battleRangeKeys, sortEnemyTargets } from '../../../targeting.js';
 
 const S1 = 'skchr_chen_1';
 const S2 = 'skchr_chen_2';
@@ -60,7 +60,7 @@ function activeModule(chess) {
   return (chess.modules ?? []).find((m) => m && m.uniEquipId === chess.module.id) ?? null;
 }
 /** Absolute tile keys of a skill range at the unit's tile and facing (a 技能范围 ignores 攻击距离: no extend). */
-const keysOf = (unit, grid) => absoluteRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0);
+const keysOf = (unit, grid) => battleRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0);
 
 /**
  * A skill that strikes ground enemies only cannot be opened while its range holds no ground enemy: every activation path

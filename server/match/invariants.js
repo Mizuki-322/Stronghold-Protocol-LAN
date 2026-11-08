@@ -123,7 +123,8 @@ export function collectViolations(m, { limit = 25 } = {}) {
         if (!pgd.token(p.id)) fail(`${id}: unknown token ${p.id}`);
         if (!(p.count >= 1)) fail(`${id}: token stack count ${p.count}`);
         // summons exist only while their owner is deployed (withdrawing / selling / merging it removes them)
-        if (!boardChessUids.has(p.ownerUid)) fail(`${id}: token ${p.uid} without a deployed owner (${p.ownerUid})`);
+        if (!(ps.bandId === 'band_shu' && p.id === 'token_shu_field' && p.ownerUid == null)
+          && !boardChessUids.has(p.ownerUid)) fail(`${id}: token ${p.uid} without a deployed owner (${p.ownerUid})`);
       } else {
         fail(`${id}: piece of unknown kind ${p.kind}`);
       }

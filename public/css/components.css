@@ -364,20 +364,6 @@
 .bond.is-active .bond__name { color: var(--text-hi); }
 .bond.is-disabled .bond__core { filter: grayscale(1) brightness(.55); }
 .bond.is-disabled .bond__name { color: var(--text-dim); }
-.bond__ban {
-  position: absolute;
-  top: calc(var(--disc) * -.12);
-  right: calc(var(--disc) * -.12);
-  width: calc(var(--disc) * .36);
-  height: calc(var(--disc) * .36);
-  display: grid;
-  place-items: center;
-  background: #d32a1b;
-  color: #fff;
-  border: 1px solid #ff7a6b;
-  box-shadow: 0 0 4px rgba(0, 0, 0, .6);
-}
-.bond__ban .icon { width: 80%; height: 80%; }
 .bond.is-frozen { opacity: .5; }
 .bond.is-clickable { cursor: pointer; }
 .bond.is-clickable:hover .bond__core { transform: scale(1.07); }

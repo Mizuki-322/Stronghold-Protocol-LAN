@@ -59,7 +59,7 @@
 
 import { num, talentBb, traitBb, skillRec, up, batMod } from '../shared/tier1.js';
 import { bbCap } from '../../../../../shared/plugins/officialBounds.js';
-import { absoluteRangeKeys, sortEnemyTargets } from '../../../targeting.js';
+import { battleRangeKeys, sortEnemyTargets } from '../../../targeting.js';
 import { hasHp } from '../../../damage.js';
 import { COLS } from '../../../constants.js';
 import { hypot } from '../../../detmath.js';
@@ -204,7 +204,7 @@ function shadowKit(host) {
 /** A shadow coming in: 迷彩 for its host while it stays, when she stands on its x-5 and may be selected by it. */
 function grantCamo(battle, host, t) {
   if (!up(host) || !battle.allySelectable(host, t)) return;
-  if (!absoluteRangeKeys(X5, t.tileR, t.tileC, t.dir, 0).includes(host.tileR * COLS + host.tileC)) return;
+  if (!battleRangeKeys(X5, t.tileR, t.tileC, t.dir, 0).includes(host.tileR * COLS + host.tileC)) return;
   battle.addBuff(host, { key: camoKey(t), flags: { camou: true }, source: t, tags: ['talent'], visible: true });
   battle.fx('camouflage', { x: host.x, y: host.y, id: host.id });
 }

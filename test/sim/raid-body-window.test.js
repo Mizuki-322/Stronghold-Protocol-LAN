@@ -16,6 +16,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeBattle, flatStage, chessRec, checkInvariants } from '../helpers/battleHarness.js';
 import { bodyKeys } from '../../server/sim/body.js';
+import { COLS as SIM_COLS } from '../../server/sim/constants.js';
 
 const COLS = 21;
 const BONDS = { raidShip: { count: 2, active: true, tier: 1, layers: 0 } };
@@ -47,7 +48,7 @@ function raidLanding({ kind, enemyKey, anchor }) {
   });
   h.step();
   const e = h.spawn(enemyKey, { pos: anchor });
-  const body = [...bodyKeys(e)].map((k) => [Math.floor(k / COLS), k - Math.floor(k / COLS) * COLS]);
+  const body = [...bodyKeys(e)].map((k) => [Math.floor(k / SIM_COLS), k % SIM_COLS]);
   const u = h.unit(PROBE);
   const home = [u.tileR, u.tileC];
   const held = h.b.allyUnits.filter((a) => a.defId === GUARD && a.alive).map((a) => [a.tileR, a.tileC]);

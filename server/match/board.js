@@ -64,8 +64,8 @@ export const DEPLOY_FIELDS = Object.freeze(['normal', 'bossL', 'bossR']);
  * display row), the opposite direction.
  */
 export const BOARD_ROWS_ABOVE_BOSS = -BOSS_ROW_OFFSET;
-/** Mirror column of the right boss half: board col c ↔ field col 20 − c (sim Battle.mapTile). */
-export const BOSS_MIRROR_COL = COLS - 1;
+/** Mirror column of the right boss half: the optional third 联防 section never changes the boss battlefield. */
+export const BOSS_MIRROR_COL = GEO.BOSS_RECT.c1;
 const fieldOf = (f) => (DEPLOY_FIELDS.includes(f) ? f : 'normal');
 
 /** The stage tile [row, col] a board tile (r, c) stands on in deploy field `field`. */

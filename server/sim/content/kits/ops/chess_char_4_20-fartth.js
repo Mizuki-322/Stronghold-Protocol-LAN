@@ -2,13 +2,16 @@
 // Conventions of the tier-4 kits: ../shared/tier4.js; kit contract and rules: ../README.md.
 
 import { COLS } from '../../../constants.js';
+import { GEO } from '../../../../../shared/constants.js';
 import { bodyInRange } from '../../../body.js';
-import { absoluteRangeKeys, sortEnemyTargets } from '../../../targeting.js';
+import { battleRangeKeys, sortEnemyTargets } from '../../../targeting.js';
 import { isHpLoss } from '../../../damage.js';
 import { num, tbb, whileDeployed, toggleBuff, skillActive, isSel, alt, withDefaults } from '../shared/tier4.js';
 import { hypot } from '../../../detmath.js';
 
-const LINE = Object.freeze(Array.from({ length: COLS }, (_, i) => Object.freeze([0, i])));
+const line = (width) => Object.freeze(Array.from({ length: width }, (_, i) => Object.freeze([0, i])));
+const LINE = line(GEO.COLS);
+const EXTENDED_LINE = line(COLS);
 const tileKey = (u) => Math.round(u.y) * COLS + Math.round(u.x);
 /** HP at 0 (boss pool: pool HP) — a `damaged` hook sees the lethal hit before the kill, while the unit is still `alive`. */
 const downed = (u) => (u.bossPool ? !(u.bossPool.hp > 0) : !(u.hp > 0));
@@ -46,7 +49,13 @@ export default withDefaults({
         }),
       }),
       skill: { kind: 'duration', mods: { atkPct: num(bb.atk), taunt: num(t1.taunt_level, -1) }, targeting: { rangeGrid: LINE },
-        onStart({ battle, unit }) { battle.fx('featherArrow', { x: unit.x, y: unit.y, id: unit.id }); } },
+        onStart({ battle, unit }) {
+          if (battle.flags.extendedUnite) {
+            unit.skill.spec.targeting.rangeGrid = EXTENDED_LINE;
+            battle.refreshRange(unit);
+          }
+          battle.fx('featherArrow', { x: unit.x, y: unit.y, id: unit.id });
+        } },
       talents: [
         { install(battle, unit) { // 凝神: ATK +15 % when not hurt for 10 s
           battle.on('damaged', (c) => { if (c.target === unit && c.amount > 0 && !isHpLoss(c.dmg)) unit.mem.lastHurt = battle.time; }, { owner: unit }); // (a 流失 is not 受伤害)
@@ -63,7 +72,7 @@ export default withDefaults({
           // unblocked enemy (a flyer…) standing on such a tile outside her own range is dropped for the next valid target
           battle.on('beforeAttack', (c) => {
             if (c.attacker !== unit || !skillActive(unit) || !unit.extraRangeKeys) return;
-            const own = new Set(absoluteRangeKeys(unit.rangeGrid, unit.tileR, unit.tileC, unit.dir, unit.s.rangeExtend));
+            const own = new Set(battleRangeKeys(unit.rangeGrid, unit.tileR, unit.tileC, unit.dir, unit.s.rangeExtend));
             const ok = (e) => bodyInRange(e, own) || !!(e.blockedBy && e.blockedBy.side === 'ally' && e.blockedBy.alive);
             if (c.targets.every(ok)) return;
             const cands = battle.enemiesInKeys(unit.rangeKeys, unit, c.profile);

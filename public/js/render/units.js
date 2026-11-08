@@ -2491,6 +2491,9 @@ export class DeviceView {
     this.isEnemy = false;
     this.spec = deviceBoxOf(info.defId) || GENERIC_DEVICE;
     this.turret = this.spec === DEVICE_BOX.turret;
+    const fieldRect = ctx.fieldRect?.();
+    this.staticStageTurret = this.turret && fieldRect &&
+      (info.y < fieldRect.r0 || info.y > fieldRect.r1 || info.x < fieldRect.c0 || info.x > fieldRect.c1);
     this.x = Number(info.x) || 0; this.y = Number(info.y) || 0; this.z = 0;
     this.hp = Number(info.maxHp) || 100; this.maxHp = this.hp;
     this.alive = true; this.remove = false; this.dying = 0; this.flags = 0;
@@ -2499,8 +2502,11 @@ export class DeviceView {
     this.screen = { x: 0, y: 0, s: 1, top: 0 };
     this.placed = false;
     this._headTiles = this.spec.height + 0.2;
-    this.box = ctx.createBox ? ctx.createBox(this.spec) : null;
+    // An off-field turret already has a static model at its authored tile. Keep the simulated unit for firing,
+    // but do not draw a second model over that stage prop.
+    this.box = !this.staticStageTurret && ctx.createBox ? ctx.createBox(this.spec) : null;
     this.gfx = new P.Graphics();       // fallback body (no tile field) and the turret head
+    this.gfx.visible = !this.staticStageTurret;
     ctx.layers.units.addChild(this.gfx);
     this.hud = new P.Container();
     ctx.layers.bars.addChild(this.hud);

@@ -52,7 +52,7 @@ export class BattleDeploy {
     const cs = initial || (first && this._startDeploying) ? (carry ?? u.carry) : null;
     // 联防 reconstructs deployment/battle-start effects first, then restores HP/SP once in Battle.start.
     const restoreLater = this.kind === 'unite' && this._startDeploying;
-    if (!restoreLater && cs && u.kind === 'op' && Number.isFinite(cs.hpPct) && cs.hpPct > 0) u.hp = u.s.maxHp * Math.min(1, cs.hpPct);
+    if (!restoreLater && cs && (u.kind === 'op' || u.defId === 'token_shu_field') && Number.isFinite(cs.hpPct) && cs.hpPct > 0) u.hp = u.s.maxHp * Math.min(1, cs.hpPct);
     this._occ[k] = u;
     this._refreshRange(u); // also rebuilds baseRangeKeys (initial range incl. permanent rangeExtend)
     if (!u.skill) this._setupUnit(u);
@@ -81,6 +81,7 @@ export class BattleDeploy {
   /** Mark `unit` dead (hp reached 0). Fires `kill` then `death`. */
   kill(unit, killer = null) {
     if (!unit || !unit.alive) return;
+    if (unit.mem.minHp > 0) { unit.hp = Math.max(unit.mem.minHp, unit.hp); return; }
     unit.hp = 0;
     if (this._hooks.kill) this.emit('kill', { killer, victim: unit });
     // a nested kill/retreat inside the handlers already removed it: a later handler's hp write must not stick

@@ -19,7 +19,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeBattle, enemyRec, checkInvariants } from '../helpers/battleHarness.js';
 import { getDefaultSource } from '../../server/sim/simdata.js';
-import { absoluteRangeKeys, extendedGrid } from '../../server/sim/targeting.js';
+import { battleRangeKeys, extendedGrid } from '../../server/sim/targeting.js';
 import { buildBattleSpec, createBattleFromSpec } from '../../server/sim/spec.js';
 import { createRng } from '../../server/sim/rng.js';
 import { COLS } from '../../server/sim/constants.js';
@@ -32,7 +32,7 @@ const C = ds.raw.chess;
 const BLAZE = 'chess_char_5_03_a';
 const dummy = (key, o = {}) => enemyRec({ key, hp: 1e7, speed: 0, ...o });
 const done = (h) => { checkInvariants(h.b); assert.equal(h.b.errors.length, 0, JSON.stringify(h.b.errors[0])); };
-const keysOf = (grid, u, ext = 0) => new Set(absoluteRangeKeys(grid, u.tileR, u.tileC, u.dir, ext));
+const keysOf = (grid, u, ext = 0) => new Set(battleRangeKeys(grid, u.tileR, u.tileC, u.dir, ext));
 const sameSet = (a, b) => a.size === b.size && [...a].every((k) => b.has(k));
 const tileKey = (e) => Math.round(e.y) * COLS + Math.round(e.x);
 const s3Grid = () => C[BLAZE].skills[2].rangeGrid;
@@ -255,7 +255,7 @@ test('the live range grid (Battle._refreshRange → unit.liveRangeGrid, unitStat
   done(h);
 });
 
-test('extendedGrid: the relative form of absoluteRangeKeys\' rangeExtend, for every facing (random grids)', () => {
+test('extendedGrid: the relative form of battleRangeKeys\' rangeExtend, for every facing (random grids)', () => {
   const rng = createRng(77);
   for (let n = 0; n < 200; n++) {
     const g = [];
@@ -263,8 +263,8 @@ test('extendedGrid: the relative form of absoluteRangeKeys\' rangeExtend, for ev
     for (let i = 0; i < cells; i++) g.push([Math.floor(rng() * 7) - 3, Math.floor(rng() * 6) - 1]);
     const ext = [0, 0.25, 1, 1.5, 2, 3][n % 6];
     for (const dir of ['UP', 'RIGHT', 'DOWN', 'LEFT']) {
-      const want = new Set(absoluteRangeKeys(g, 10, 10, dir, ext));
-      const got = new Set(absoluteRangeKeys(extendedGrid(g, ext), 10, 10, dir, 0));
+      const want = new Set(battleRangeKeys(g, 10, 10, dir, ext));
+      const got = new Set(battleRangeKeys(extendedGrid(g, ext), 10, 10, dir, 0));
       assert.ok(sameSet(got, want), `${JSON.stringify(g)} +${ext} ${dir}`);
     }
   }

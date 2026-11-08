@@ -50,7 +50,7 @@
 //   stays DEFAULT.
 
 import { num, talentBb, moduleBb, traitBb, up, onHitBy, onHitOn, toggleBuff, skillRec } from '../shared/tier1.js';
-import { absoluteRangeKeys } from '../../../targeting.js';
+import { battleRangeKeys } from '../../../targeting.js';
 
 const S1 = 'skchr_huang_1';
 const S2 = 'skchr_huang_2';
@@ -75,7 +75,7 @@ export default {
     const ownGrid = chess?.rangeGrid ?? def?.rangeGrid ?? [[0, 0], [0, 1]];
     /** The ground enemies her own range holds and the ones she blocks (the S3 cuts). */
     const cutTargets = (battle, unit) => {
-      const keys = absoluteRangeKeys(unit.rangeGrid || ownGrid, unit.tileR, unit.tileC, unit.dir, unit.s.rangeExtend || 0);
+      const keys = battleRangeKeys(unit.rangeGrid || ownGrid, unit.tileR, unit.tileC, unit.dir, unit.s.rangeExtend || 0);
       const list = battle.enemiesInKeys(keys, unit, { canHitFly: false });
       for (const e of battle.blockedTargets(unit, { canHitFly: false })) if (!list.includes(e)) list.push(e);
       return list;
@@ -87,7 +87,7 @@ export default {
       if (loss > 0) battle.loseHp(unit, loss, { source: unit });
       if (!up(unit)) return;
       const atk = unit.s.atk;
-      const keys = absoluteRangeKeys(GRID_3_6, unit.tileR, unit.tileC, unit.dir, 0);
+      const keys = battleRangeKeys(GRID_3_6, unit.tileR, unit.tileC, unit.dir, 0);
       battle.fx('aoe', { x: unit.x, y: unit.y, radius: 1.5, id: unit.id, skill: 'huang:burst' });
       for (const e of battle.enemiesInKeys(keys, unit, { canHitFly: true })) {
         if (e.alive) battle.dealDamage(unit, e, { amount: atk * num(b3.damage_by_atk_scale, 1), type: 'phys', isSkill: true, tags: ['skill'] });

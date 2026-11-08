@@ -2,6 +2,8 @@
 
 Part of [DESIGN.md](../DESIGN.md) (the index; section numbers are global).
 
+The local 5–8 player room uses an expandable member list, short chat/emote popups, and a procedural third 联防 section; see [extended-coop.md](extended-coop.md).
+
 ## 9. Client rendering contract (public/js/render)
 
 **Operator skins (§34.23, [SKINS.md](../SKINS.md)).** [ASSUMED] Retain received skin IDs separately from displayed
@@ -265,7 +267,9 @@ Screens: **Title** (season art backdrop, 开始 → nickname), **Lobby** (独立
 
 盟约栏支持「收起／展开盟约」（GitHub #142）：收起时隐藏完整列表并关闭由列表打开的浮层，让原图标区域的指针事件到达棋盘，只保留至少 44×44 CSS px 的恢复按钮。折叠状态在本局阶段变化、观看队友时保留；展开后仍按当前观看对象显示最新盟约。按钮支持 Enter / Space，聚焦按钮时 Space 不触发准备或暂停。
 
-A bond the mode never activates (标准: official `inactiveBondIdList`) reads 本局禁用 on shop / reward cards (struck through), detail chips and the popup — no 在场 count, no 当前效果 (§21.7); a strategy built around one carries a 本局禁用 tag and note in the strategy draft and stays selectable (bands.json `bondIds`, §21.26).
+首领战和联防的战斗快照提供每名玩家各自的部署费用；HUD 显示当前观察玩家的费用。大型同盟的寻呼模块详情显示四选一，普通模式显示三选一。
+
+A bond the mode normally leaves inactive (标准: official `inactiveBondIdList`) is dimmed on shop / reward cards and detail chips. The bond popup shows its actual 在场 count and 未激活／已激活 state, without a ban label or a claim that it can never activate. It omits 当前效果 while inactive (§21.7); a strategy built around one carries a 本局禁用 tag and note in the strategy draft and stays selectable (bands.json `bondIds`, §21.26).
 
 The strategy draft enables skip only on the viewer's turn, with quota left and another unpicked player to pass to.
 The order list retains finished players for display; they do not keep the last player's skip button enabled.
@@ -671,3 +675,9 @@ keys override and missing/invalid entries retain built-in text. Scope remains br
 room content and simulation. Pure geometry SDK helpers return frozen values and accept at most 1024 range cells.
 Forge UI mounts without an equivalent slot require an explicit manual-adaptation report, separate from script copying.
 Art/audio templates ship original CC0 sample media; the studio fills the target's first editable slot [ASSUMED].
+
+The in-match 交流 panel in this fork adds a 20-character text input below the existing emote grid. `m.chat` lines are shown in a small recent-message log; `m.emote` bubbles remain picture-only. External AI player seats have an explicit lobby label and use the same chat display. See [local-lan-2026-10-20.md](../local-lan-2026-10-20.md) for the external process and its data boundary.
+
+### 局内盟约禁用提示
+
+开局信息、策略选择中的本局信息、局内盟约条、商店卡牌和干员详情，将有成员被禁用的盟约以暗淡图标和名称表示；模式明确停用的盟约也采用相同视觉提示。盟约项不叠加红叉、红色人数徽标或红色删除线。悬停说明和禁用干员列表可查看禁用信息；盟约详情展示实际在场人数与未激活／已激活状态。干员头像自身的禁用标记独立于盟约显示。

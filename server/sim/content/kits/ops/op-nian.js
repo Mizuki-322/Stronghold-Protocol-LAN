@@ -38,7 +38,7 @@
 //   (installAura's rule). The DEF / block buff ends with the skill, the 抵抗 within AURA_DUR.
 
 import { num, talentBb, traitBb, skillRec, statBuff, toggleBuff, up, giveSp, byEnemyAttack } from '../shared/tier1.js';
-import { absoluteRangeKeys } from '../../../targeting.js';
+import { battleRangeKeys } from '../../../targeting.js';
 import { COLS } from '../../../constants.js';
 
 const S1 = 'skchr_nian_1';
@@ -71,7 +71,7 @@ export default {
     const resist = Math.min(0.95, Math.max(0, -num(b3.one_minus_status_resistance)));
     /** 铁御: the other allied operators on her x-2 get the DEF / block buff and 抵抗 for AURA_DUR. */
     const ironGuard = (battle, unit) => {
-      const keys = new Set(absoluteRangeKeys(guardGrid, unit.tileR, unit.tileC, unit.dir, 0));
+      const keys = new Set(battleRangeKeys(guardGrid, unit.tileR, unit.tileC, unit.dir, 0));
       for (const a of battle.alliesFor(unit)) {
         if (a === unit || a.kind !== 'op' || a.hidden || !keys.has(a.tileR * COLS + a.tileC)) continue;
         const cur = a.findBuff(GUARD);

@@ -95,18 +95,30 @@ export class MatchInfra {
     return false;
   }
 
-  /**
-   * Whether a bond can matter in this match: not in the mode's static inactive list (标准: 拉特兰 / 阿戈尔 / 卡西米尔 /
-   * 奥术 … never activate, research 02 §2.1) and still with chess in the pool. 机变 tactic cards whose every target bond
-   * is dead are not offered (choices.js).
-   */
+  /** Whether a bond still has natural members in the pool (for 机变 offer selection). */
   bondLive(bondId) {
-    return !this.gd.modeInactiveBonds.has(bondId) && this.bondInPool(bondId);
+    return this.bondInPool(bondId);
   }
   humans() { return this.order.filter((p) => !p.isBot && !p.left); }
 
   /** [ASSUMED] Touch's initial, match-long team grant survives its holder's elimination/quit; focus alone grants none. */
   teamMedicGranted() { return this.order.some(p => (this.gd.band(p.bandId)?.effectRef ?? p.bandId) === 'band_amedic'); }
+
+  /** 森蚺's map device is a match-long team grant, like Touch's reserve medic. */
+  teamTurretGranted() { return this.mode === 'coop8' && this.order.some(p => (this.gd.band(p.bandId)?.effectRef ?? p.bandId) === 'band_eunectes'); }
+
+  effectiveDeviceOverrides(ps) {
+    const overrides = { ...ps.deviceOverrides };
+    if (!this.teamTurretGranted()) return overrides;
+    for (const d of this.stage?.devices || []) {
+      if (d.key !== 'trap_1104_aclasert' && d.role !== 'turret') continue;
+      if (typeof d.alias !== 'string') continue;
+      overrides[d.alias] = true;
+      // The third helper's copy has the same alias with this suffix.
+      overrides[`${d.alias}:third`] = true;
+    }
+    return overrides;
+  }
 
   /**
    * The boss-round group of a player (`bossWaves`: the per-match random pairs, planned in startRound
@@ -136,7 +148,7 @@ export class MatchInfra {
    * Pure — no PlayerState cache is touched (the read-only checker invariants.js uses it; PlayerState.deployMap caches).
    */
   deployMapFor(ps, field = this.deployFieldOf(ps)) {
-    return buildDeployMap(this.stage, { deviceOverrides: ps.deviceOverrides, tileOverrides: ps.tileOverrides, field });
+    return buildDeployMap(this.stage, { deviceOverrides: this.effectiveDeviceOverrides(ps), tileOverrides: ps.tileOverrides, field });
   }
 
   dispatch(ps, hook, ev = {}, opts = {}) {

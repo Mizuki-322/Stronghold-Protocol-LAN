@@ -147,6 +147,7 @@ export class PlayerState {
     this.seat = seat.seat;
     this.name = seat.name;
     this.isBot = !!seat.isBot;
+    this.isAgent = !!seat.isAgent;
     this.connected = this.isBot ? true : !!seat.connected;
     this.left = false;
     this.autoplay = false;
@@ -158,6 +159,8 @@ export class PlayerState {
     this.ready = false;
     this.infoReady = this.isBot;
     this.lastEmoteAt = -Infinity;
+    this.lastChatAt = -Infinity;
+    this.lastBattleStatsAt = -Infinity;
     /** operator loadout (DESIGN §16): frozen { [baseChessId]: { skill, module } }, {} = every chess on its defaults */
     this.loadout = Object.freeze({});
     // 0.2.2: the per-operator 潜能 / 练度 ({} = every operator 潜能 6, 精英2 Lv.60 — bots always)
@@ -225,6 +228,8 @@ export class PlayerState {
      * @type {null | { id: string, round: number, sourceItemId: string, cards: any[] }}
      */
     this.personalChoice = null;
+      /** 黍 strategy: field HP/progress and its one-time round-7 助力 count bonus. */
+    this.shu = null;
     /** free-form match-long content counters (ctx.counter / setCounter), including band:cathy:cellTaken (#677) */
     this.counters = {};
     /** per-round counters (reset at round start) */

@@ -64,7 +64,7 @@
 import { num, up, traitBb, talentBb, skillRec, once } from '../shared/tier1.js';
 import { isElite, onElementHit, elementDmg } from '../shared/tier6.js';
 import { releaseSkillSummon, startCountdown } from '../../tokens.js';
-import { absoluteRangeKeys } from '../../../targeting.js';
+import { battleRangeKeys } from '../../../targeting.js';
 import { bodyInRange } from '../../../body.js';
 import { hasHp, burstLocked } from '../../../damage.js';
 import { MIN_DAMAGE_RATIO } from '../../../constants.js';
@@ -91,7 +91,7 @@ const ANY = Object.freeze({ canHitFly: true });
 
 const bbOf = (chess, id) => skillRec(chess, id)?.bb ?? {};
 const skillOn = (u, id) => !!(u && u.skill && u.skill.id === id && u.skill.active);
-const keysAt = (grid, u) => new Set(absoluteRangeKeys(grid, u.tileR, u.tileC, u.dir, 0));
+const keysAt = (grid, u) => new Set(battleRangeKeys(grid, u.tileR, u.tileC, u.dir, 0));
 
 /**
  * 神经损伤 of a fixed value that ignores the target's 损伤抵抗 (PRTS 群体性谵妄 备注 "不受目标损伤抗性影响": the client's

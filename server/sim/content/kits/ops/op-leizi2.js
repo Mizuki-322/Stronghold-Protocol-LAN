@@ -64,7 +64,7 @@
 //   (leizi2_s_3 ON_OUTPUT_MODIFIER, modifier key "leizi2") — with `prob` to 战栗 it not_combat s.
 
 import { num, talentBb, moduleBb, skillRec, batMod, up } from '../shared/tier1.js';
-import { absoluteRangeKeys } from '../../../targeting.js';
+import { battleRangeKeys } from '../../../targeting.js';
 import { toLocal } from '../../../dir.js';
 import { COLS } from '../../../constants.js';
 
@@ -113,7 +113,7 @@ const S2_ATK_KEY = 'skill:leizi2:thunderAtk';
 
 const bbOf = (chess, id) => skillRec(chess, id)?.bb ?? {};
 /** Absolute tile keys of a grid at the unit's tile and facing. */
-const keysOf = (unit, grid) => absoluteRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0);
+const keysOf = (unit, grid) => battleRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0);
 /** A tile of the battle's field — the official map of a battle: no lightning falls on a stage tile beyond it. */
 const onField = (battle, k) => battle.grid.inRect(Math.floor(k / COLS), k % COLS);
 
@@ -299,8 +299,8 @@ export default {
           // Keep SEARCH when the actual running area does not strictly contain her initial range.
           unit.skill.addTriggerRange(() => {
             const extend = unit.s.baseRangeExtend || 0;
-            const keys = absoluteRangeKeys(floodGrid(battle, unit), unit.tileR, unit.tileC, unit.dir, extend);
-            const initial = absoluteRangeKeys(unit.def.rangeGrid, unit.tileR, unit.tileC, unit.dir, extend);
+            const keys = battleRangeKeys(floodGrid(battle, unit), unit.tileR, unit.tileC, unit.dir, extend);
+            const initial = battleRangeKeys(unit.def.rangeGrid, unit.tileR, unit.tileC, unit.dir, extend);
             const set = new Set(keys);
             return set.size > initial.length && initial.every(k => set.has(k)) ? [{ keys, profile: AIR }] : [];
           });

@@ -49,6 +49,8 @@
   padding: .3rem .6rem .24rem;
 }
 .seats--solo { grid-template-columns: 3.8rem minmax(0, 6.4rem); }
+.seats--extended { grid-template-rows: repeat(2, minmax(0, 2.85rem)); gap: .16rem; }
+.seats--extended .seat__art .avatar { --av: 1.12rem; }
 
 .seat {
   --bk-c: var(--line-3);

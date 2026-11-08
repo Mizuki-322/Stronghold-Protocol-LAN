@@ -9,7 +9,8 @@ export const TICK = 1 / 30;
 export const SNAPSHOT_EVERY = 3;
 
 export const ROWS = GEO.ROWS;
-export const COLS = GEO.COLS;
+// Internal key stride leaves room for the optional third 联防 section; normal and boss field rects stay 21 wide.
+export const COLS = 29;
 
 /** tilesPerSecond = moveSpeed × MOVE_SCALE (DESIGN §3). */
 export const MOVE_SCALE = 0.5;

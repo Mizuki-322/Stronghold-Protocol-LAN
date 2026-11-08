@@ -503,13 +503,13 @@ export function createBattleRunner(deps) {
       msg.bossDmg = pool && Number.isFinite(pool.cum) ? pool.cum : 0;
       if (pool && pool.byPlayer) {
         const by = {};
-        for (const pid of Object.keys(pool.byPlayer).slice(0, 4)) by[pid] = pool.byPlayer[pid];
+        for (const pid of Object.keys(pool.byPlayer).slice(0, 8)) by[pid] = pool.byPlayer[pid];
         msg.by = by;
       }
     } else {
       msg.leaks = Math.min(1e6, p.leaks);
       // 联防: the leakers' enemies still standing (shared/protocol.js b.progress `left`, ≤ 4 players)
-      if (p.left) msg.left = Object.fromEntries(Object.entries(p.left).slice(0, 4));
+      if (p.left) msg.left = Object.fromEntries(Object.entries(p.left).slice(0, 8));
     }
     try { net.send('b.progress', msg); } catch { /* offline */ }
   }
@@ -681,7 +681,10 @@ export function createBattleRunner(deps) {
       // the watched player's effects column (user playtest #2; undefined for 联防 / boss pairs and server-run fields)
       effects: spectateEffects(e.spec, e.members),
       // which half each player holds (联防: the first helper takes the right half; boss pairs: L / R)
-      sides: Object.fromEntries((e.spec.players || []).filter((p) => p && p.playerId).map((p) => [p.playerId, p.side === 'R' || Number(p.colOffset) >= 8 ? 'R' : 'L'])),
+      sides: Object.fromEntries((e.spec.players || []).filter((p) => p && p.playerId).map((p) => [p.playerId,
+        e.kind === 'unite' && e.spec.flags?.extendedUnite
+          ? (Number(p.colOffset) >= 16 ? 'R' : Number(p.colOffset) >= 8 ? 'C' : 'L')
+          : p.side === 'R' || Number(p.colOffset) >= 8 ? 'R' : 'L'])),
     };
     emit('field', field);
     try { store.patch('match', { field }); } catch { /* ignore */ }

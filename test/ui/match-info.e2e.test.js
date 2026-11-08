@@ -4,8 +4,8 @@
 //
 //   SP_E2E=1 node --test test/ui/match-info.e2e.test.js
 //
-// 1. Solo 标准模拟 (the mode that switches 10 bonds off), desktop 1920×1080: the briefing's greyed bonds, badges, legend
-//    and banned operators are read; in the draft 查看禁用盟约与干员 opens the dialog with exactly the same (and the 本局禁用
+// 1. Solo 标准模拟 (the mode with 10 fixed operator-pool exclusions), desktop 1920×1080: the briefing's dimmed bonds, legend
+//    and banned operators are read; in the draft 查看盟约与禁用干员 opens the dialog with exactly the same (and the partial-ban
 //    tooltip); Esc, a click outside — right over 确认选择 — and 关闭 close it without touching the highlighted band or
 //    sending an intent; a strategy is then confirmed; in the first prep the in-game 本局信息 tab lists the same.
 // 2. Co-op 绝境 with two humans — desktop (mouse) and a phone (touch, 844×390, then 756×366): both briefings agree with
@@ -31,7 +31,6 @@ const ARGS = ['--no-sandbox', '--no-first-run', '--autoplay-policy=no-user-gestu
   '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows', '--mute-audio'];
 const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36';
 const PHONE = (width, height) => ({ width, height, deviceScaleFactor: 2, isMobile: true, hasTouch: true, isLandscape: true });
-const OFF_FUNNY = ['lateranoShip', 'egirShip', 'kazimierzShip', 'skillfulShip', 'arcaneShip', 'miraShip', 'investShip', 'raidShip', 'soloShip', 'suntShip'];
 
 describe('GitHub issue #8 item 1: 本局信息 in the strategy draft (real server, headless Chrome)', { skip: !ENABLED && 'set SP_E2E=1 (and have Chrome + assets) to run' }, () => {
   let srv;
@@ -130,14 +129,14 @@ describe('GitHub issue #8 item 1: 本局信息 in the strategy draft (real serve
   }
   const dialogOpen = (page) => page.evaluate(() => !!document.querySelector('.minfo-dlg'));
 
-  /** The bonds, badges, legend and banned operators as drawn under `root` (the briefing's column or the dialog). */
+  /** The bonds, legend and banned operators as drawn under `root` (the briefing's column or the dialog). */
   const readInfo = (page, root) => page.evaluate((root) => {
     const scope = document.querySelector(root);
     if (!scope) return null;
     return {
       bonds: [...scope.querySelectorAll('.brief-bond')].map((el) => ({
         id: el.dataset.bond, name: el.querySelector('.bond__name')?.textContent || '',
-        off: el.classList.contains('is-off'), incomplete: el.classList.contains('is-incomplete'), partial: el.classList.contains('is-partial'),
+        off: el.classList.contains('is-off'), muted: el.classList.contains('is-muted'), incomplete: el.classList.contains('is-incomplete'), partial: el.classList.contains('is-partial'),
         x: !!el.querySelector('.bond.is-disabled .bond__ban'), ban: el.querySelector('.brief-bond__ban')?.textContent.trim() || '',
       })),
       rows: [...scope.querySelectorAll('.brief-bonds .brief-h > span:first-child')].map((el) => el.textContent),
@@ -146,16 +145,16 @@ describe('GitHub issue #8 item 1: 本局信息 in the strategy draft (real serve
       banned: [...scope.querySelectorAll('.brief-banned__grid .uthumb')].map((el) => el.getAttribute('title')),
     };
   }, root);
-  /** What the server says: greyed = the drawn set ∪ the mode's inactive bonds; banned names by tier. */
+  /** What the server says: greyed = bonds that actually lost a listed operator. */
   const truth = (page) => page.evaluate(() => {
     const { store, data } = globalThis.__SP__;
     const pub = store.get().match.public;
-    const mode = data.get('config')?.modes?.[pub.modeId];
-    const greyed = [...new Set([...(pub.drawnDisabledBonds || []), ...(mode?.inactiveBondIds || [])])].sort();
+    const bannedIds = new Set(pub.bannedChess);
+    const greyed = data.list('bonds').filter((b) => b.visibleMembers?.some((id) => bannedIds.has(id))).map((b) => b.bondId).sort();
     const chess = pub.bannedChess.map((id) => data.lookup('chess', id)).filter(Boolean);
-    return { greyed, off: (mode?.inactiveBondIds || []).slice().sort(), tiers: chess.map((c) => c.tier), names: chess.slice().sort((a, b) => a.tier - b.tier).map((c) => c.name) };
+    return { greyed, tiers: chess.map((c) => c.tier), names: chess.slice().sort((a, b) => a.tier - b.tier).map((c) => c.name) };
   });
-  const greyedOf = (info) => info.bonds.filter((b) => b.off).map((b) => b.id).sort();
+  const greyedOf = (info) => info.bonds.filter((b) => b.muted).map((b) => b.id).sort();
   const selBand = (page) => page.evaluate(() => document.querySelector('.dband.is-sel .dband__name')?.textContent || null);
 
   async function openDialog(p) {
@@ -176,11 +175,10 @@ describe('GitHub issue #8 item 1: 本局信息 in the strategy draft (real serve
     await sleep(600);
     const brief = await readInfo(page, '.brief__right');
     const want = await truth(page);
-    assert.deepEqual(want.off, [...OFF_FUNNY].sort(), '标准模拟 switches the official 10 bonds off');
-    assert.deepEqual(greyedOf(brief), want.greyed, 'the briefing greys D ∪ the mode\'s inactive bonds');
+    assert.deepEqual(greyedOf(brief), want.greyed, 'the briefing greys bonds with banned members');
     assert.deepEqual(brief.banned, want.names, 'the briefing\'s banned operators, by tier');
     assert.equal(brief.count, String(want.names.length));
-    assert.match(brief.legend, /或本模式禁用/);
+    assert.doesNotMatch(brief.legend, /本模式禁用/);
     await shot(page, 'solo-briefing');
 
     await press(p, '.brief__foot .btn--primary', '准备就绪');
@@ -194,13 +192,13 @@ describe('GitHub issue #8 item 1: 本局信息 in the strategy draft (real serve
     // open: the very same blocks, the same tip; nothing sent
     await openDialog(p);
     const dlg = await readInfo(page, '.minfo-dlg');
-    assert.deepEqual(dlg, brief, 'the dialog shows exactly the briefing\'s bonds, badges, legend and banned operators');
+    assert.deepEqual(dlg, brief, 'the dialog shows exactly the briefing\'s bonds, legend and banned operators');
     assert.deepEqual(dlg.rows, ['核心盟约', '附加盟约']);
-    assert.ok(dlg.bonds.filter((b) => b.off).every((b) => b.x), 'every greyed disc carries the ✕');
+    assert.ok(dlg.bonds.every((b) => !b.x && !b.ban), 'bond discs have no red cross or ban badge');
     const arcane = await centre(page, '.minfo-dlg .brief-bond[data-bond="arcaneShip"] .bond__disc');
     await page.mouse.move(arcane.x, arcane.y);
     await page.waitForSelector('.tooltip.is-shown', { visible: true, timeout: 3000 });
-    assert.equal(await page.$eval('.tooltip.is-shown .tooltip__main', (el) => el.textContent), '奥术：本局禁用（该盟约不会激活）');
+    assert.match(await page.$eval('.tooltip.is-shown .tooltip__main', (el) => el.textContent), /奥术：部分盟约所含干员阵容不完整/);
     const listed = await page.$$eval('.tooltip--aside .brief-bantip__txt b', els => els.map(e => e.textContent));
     const arcaneNames = await page.evaluate(() => {
       const { store, data } = globalThis.__SP__;
@@ -242,19 +240,23 @@ describe('GitHub issue #8 item 1: 本局信息 in the strategy draft (real serve
     const s1 = await waitSt(page, (s) => s.phase !== 'BAND_DRAFT', 'the draft to end');
     assert.equal(s1.bandId, 'band_amiya');
 
-    // the in-game 本局信息 tab (left 🔍) lists the same greyed bonds, badges and banned operators (by tier)
+    // the in-game 本局信息 tab (left 🔍) mutes affected bonds without crosses or badges and lists banned operators by tier
     await waitSt(page, (s) => s.phase === 'PREP', 'the first prep', 60000);
     await page.waitForFunction(() => !document.querySelector('.pbanner'), { timeout: 10000 }); // the 休整期 banner has played
     await press(p, '.gtop__iconbtn');
     await page.waitForSelector('.edrawer .ibanned', { visible: true, timeout: 5000 });
     const tab = await page.evaluate(() => ({
-      off: [...document.querySelectorAll('.edrawer .ibond.is-off')].map((el) => el.querySelector(':scope > span:not([class])')?.textContent || ''),
-      ban: Object.fromEntries([...document.querySelectorAll('.edrawer .ibond')].map((el) => [el.querySelector(':scope > span:not([class])')?.textContent || '', el.querySelector('.ibond__ban')?.textContent.trim() || ''])),
+      muted: [...document.querySelectorAll('.edrawer .ibonds:not(.ibonds--available) .ibond.is-muted')].map((el) => el.querySelector(':scope > span:not([class])')?.textContent || ''),
+      available: [...document.querySelectorAll('.edrawer .ibonds--available .ibond')].map((el) => ({
+        name: el.querySelector(':scope > span:not([class])')?.textContent || '', muted: el.classList.contains('is-muted'),
+      })),
+      hasMarks: !!document.querySelector('.edrawer .ibond__off, .edrawer .ibond__ban, .edrawer .ibond__status'),
       banned: [...document.querySelectorAll('.edrawer .ibanned .uthumb')].map((el) => el.getAttribute('title')),
-      count: document.querySelector('.edrawer .ihead small')?.textContent.trim() || '',
+      count: [...document.querySelectorAll('.edrawer .ihead')].find((el) => el.textContent.includes('本局禁用干员情况'))?.querySelector('small')?.textContent.trim() || '',
     }));
-    assert.deepEqual(tab.off.sort(), brief.bonds.filter((b) => b.off).map((b) => b.name).sort(), 'the same greyed bonds');
-    for (const b of brief.bonds) if (b.ban) assert.equal(tab.ban[b.name], b.ban, `${b.name}: the same badge`);
+    assert.deepEqual(tab.muted.sort(), brief.bonds.filter((b) => b.muted).map((b) => b.name).sort(), 'affected bonds are shown with muted names');
+    assert.ok(tab.available.every((b) => b.muted === brief.bonds.some((x) => x.name === b.name && x.muted)), 'available bonds with banned members are also dimmed');
+    assert.equal(tab.hasMarks, false, 'the in-game list uses no crosses, full-ban labels or badges');
     assert.deepEqual(tab.banned, brief.banned, 'the same banned operators, in the same (tier) order');
     assert.equal(tab.count, brief.count);
     await shot(page, 'solo-ingame-tab');
@@ -280,8 +282,7 @@ describe('GitHub issue #8 item 1: 本局信息 in the strategy draft (real serve
     const briefs = new Map();
     for (const p of [a, b]) briefs.set(p, await readInfo(p.page, '.brief__right'));
     const want = await truth(a.page);
-    assert.deepEqual(want.off, [], '绝境 switches no bond off');
-    assert.equal(want.greyed.length, 7, '3 core + 4 add-on bonds drawn');
+    assert.ok(want.greyed.length <= 7, 'only bonds with banned members are dimmed');
     for (const [p, info] of briefs) {
       assert.deepEqual(greyedOf(info), want.greyed, `${p.name}: briefing greyed`);
       assert.deepEqual(info.banned, want.names, `${p.name}: briefing banned`);
@@ -353,11 +354,11 @@ describe('GitHub issue #8 item 1: 本局信息 in the strategy draft (real serve
         return {
           box: [r.left, r.top, r.right, r.bottom], vw: innerWidth, vh: innerHeight, scrolls: body.scrollHeight > body.clientHeight + 4,
           overflow: getComputedStyle(body).overflowY, name: px('.bond__name'), legend: px('.brief-legend'), title: px('.modal__title'),
-          badge: px('.brief-bond__ban'), status: vis('[data-testid="match-info-status"]'), close: vis('[data-testid="match-info-close"]'),
+          status: vis('[data-testid="match-info-status"]'), close: vis('[data-testid="match-info-close"]'),
         };
       });
       assert.ok(lay.box[0] >= 0 && lay.box[1] >= 0 && lay.box[2] <= lay.vw && lay.box[3] <= lay.vh, `${w}×${h}: the dialog inside the screen ${JSON.stringify(lay.box)}`);
-      assert.ok(lay.name >= 9 && lay.legend >= 9 && lay.badge >= 9 && lay.title >= 14, `${w}×${h}: readable text ${JSON.stringify(lay)}`);
+      assert.ok(lay.name >= 9 && lay.legend >= 9 && lay.title >= 14, `${w}×${h}: readable text ${JSON.stringify(lay)}`);
       assert.ok(lay.status && lay.close, `${w}×${h}: the status line and 关闭 stay in view`);
       assert.ok(lay.scrolls && lay.overflow === 'auto', `${w}×${h}: the body scrolls`);
       assert.deepEqual(await readInfo(ph.page, '.minfo-dlg'), briefs.get(ph), `${w}×${h}: the dialog = the briefing`);

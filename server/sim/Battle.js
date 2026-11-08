@@ -46,6 +46,7 @@
 
 import { TICK, ROWS, COLS, DP_DEFAULTS, MAX_HOOK_DEPTH, AUTO_OP_COOLDOWN } from './constants.js';
 import { GEO } from '../../shared/constants.js';
+import { extendedUniteStage } from '../../shared/extendedUnite.js';
 import { createRng } from './rng.js';
 import { Grid } from './grid.js';
 import { ProjectileSystem } from './projectiles.js';
@@ -86,6 +87,7 @@ export class Battle {
     this.autoFinish = opts.autoFinish !== false;
     this.data = toDataSource(opts.data);
     let stage = opts.stage ?? (opts.stageId ? this.data.getStage(opts.stageId) : null);
+    if (opts.flags?.extendedUnite) stage = extendedUniteStage(stage);
     if (stage && !stage._norm) stage = normalizeStage(stage.id ?? opts.stageId, stage);
     this.stage = stage || { id: 'empty', rows: [], devices: [] };
     this.stageId = this.stage.id ?? opts.stageId ?? null;

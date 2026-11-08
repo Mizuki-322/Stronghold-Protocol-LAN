@@ -73,7 +73,7 @@
 
 import { num, talentBb, traitBb, skillRec, up, giveSp, holdProtect } from '../shared/tier1.js';
 import { burstLimit, stepOf } from '../../../../../shared/plugins/steps.js';
-import { absoluteRangeKeys } from '../../../targeting.js';
+import { battleRangeKeys } from '../../../targeting.js';
 import { COLS } from '../../../constants.js';
 import { frontOf } from '../../../dir.js';
 import { deviceState, devicesUp, rechargeDevices, deviceAura, opsOn, deviceReturn, devicesLeaveWithOwner } from './op-ironmn.js';
@@ -102,7 +102,7 @@ const RANGED_POS = new Set(['RANGED', 'ALL']);
 const bbOf = (chess, id) => skillRec(chess, id)?.bb ?? {};
 const tokBb = (def, key) => (def?.talents ?? []).find((t) => t && t.bb && t.bb[key] != null)?.bb ?? {};
 const tileOf = (u) => u.tileR * COLS + u.tileC;
-const ownKeys = (u) => absoluteRangeKeys(u.rangeGrid ?? u.def?.rangeGrid ?? FRONT1, u.tileR, u.tileC, u.dir, 0);
+const ownKeys = (u) => battleRangeKeys(u.rangeGrid ?? u.def?.rangeGrid ?? FRONT1, u.tileR, u.tileC, u.dir, 0);
 /** The barrier key of the shields her S2 devices give (one per operator from her: nasti_nstchr_m2[shield_core]). */
 const shieldKey = (owner) => `nasti:shield:${owner.id}`;
 const SELF_SHIELD = 'nasti:s2shield';

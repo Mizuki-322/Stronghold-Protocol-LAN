@@ -387,6 +387,7 @@ export function dealDamage(battle, source, target, dmgIn) {
  */
 export function applyHpLoss(battle, source, target, amount, dmg, mark) {
   if (!target.alive) return 0;
+  if (target.mem.lockHp) return 0;
   let dealt = 0;
   const hs = dmg && dmg.sourceless ? null : source; // the source hooks see (无来源: none; `credit` keeps it)
   if (target.bossPool) {
@@ -402,7 +403,7 @@ export function applyHpLoss(battle, source, target, amount, dmg, mark) {
     battle._syncBossHp(target);
   } else {
     const before = target.hp;
-    target.hp -= amount;
+    target.hp = Math.max(target.mem.minHp || 0, target.hp - amount);
     if (target.hp <= 0) {
       target.hp = 0;
       if (battle._hooks.fatal) {
@@ -420,6 +421,7 @@ export function applyHpLoss(battle, source, target, amount, dmg, mark) {
     if (source.side === 'ally' && source.ownerId != null) { const pp = battle._pp(source.ownerId); if (pp) pp.damageDealt += dealt; }
   }
   target.stats.taken += dealt;
+  if (battle.flags.uniteAntiStall && target.side === 'enemy' && target.blockedBy && dealt > 0) target._uniteLastDamageAt = battle.time;
   target.lastHitAt = battle.time;
   if (dmg && !dmg.silent && amount >= 0.5) {
     const shown = dmg.type === 'element' ? dmg.element : dmg.type === 'elemental' ? (dmg.element || 'true') : dmg.type;
@@ -637,6 +639,7 @@ export function reduceElement(target, amount, el = null) {
  */
 export function heal(battle, source, target, amount, opts = {}) {
   if (!target || !target.alive || target.removed || !target.deployed || target.bossPool) return 0;
+  if (target.mem.noHealing) return 0;
   const self = source === target || !!opts.self;
   const through = !!(source && source.profile && typeof source.profile.healThrough === 'function' && source.profile.healThrough(source, target));
   if (!self && ((target.s.flags.noHeal && !through) || (target.profile && target.profile.noHeal))) return 0;
@@ -654,6 +657,7 @@ export function heal(battle, source, target, amount, opts = {}) {
   const max = target.s.maxHp;
   const actual = Math.max(0, Math.min(amt, max - target.hp));
   target.hp = Math.min(max, target.hp + actual);
+  if (actual > 0 && battle._hooks.healed) battle.emit('healed', { source, target, amount: actual, opts });
   if (opts.overheal && amt > actual) {
     // overheal becomes a shield (capped at max HP) so hp stays within [0, maxHp]
     const cur = target.findBuff('overheal');

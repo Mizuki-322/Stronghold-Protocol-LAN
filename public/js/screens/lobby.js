@@ -90,6 +90,11 @@ const MODE_CARDS = [
     desc: N_('与至多 {n} 名博士组成同盟，共享干员池，联防协作抵御敌潮。'), params: { n: MAX_SEATS - 1 },
     points: [N_('1–{n} 名博士 · 可由 AI 队友补位'), N_('联防阶段 · 最终攻势合并生命值')], pointParams: { n: MAX_SEATS },
   },
+  {
+    id: 'coop8', name: N_('大型同盟'), en: 'EXTENDED ALLIANCE', icon: 'users',
+    desc: N_('5–8 名博士共享干员池，至少 5 人开局；AI 队友计入人数。'),
+    points: [N_('牌堆随人数扩大'), N_('最多三人联防')],
+  },
 ];
 
 /**
@@ -263,7 +268,10 @@ export function LobbyScreen() {
   const me = useStore((s) => s.me, shallowEqual);
   const conn = useStore((s) => s.connection, shallowEqual);
   useData('config');
-  const [roomMode, setRoomMode] = useState(() => (loadPref('lobby.mode', 'coop') === 'solo' ? 'solo' : 'coop'));
+  const [roomMode, setRoomMode] = useState(() => {
+    const saved = loadPref('lobby.mode', 'coop');
+    return saved === 'solo' || saved === 'coop8' ? saved : 'coop';
+  });
   const [difficulty, setDifficulty] = useState(() => {
     const d = loadPref('lobby.difficulty', 'FUNNY');
     return DIFFICULTIES.includes(d) ? d : 'FUNNY';
@@ -387,6 +395,9 @@ export function LobbyScreen() {
           </div>
         <//>
         <${TipsPanel} />
+        <a class="lobby-reference-link" href="/synergy/"><${Icon} name="book" />
+          <span>${t('特质联动查询')}</span><${Icon} name="chevronRight" />
+        </a>
       </section>
 
       <section class="lobby-right">

@@ -111,7 +111,7 @@
 // `elementHit` hook (`onElementHit`: × dmg.mul before the gauge fill).
 
 import { textCount, textFinite } from '../../../../../shared/plugins/textNumber.js';
-import { absoluteRangeKeys } from '../../../targeting.js';
+import { battleRangeKeys } from '../../../targeting.js';
 import { COLS, ROWS, PULL_STOP_RADIUS } from '../../../constants.js';
 import { hasHp } from '../../../damage.js';
 import { hypot } from '../../../detmath.js';
@@ -223,7 +223,7 @@ function bstate(battle) {
 function freeTiles(battle, unit, grid, { ranged = false, ground = true } = {}) {
   const out = [];
   const own = unit.tileR * COLS + unit.tileC;
-  for (const k of absoluteRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0)) {
+  for (const k of battleRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0)) {
     if (k === own) continue;
     const r = (k / COLS) | 0, c = k % COLS;
     if (!battle.grid.inRect(r, c) || battle.isReservedTile(r, c)) continue;

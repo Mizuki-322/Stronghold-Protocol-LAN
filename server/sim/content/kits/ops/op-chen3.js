@@ -53,7 +53,7 @@
 //   begin clips (S1 0.2 s, S3 0.433 s) are not modelled [ASSUMED: the engine starts skills at once].
 
 import { num, talentBb, traitBb, skillRec, statBuff, toggleBuff, up } from '../shared/tier1.js';
-import { absoluteRangeKeys, canTargetEnemy } from '../../../targeting.js';
+import { battleRangeKeys, canTargetEnemy } from '../../../targeting.js';
 import { bodyDist } from '../../../body.js';
 import { isHpLoss } from '../../../damage.js';
 import { weaknessRetype } from '../../items/battle.js';
@@ -88,7 +88,7 @@ const AFTER_KEY = 'skill:chen3:respawn';
 
 const bbOf = (chess, id) => skillRec(chess, id)?.bb ?? {};
 /** Absolute tile keys of a skill range at the unit's tile and facing (a 技能范围 ignores 攻击距离). */
-const keysOf = (unit, grid) => absoluteRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0);
+const keysOf = (unit, grid) => battleRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0);
 /** An S2 target that left the field — dead, removed or hidden [ASSUMED: a hidden one counts as gone]. */
 const gone = (e) => !e || !e.alive || e.removed || e.hidden;
 /** The enemy of `list` nearest to (x, y) (body distance; ties by spawn order), or null. */
@@ -290,7 +290,7 @@ export default {
         // targets in the existing ACTIVE_RANGE automation. [ASSUMED] Use its expanded attack grid (plus permanent
         // range extension), not the wave's entire eventual route; operation cooldown / control checks stay shared.
         unit.skill.addTriggerRange(() => [{
-          keys: absoluteRangeKeys(grid3, unit.tileR, unit.tileC, unit.dir, unit.s.baseRangeExtend || 0), profile: AIR,
+          keys: battleRangeKeys(grid3, unit.tileR, unit.tileC, unit.dir, unit.s.baseRangeExtend || 0), profile: AIR,
         }]);
         const ratio = num(b3.hp_ratio), minScale = num(b3.projectile_min_atk_scale);
         battle.on('tick', ({ dt }) => {

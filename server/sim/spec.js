@@ -42,6 +42,7 @@ import { toDataSource, withUnitLoadouts } from './simdata.js';
 import { isPotential, isCultivate } from '../../shared/potential.js';
 import { isContentHash } from '../../shared/plugins/identity.js';
 import { BOSS_POOL_MIN_HP } from './constants.js';
+import { SHU_HEAL_THRESHOLD } from '../../shared/shuStrategy.js';
 
 export const SPEC_VERSION = 1;
 
@@ -319,7 +320,7 @@ export function battleProgress(battle) {
   }
   if (battle && (battle.kind === 'boss' || battle.kind === 'hidden')) {
     const leaksBy = {};
-    for (const pid of Object.keys(pp).slice(0, 4)) leaksBy[pid] = Math.min(1e6, leakEntries(pp[pid]).reduce((n, l) => n + leakLpr(l), 0));
+    for (const pid of Object.keys(pp).slice(0, 8)) leaksBy[pid] = Math.min(1e6, leakEntries(pp[pid]).reduce((n, l) => n + leakLpr(l), 0));
     out.leaksBy = leaksBy;
   }
   return out;
@@ -365,6 +366,7 @@ export function resultDigest(result) {
       (Array.isArray(p.leaked) ? p.leaked : []).map((l) => `${l && l.enemyKey}|${l && l.counted === false ? 0 : 1}|${l && l.uniteRuntime ? 'x' : ''}|${(l && l.sourcePlayerId) || ''}|${modsKey(l && l.mods)}`).sort(),
       Math.round(Number(p.damageDealt) || 0), Math.round(Number(p.bossDamage) || 0),
       (Array.isArray(p.unitsEnd) ? p.unitsEnd : []).map((u) => [u && u.uid, r4(u && u.hpPct), r4(u && u.sp), !!(u && u.alive)]),
+      ...(p.shuProgress > 0 ? [r4(p.shuProgress)] : []),
     ];
   });
   const json = JSON.stringify([res.reason ?? null, r4(res.time), res.killed | 0, res.total | 0, players]);
@@ -402,7 +404,7 @@ function compactMods(m) {
 export function compactResult(res) {
   const r = res && typeof res === 'object' ? res : {};
   const perPlayer = {};
-  for (const pid of Object.keys(r.perPlayer || {}).slice(0, 4)) {
+  for (const pid of Object.keys(r.perPlayer || {}).slice(0, 8)) {
     const p = r.perPlayer[pid] || {};
     const layerGains = {};
     for (const [k, v] of Object.entries(p.layerGains || {}).slice(0, 40)) if (isKey(k) && fnum(v) > 0) layerGains[k] = Math.min(1e4, fnum(v));
@@ -427,6 +429,7 @@ export function compactResult(res) {
       bossDamage: Math.max(0, Math.round(fnum(p.bossDamage))),
       healingDone: Math.max(0, Math.round(fnum(p.healingDone))),
       deaths: Math.max(0, Math.trunc(fnum(p.deaths))),
+      shuProgress: Math.max(0, Math.min(SHU_HEAL_THRESHOLD - 1e-6, fnum(p.shuProgress))),
       unitsEnd: cap(p.unitsEnd, 64).filter(Boolean).map((u) => ({
         uid: uidOr(u.uid), defId: keyOr(u.defId), hpPct: Math.max(0, Math.min(1, fnum(u.hpPct))), sp: Math.max(0, Math.min(1e5, fnum(u.sp))),
         skillActive: !!u.skillActive, alive: !!u.alive,

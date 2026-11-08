@@ -84,6 +84,7 @@ export function makeMatch(o = {}) {
     verify: o.verify ?? 'off',
     headlessSliceMs: o.headlessSliceMs,
     aiPicksLast: o.aiPicksLast,
+    prepUntimed: o.prepUntimed,
     // a bot prep's layout rehearsal delegated to the room's host (DESIGN §14; test/match/rehearsal-delegate.test.js):
     // `hostId` is the executor a task is sent to, `botRehearsalDelegateMs` its answer window
     hostId: o.hostId !== undefined ? o.hostId : (o.test === true ? (seats.find((s) => s && !s.isBot)?.playerId ?? null) : undefined),
@@ -207,7 +208,7 @@ function legacyInvariants(m) {
       assert.ok(canPlace(dmap, cls, r, c), `illegal tile ${p.id} @ ${k}`);
       assert.notEqual(p.kind, 'item', 'items never stand on the board');
       if (p.kind === 'chess') deployed++;
-      if (p.kind === 'token') assert.ok(chessUids.has(p.ownerUid), `orphan token ${p.uid}`);
+      if (p.kind === 'token' && !(ps.bandId === 'band_shu' && p.id === 'token_shu_field' && p.ownerUid == null)) assert.ok(chessUids.has(p.ownerUid), `orphan token ${p.uid}`);
     }
     assert.ok(deployed <= ps.deployCap, `${ps.playerId} deployCount ${deployed} > cap ${ps.deployCap}`);
     for (const p of all) {
@@ -227,7 +228,7 @@ function legacyInvariants(m) {
         assert.ok(m.gd.item(p.id), `unknown item ${p.id}`);
       } else if (p.kind === 'token') {
         assert.ok(p.count >= 1, 'token stack count');
-        assert.ok(chessUids.has(p.ownerUid), `orphan token ${p.uid}`);
+        if (!(ps.bandId === 'band_shu' && p.id === 'token_shu_field' && p.ownerUid == null)) assert.ok(chessUids.has(p.ownerUid), `orphan token ${p.uid}`);
       }
     }
     // merges are immediate: never 3 normal copies (风丸 2) of one chess owned at once

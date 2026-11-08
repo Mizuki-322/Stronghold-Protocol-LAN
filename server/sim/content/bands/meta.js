@@ -31,6 +31,9 @@
 //   round_start_gain_coin_by_bond_char_chess_buy       玛恩纳   each <bond> chess bought → +count funds next round (≤ max_count / round)
 //   refresh_shop_count_gain_coin_bond_char_chess       贾维     every refresh_count manual refreshes (match total) → <bond> chess ≤ shop level (≤ max_count / round)
 //   preparation_start_add_special_goods_every_n_round  娜仁图亚 round % n = 0: pick choice_cnt of refresh_cnt items of pool (free)
+//   band_yela_kjerag_grant 圣山护佑: grant Kjerag chess at R5, then every second cumulative no-LP-loss round from R5
+//   band_lumen_board_bond_layers 凡人之愿 prep end: each board operator gives +2 to every active bond it belongs to,
+//                                at most +6 per bond per round from this effect
 // "进入休整期时" / "回合开始时" = onRoundStart (research 01 §5 step 6).
 
 import { GEO } from '../../../../shared/constants.js';
@@ -162,6 +165,67 @@ K.preparation_start_gain_chess_every_n_round = (ps) => ({
       const id = p.chess ?? p.chess_id;
       if (n <= 0 || ctx.round % n !== 0 || !id) continue;
       for (let k = 0; k < timesOf(p.count, 1); k++) grant(ctx, id, { source: 'band' });
+    }
+  },
+});
+
+K.band_yela_kjerag_grant = (ps) => {
+  const p = ps[0];
+  const seen = 'band:yela:seenRound';
+  const lost = 'band:yela:lostRound';
+  const counted = 'band:yela:countedRound';
+  const cleanRounds = 'band:yela:cleanRounds';
+  const initialGrant = 'band:yela:initialGrant';
+  const reward = (ctx) => {
+    const bond = p.bond || 'kjeragShip';
+    const maxTier = Math.max(1, ctx.shopLevel());
+    const id = ctx.rollChess({ bond, maxTier });
+    if (id) ctx.grantChess(id, { source: 'band' });
+  };
+  return {
+    onRoundStart(ctx) {
+      if (ctx.round === int(p.first_grant_round, 5) && !ctx.counter(initialGrant)) {
+        ctx.setCounter(initialGrant, 1);
+        reward(ctx);
+      }
+      const previous = ctx.round - 1;
+      if (previous < int(p.count_from_round, 5) || ctx.counter(seen) !== previous
+        || ctx.counter(lost) === previous || ctx.counter(counted) === previous) return;
+      ctx.setCounter(counted, previous);
+      const total = ctx.incCounter(cleanRounds, 1);
+      if (total % 2 === 0) reward(ctx);
+    },
+    onBattleResult(ctx, ev) {
+      if (ctx.round < int(p.count_from_round, 5) || !Number.isFinite(ev?.lpLoss)) return;
+      ctx.setCounter(seen, ctx.round);
+      if (ev.lpLoss > 0) ctx.setCounter(lost, ctx.round);
+    },
+  };
+};
+
+K.band_lumen_board_bond_layers = (ps) => ({
+  onPrepEnd(ctx) {
+    const each = int(ps[0].layer, 0);
+    const cap = int(ps[0].max_count, 0);
+    if (each <= 0 || cap <= 0) return;
+    const active = ctx.bonds();
+    const counts = new Map();
+    for (const piece of ctx.board()) {
+      if (!piece || piece.kind !== 'chess') continue;
+      for (const bondId of new Set(metaBonds(ctx, piece))) {
+        if (active[bondId]?.active) counts.set(bondId, (counts.get(bondId) || 0) + 1);
+      }
+    }
+    for (const [bondId, count] of counts) {
+      const roundKey = `band:lumen:round:${bondId}`;
+      const usedKey = `band:lumen:layers:${bondId}`;
+      if (ctx.counter(roundKey) !== ctx.round) {
+        ctx.setCounter(roundKey, ctx.round);
+        ctx.setCounter(usedKey, 0);
+      }
+      const remaining = Math.max(0, cap - ctx.counter(usedKey));
+      const gained = ctx.addLayers(bondId, Math.min(remaining, count * each), { requireActive: true, reason: 'band' });
+      if (gained > 0) ctx.incCounter(usedKey, gained);
     }
   },
 });

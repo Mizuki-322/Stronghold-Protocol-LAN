@@ -11,7 +11,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeBattle, chessRec, enemyRec, checkInvariants } from '../helpers/battleHarness.js';
 import { getDefaultSource } from '../../server/sim/simdata.js';
-import { absoluteRangeKeys } from '../../server/sim/targeting.js';
+import { battleRangeKeys } from '../../server/sim/targeting.js';
 import { COLS } from '../../server/sim/constants.js';
 
 const ds = getDefaultSource();
@@ -80,8 +80,8 @@ test('real data: 莫斯提马 S3 序时之匙 (3-15 over her 3-6) casts on its r
   assert.equal(d.skill.trigger.rule, 'ACTIVE_RANGE');
   assert.equal(ds.getChess(PLOSIS).skill.trigger.rule, 'ACTIVE_RANGE');
   // an enemy on a field tile of 3-15 that 3-6 lacks (she stands at (10,3) facing right)
-  const base = new Set(absoluteRangeKeys(d.rangeGrid, 10, 3, 'RIGHT', 0));
-  const k = absoluteRangeKeys(d.skill.trigger.grid, 10, 3, 'RIGHT', 0).find((x) => !base.has(x) && ((x / COLS) | 0) >= 9 && ((x / COLS) | 0) <= 12);
+  const base = new Set(battleRangeKeys(d.rangeGrid, 10, 3, 'RIGHT', 0));
+  const k = battleRangeKeys(d.skill.trigger.grid, 10, 3, 'RIGHT', 0).find((x) => !base.has(x) && ((x / COLS) | 0) >= 9 && ((x / COLS) | 0) <= 12);
   assert.ok(k != null);
   const h = makeBattle({
     defs: { enemies: { e: dummy('e') } }, units: [{ chessId: MOST, row: 10, col: 3, dir: 'RIGHT' }],

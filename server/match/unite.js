@@ -136,15 +136,19 @@ export function uniteBattleOpts(m, plan, timeLimit) {
       if (!u || u.uid == null) continue;
       const sp = Number.isFinite(u.sp) ? Math.max(0, u.sp) : 0;
       // a summon: its SP only ("召唤物仅修改技力"); one off the field at the end enters fresh [ASSUMED]
-      if (summonUids.has(u.uid)) { if (u.alive) carry.set(u.uid, { sp }); continue; }
+        if (summonUids.has(u.uid)) {
+          if (u.alive) carry.set(u.uid, ps.shu && [...ps.board.values()].some((p) => p.uid === u.uid && p.id === 'token_shu_field')
+            ? { sp, hpPct: Math.max(0, Math.min(1, Number(u.hpPct) || 0)) } : { sp });
+          continue;
+        }
       // knocked out at the end of its own combat: 强制退场 right after the deployment (see header)
       if (!u.alive) { carry.set(u.uid, { down: true }); continue; }
       // HP ratio and SP only: a skill still running at the end is not carried (unitsEnd `skillActive` stays unused —
       // community report #34, GitHub #82)
       carry.set(u.uid, { hpPct: Number.isFinite(u.hpPct) ? Math.max(0, Math.min(1, u.hpPct)) : 1, sp });
     }
-    // 2 helpers: the first one meets the enemies first on the right-hand field (escaped_multi enters at col 18)
-    const colOffset = plan.helpers.length > 1 && i === 0 ? 8 : 0;
+    // First-ranked helper meets the enemies on the rightmost section; each later helper stands eight columns left.
+    const colOffset = (plan.helpers.length - i - 1) * 8;
     // the layers its own combat reached (bondsView, the round's pending gains; PRTS "以其阵地当前的状态") — see header
     const input = ps.battleInput({ side: 'L', colOffset, carry, reached: true });
     const ev = { input, kind: 'unite', round: m.round, spawns: wave.spawns };

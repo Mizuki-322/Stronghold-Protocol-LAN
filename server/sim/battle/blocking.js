@@ -26,7 +26,7 @@ export class BattleBlocking {
   _checkBlock(e) {
     if (e.blockedBy || e.hidden || !e.alive) return !!e.blockedBy;
     const f = e.s.flags;
-    if (f.unblockable || f.levitate || f.fear || f.sleep) return false;
+    if (f.unblockable || f.levitate || f.fear || f.sleep || (this.flags.uniteAntiStall && e._uniteUnblockUntil > this.time)) return false;
     const r0 = Math.round(e.y), c0 = Math.round(e.x);
     const w = e.blockWeight ?? 1;
     let u = null, bd = Infinity;
@@ -46,6 +46,7 @@ export class BattleBlocking {
     }
     if (!u) return false;
     e.blockedBy = u;
+    if (this.flags.uniteAntiStall) e._uniteLastDamageAt = this.time;
     u.blocking.push(e);
     e.moving = false;
     if (this._hooks.blocked) this.emit('blocked', { blocker: u, enemy: e });
@@ -100,6 +101,14 @@ export class BattleBlocking {
     if (i >= 0) bl.blocking.splice(i, 1);
     e.blockedBy = null;
     this._stealthSwitch(e);
+  }
+
+  /** A 5–8 player 联防 enemy cannot be held indefinitely without taking damage. */
+  _uniteAntiStall(e) {
+    if (!this.flags.uniteAntiStall || !e.blockedBy || this.time - (e._uniteLastDamageAt ?? this.time) < 20) return;
+    this._unblock(e);
+    e._uniteUnblockUntil = this.time + 4;
+    if (e.s.flags.stealth) this.addBuff(e, { key: 'unite:antiStallReveal', duration: 5, flags: { reveal: true } });
   }
 
   /** Release every enemy blocked by ally `u` (death, retreat, block count drop, substitution…). */

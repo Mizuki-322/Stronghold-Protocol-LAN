@@ -2,6 +2,7 @@
 // every grid in the owner's row (UP/DOWN) or column (LEFT/RIGHT). WithEdgeBehaviour offsets
 // the visible pieces 0.4 in the deploy direction, chooses vertical art by camera side, and
 // adds caps on invalid neighbouring tiles. Source/root are controllers, not one-shot casts.
+import { EXTENDED_UNITE_COLS } from '../../../../shared/extendedUnite.js';
 export const YU_WALL_SOURCE = 'yu_skill3_range_01_source';
 const lc = (key) => typeof key === 'string' ? key.toLowerCase() : null;
 const fields = (def, name) => def?.nodes?.flatMap((n) => n.behaviours || []).find((b) => b.class === name && b.enabled !== false)?.fields;
@@ -9,7 +10,7 @@ const fields = (def, name) => def?.nodes?.flatMap((n) => n.behaviours || []).fin
 /** Finite battlefield rectangle; [ASSUMED] our active field is the official controller's map. */
 export function wallRect(rect) {
   if (!rect || ![rect.r0, rect.r1, rect.c0, rect.c1].every(Number.isFinite)) return null;
-  const r = { r0: Math.max(0, Math.ceil(rect.r0)), r1: Math.min(18, Math.floor(rect.r1)), c0: Math.max(0, Math.ceil(rect.c0)), c1: Math.min(20, Math.floor(rect.c1)) };
+  const r = { r0: Math.max(0, Math.ceil(rect.r0)), r1: Math.min(18, Math.floor(rect.r1)), c0: Math.max(0, Math.ceil(rect.c0)), c1: Math.min(EXTENDED_UNITE_COLS - 1, Math.floor(rect.c1)) };
   return r.r0 <= r.r1 && r.c0 <= r.c1 ? r : null;
 }
 

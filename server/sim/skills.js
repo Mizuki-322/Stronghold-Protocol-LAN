@@ -52,7 +52,7 @@
 //   also carries `noAmmo` (set it to true: this attack spends no ammo). onEnd runs while the skill's mods / range are
 //   still applied (`active` is already false); they are removed right after it (unless onEnd re-activated the skill).
 
-import { absoluteRangeKeys, canTargetEnemy } from './targeting.js';
+import { battleRangeKeys, canTargetEnemy } from './targeting.js';
 import { AUTO_OP_COOLDOWN, COLS, ROWS } from './constants.js';
 import { boundedCount } from '../../shared/plugins/limits.js';
 import { fieldCap } from '../../shared/plugins/officialBounds.js';
@@ -432,7 +432,7 @@ export class SkillRuntime {
     const tile = u.tileR * COLS + u.tileC;
     const ext = this.rule === 'ACTIVE_RANGE' && !this.spec.targeting?.noRangeExtend ? (u.s.baseRangeExtend || 0) : 0;
     if (!this._trigKeys || this._trigTile !== tile || this._trigDir !== u.dir || this._trigExt !== ext) {
-      this._trigKeys = absoluteRangeKeys(this.triggerGrid, u.tileR, u.tileC, u.dir, ext);
+      this._trigKeys = battleRangeKeys(this.triggerGrid, u.tileR, u.tileC, u.dir, ext);
       this._trigSet = new Set(this._trigKeys);
       this._trigTile = tile;
       this._trigDir = u.dir;

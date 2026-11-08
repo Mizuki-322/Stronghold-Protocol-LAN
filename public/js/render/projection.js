@@ -316,7 +316,7 @@ export function normRect(rect, rows = 19, cols = 21) {
  */
 export function fitCamera(rect, viewport, options) {
   const opts = options && typeof options === 'object' ? options : {};
-  const R = normRect(rect);
+  const R = normRect(rect, 19, rect?.c1 > 20 ? 29 : 21);
   const W = Math.max(1, finite(viewport?.width, 1));
   const H = Math.max(1, finite(viewport?.height, 1));
   const pad = viewport?.padding || {};
@@ -440,7 +440,7 @@ export function presetCamera(kind, viewport, options) {
   const opts = options && typeof options === 'object' ? options : {};
   let k = kind === 'hidden' ? 'boss' : kind;
   if (!CAMERA_PRESETS[k]) k = 'normal';
-  let rect = opts.rect ? normRect(opts.rect) : null;
+  let rect = opts.rect ? normRect(opts.rect, 19, opts.rect.c1 > 20 ? 29 : 21) : null;
   // the Final Assault prep happens on the boss field: a 'prep' camera asked for the boss rows is the boss one
   if (k === 'prep' && rect && rect.r1 <= 6) k = 'bossPrep';
   const preset = CAMERA_PRESETS[k];
@@ -449,7 +449,7 @@ export function presetCamera(kind, viewport, options) {
   const knownRect = !rect || sameRect(rect, preset.rect) || (k === 'prep' && rect.r0 >= 6 && rect.r1 <= 12 && rect.c1 <= 10)
     || (k === 'normal' && rect.r0 >= 6 && rect.r1 <= 13) || (k === 'unite' && rect.r0 >= 6 && rect.r1 <= 13)
     || (k === 'boss' && rect.r1 <= 6) || k === 'bossPrep' || k === 'pen';
-  const useOfficial = !opts.fit && knownRect && W / H >= 4 / 3 - 1e-6;
+  const useOfficial = !opts.fit && knownRect && !(k === 'unite' && rect?.c1 > 20) && W / H >= 4 / 3 - 1e-6;
   if (useOfficial) {
     const table = opts.half && preset.half ? preset.half : opts.shop === false && preset.officialNoShop ? preset.officialNoShop : preset.official;
     const key = table[side];

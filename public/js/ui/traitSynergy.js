@@ -1,6 +1,7 @@
 // Direct 特质 combinations in the visible v0.3.1 roster. Match the target's actual eventType: 铃兰's description
 // mentions “获得时”, but her own trait is not an 获得时 effect.
 import { N_ } from '../../../shared/i18n.js';
+import { battleRelation } from '../../synergy/model.js';
 
 export const TRAIT_SYNERGIES = Object.freeze([
   {
@@ -18,6 +19,11 @@ export const TRAIT_SYNERGIES = Object.freeze([
     targetEvent: 'SERVER_PREP_FIN', targetLabel: N_('休整期结束时'),
     summary: N_('塞雷娅：复制前方一格干员的「休整期结束时」特质。'),
   },
+  {
+    id: 'theresa-battle-layers', sourceChessId: 'chess_char_4_25_a', sourceGarrisons: ['garrison_59_a', 'garrison_59_b'],
+    targetRole: 'battle-layers', targetLabel: N_('战斗中'),
+    summary: N_('魔王：身前一格干员在战斗中因自身特质获得盟约层数时，可使该次层数额外增加。赋予队友叠层特质的干员需要让受赠者站在魔王身前。'),
+  },
 ]);
 
 export const traitSynergy = (id) => TRAIT_SYNERGIES.find((p) => p.id === id) || null;
@@ -27,5 +33,6 @@ export const traitSynergyForGarrison = (id) => TRAIT_SYNERGIES.find((p) => p.sou
 export function matchesTraitSynergy(chess, preset, getChess, getGarrison) {
   if (!chess || !preset || chess.chessId === preset.sourceChessId) return false;
   const forms = [chess, chess.goldenId ? getChess(chess.goldenId) : null].filter(Boolean);
+  if (preset.targetRole === 'battle-layers') return ['direct', 'granter'].includes(battleRelation(forms, getGarrison)?.role);
   return forms.some((form) => (form.garrisonIds || []).some((id) => getGarrison(id)?.eventType === preset.targetEvent));
 }

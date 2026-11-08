@@ -48,7 +48,7 @@
 //   first after 0.5 s, then every `interval` s; 持续伤害, not dodgeable; 无来源 at her last ATK once she left).
 
 import { num, up, traitBb, talentBb, skillRec, batMod, giveSp, protectMods } from '../shared/tier1.js';
-import { absoluteRangeKeys } from '../../../targeting.js';
+import { battleRangeKeys } from '../../../targeting.js';
 import { COLS } from '../../../constants.js';
 import { hypot } from '../../../detmath.js';
 
@@ -159,7 +159,7 @@ export default {
         if (d.prob > 0 && d.sp > 0 && battle.rng.chance(d.prob)) giveSp(a, d.sp);
       }
       if (skillOn(u, S1) && up(u)) {
-        const keys = new Set(absoluteRangeKeys(X4, a.tileR, a.tileC, a.dir || 'RIGHT', 0));
+        const keys = new Set(battleRangeKeys(X4, a.tileR, a.tileC, a.dir || 'RIGHT', 0));
         const next = bubbleCands(battle, u, keys, a)[0];
         if (next) bubble(battle, u, next);
       }

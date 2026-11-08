@@ -75,8 +75,9 @@ export class PlayerViews {
       personalChoice: this.personalChoice ? {
         id: this.personalChoice.id,
         round: this.personalChoice.round,
+          kind: this.personalChoice.kind || 'bounty',
         sourceItemId: this.personalChoice.sourceItemId,
-        cards: this.personalChoice.cards.map((c) => bountyCard(this.gd, c)),
+          cards: this.personalChoice.cards.map((c) => bountyCard(this.gd, c)),
       } : null,
       shop: {
         level: this.shop.level,
@@ -95,9 +96,12 @@ export class PlayerViews {
       board,
       // The stage's 外勤医疗 reserve medic is present during prep, but is not a draggable board piece.
       prepMapChars: this.m.prepMapChars(this),
+      eunectesTurrets: this.m.teamTurretGranted(),
+      deviceOverrides: this.m.effectiveDeviceOverrides(this),
+      tileOverrides: { ...this.tileOverrides },
       deployCap: this.deployCap,
       deployCount: this.deployCount,
-      // + the mode-off bonds it has members of (`off: true`, the strip's grey 本局禁用 discs — bondsMeta.offBondCounts)
+      // No mode-off entries: fixed and drawn exclusions affect the operator pool only.
       bonds: bondList(this.gd, this.bondsView(), { full: true, off: offBondCounts(this.gd, this) }),
       effects: this.effectsView(),
       nextEnemies: this.m.nextEnemiesFor(this),

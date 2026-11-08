@@ -3259,6 +3259,9 @@ async function main() {
       await writeFile(tmp, text);
       await rename(tmp, dest);
     }
+    // Preserve the local large-alliance strategy after official data is regenerated.
+    const { injectTechnicianData } = await import('./inject-technician-data.mjs');
+    injectTechnicianData(OPTS.out);
   }
   const report = {
     counts: {

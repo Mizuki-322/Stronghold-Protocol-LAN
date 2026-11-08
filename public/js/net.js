@@ -113,6 +113,7 @@ export class Net {
    * @param {object} [opts]
    * @param {string} [opts.url] socket URL (default: derived from location at connect time)
    * @param {any} [opts.WebSocket] WebSocket constructor (default: globalThis.WebSocket)
+   * @param {boolean} [opts.agent] mark an external AI player seat (never set by the browser UI)
    * @param {() => (string|null)} [opts.getToken] reconnect-token provider for `hello`
    * @param {() => ({ noReplace: boolean, claimAt?: number })} [opts.getTokenClaim] local ownership for this hello
    * @param {() => number} [opts.now]
@@ -122,6 +123,7 @@ export class Net {
   constructor(opts = {}) {
     this.url = opts.url || null;
     this.WS = opts.WebSocket || null;
+    this.agent = opts.agent === true;
     this.getToken = typeof opts.getToken === 'function' ? opts.getToken : () => null;
     this.getTokenClaim = typeof opts.getTokenClaim === 'function' ? opts.getTokenClaim : () => null;
     this.now = opts.now || (() => Date.now());
@@ -367,6 +369,7 @@ export class Net {
     if (!this.name) return;
     const rid = this._nextRid();
     const msg = { t: 'hello', rid, name: this.name, version: PROTOCOL_VERSION };
+    if (this.agent) msg.agent = true;
     let token = null;
     try { token = this.getToken(); } catch { token = null; }
     if (typeof token === 'string' && token.length > 0 && token.length <= 64) {

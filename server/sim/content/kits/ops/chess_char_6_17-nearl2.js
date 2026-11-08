@@ -1,7 +1,7 @@
 // server/sim/content/kits/ops/chess_char_6_17-nearl2.js — 耀骑士临光 (char_1014_nearl2) kit, tier 6.
 // Conventions of the tier-6 kits: ../shared/tier6.js; kit contract and rules: ../README.md.
 
-import { absoluteRangeKeys } from '../../../targeting.js';
+import { battleRangeKeys } from '../../../targeting.js';
 import { bodyInRange } from '../../../body.js';
 import {
   num, tbb, live, hasBond, onDefaultSkill, selectedSkill, N4, bstate, freeTiles, bestTile,
@@ -25,7 +25,7 @@ function nearl2(bb, chess, def) {
   const skillGrid = def?.skill?.rangeGrid?.length ? def.skill.rangeGrid : null;
   const tokId = (chess?.tokens || []).find((t) => /nearl2_sword/.test(String(t))) || 'token_10019_nearl2_sword';
   const sunBurst = (battle, unit, r, c, scale, stun) => {
-    const keys = new Set(absoluteRangeKeys(N4, r, c, 1, 0));
+    const keys = new Set(battleRangeKeys(N4, r, c, 1, 0));
     battle.fx('sunBurst', { x: c, y: r, id: unit.id });
     for (const e of battle.enemies) {
       if (!e.alive || e.hidden || !bodyInRange(e, keys)) continue;

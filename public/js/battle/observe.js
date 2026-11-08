@@ -124,6 +124,9 @@ export function teammateProgress(pub, myId) {
 export function sidesOf(field) {
   if (isObj(field?.sides)) return field.sides;
   const ps = Array.isArray(field?.players) ? field.players : [];
+  if (field?.kind === 'unite' && ps.length >= 3 && field?.rect?.c1 > 20) {
+    return Object.fromEntries(ps.slice(0, 3).map((pid, i) => [pid, ['R', 'C', 'L'][i]]));
+  }
   return Object.fromEntries(ps.map((pid, i) => [pid, i === 1 ? 'R' : 'L']));
 }
 
@@ -136,6 +139,12 @@ export function cameraLayers(field, pub, myId) {
   const sides = sidesOf(field);
   const at = (side) => Object.keys(sides).find((pid) => sides[pid] === side) || null;
   const label = (pid) => (!pid ? t('无人在家') : pid === myId ? t('你自己') : nameOf(pub, pid));
+  if (field.kind === 'unite' && field.players?.length >= 3 && field.rect?.c1 > 20) {
+    return ['L', 'C', 'R'].map((key) => {
+      const pid = at(key);
+      return { key, label: label(pid), self: pid === myId, watch: !!pid && pid !== myId };
+    });
+  }
   const left = at('L');
   const right = at('R');
   if ((field.kind === 'boss' || field.kind === 'hidden') && (!left || !right)) return [];
@@ -149,6 +158,10 @@ export function cameraLayers(field, pub, myId) {
 /** Camera options of a layer for view.setCamera(kind, …). */
 export function layerCamera(field, layer, mySide = 'L') {
   const rect = field?.rect;
+  if (field?.kind === 'unite' && rect?.c1 > 20 && ['L', 'C', 'R'].includes(layer)) {
+    const c0 = layer === 'L' ? 0 : layer === 'C' ? 8 : 16;
+    return { rect: { ...rect, c0, c1: c0 + 12 }, side: layer, fit: true };
+  }
   if (layer === 'L' || layer === 'R') return { rect, side: layer, half: true };
   return { rect, side: mySide };
 }

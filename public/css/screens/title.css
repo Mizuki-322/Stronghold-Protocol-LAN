@@ -322,7 +322,7 @@ html[data-script="alphabetic"] .title-login .btn--xl { letter-spacing: .3em; }
   border: 1px solid rgba(255, 159, 67, .5); color: #ffb066; background: rgba(255, 159, 67, .08); font-size: inherit;
 }
 .title-plugins .icon { width: .15rem; height: .15rem; }
-/* 公告 (ui/notices.js): absent when the catalogue has none. The dot is unread. The popup body keeps newlines as text. */
+/* 公告 (ui/notices.js): the title always shows the project notice; plugin notices show when present. The dot marks unread plugin notices. */
 .notice-slot { display: inline-flex; align-items: center; }
 .notice-entry {
   display: inline-flex; align-items: center; gap: .06rem; padding: .03rem .1rem;
@@ -338,3 +338,6 @@ html[data-script="alphabetic"] .title-login .btn--xl { letter-spacing: .3em; }
 .notice-card__meta { margin: 0; font-size: calc(.13 * var(--t)); color: var(--text-dim); overflow-wrap: anywhere; }
 .notice-card__title { margin: .02rem 0; font-size: calc(.16 * var(--t)); color: var(--text-hi); overflow-wrap: anywhere; }
 .notice-card__body { margin: 0; font-size: calc(.15 * var(--t)); color: var(--text-md); line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; -webkit-user-select: text; user-select: text; }
+.notice-card__body + .notice-card__body { margin-top: .08rem; }
+.notice-card__links { display: flex; flex-wrap: wrap; gap: .06rem .16rem; margin-top: .12rem; font-size: calc(.14 * var(--t)); }
+.notice-card__links a { color: var(--mint); text-decoration: underline; text-underline-offset: .03rem; overflow-wrap: anywhere; }

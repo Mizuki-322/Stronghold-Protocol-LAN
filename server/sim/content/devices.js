@@ -20,9 +20,10 @@
 //   活性源石 i  a unit on it (allies and ground enemies) gets a timed effect: damage true dmg/s, ATK + atk, ASPD +
 //              attack_speed for `duration` s from its last contact — an enemy keeps it after walking off; one effect
 //              per unit, its time starts again while the unit is on the tile; the tiles never switch off
-//   “双眼皮”   turrets (`trap_1104_aclasert`, band 机械援助 / `deviceOverrides` alias on): ranged arts shooter on its data
-//              range; ASPD + attack_speed_per_stack × L (≤ max_attack_speed), hits apply fragile 1 + damage_scale_per_stack
-//              × L (≤ max_damage_scale) for the text's duration; L = the owner's highest bond layers (live)
+//   “双眼皮”   ordinary map-card turrets (`trap_1104_aclasert`) keep their ranged arts attack and data range. With
+//              森蚺's opening strategy they use the widened range and physical splash, +1 ASPD / +0.1% fragile per
+//              active bond layer beyond 50 (up to 300), -2% DEF/RES per 30 such layers for 2 s (up to -20%), and
+//              two projectiles at 350 total layers. Other turrets use the owner's highest bond layer count.
 //   盟约寒风   `startColdWind` / `kjeragColdWind` helpers for the 谢拉格 bond (every interval s all enemies cold)
 // Device overrides: a player's battle input `deviceOverrides` ({ alias: bool }) and `alias` keys in its playerEffects
 // params (auto_chess_change_map effects: band 机械援助, 机变 map cards) switch the devices on that player's half of
@@ -38,6 +39,7 @@ import { performAttack, attackCountdown } from '../ai.js';
 import { sortEnemyTargets } from '../targeting.js';
 import { DIR_VEC, normDir, oppositeDir } from '../dir.js';
 import { hypot } from '../detmath.js';
+import { eunectesRangeTiles } from '../../../shared/eunectesRange.js';
 
 const num = (v, d = 0) => (typeof v === 'number' && Number.isFinite(v) ? v : (typeof v === 'string' && v.trim() !== '' && Number.isFinite(+v) ? +v : d));
 /** ASPD blackboard values: a fraction (|v| < 1, e.g. −0.6 / −0.05) is ×100 ASPD, otherwise flat (+20). */
@@ -94,9 +96,9 @@ function dataActive(d) {
 /**
  * Override of a device (true / false, undefined = none). A device belongs to the player whose half of the field
  * holds it (the stage has one alias group per half: #0xx own board, #1xx partner half, #2xx/#3xx boss halves); map
- * cards (“移除场地上全部阻隔工事”) and band 机械援助 (“所有场地中出现1个”) change the owner's own half only — a
- * partner's card never removes this player's crates, a partner's band never adds a turret scaling with this player's
- * layers. Battle-level overrides (opts.deviceOverrides) apply to every half.
+ * cards (“移除场地上全部阻隔工事”) change the owner's own half only — a partner's card never removes this player's
+ * crates. 森蚺策略 is a battle-wide flag handled by isActive, with each turret scaling from its field owner's layers.
+ * Battle-level overrides (opts.deviceOverrides) apply to every half.
  */
 function overrideOf(battle, st, d) {
   const a = aliasOf(d);
@@ -108,6 +110,7 @@ function overrideOf(battle, st, d) {
   return undefined;
 }
 function isActive(battle, st, d) {
+  if (battle.flags?.eunectesTurrets && (d.key === TURRET_KEY || d.role === 'turret')) return true;
   const o = overrideOf(battle, st, d);
   return o === undefined ? dataActive(d) : o;
 }
@@ -172,9 +175,23 @@ function topLayers(battle, playerId) {
   return L;
 }
 
+/** 森蚺: the sum of all currently active bonds, with the first 50 layers ignored. */
+function eunectesLayers(battle, playerId) {
+  const bonds = battle.getPlayer(playerId)?.bonds;
+  let total = 0;
+  if (bonds && typeof bonds === 'object') for (const b of Object.values(bonds)) {
+    if (b?.active) total += num(b.layers, 0);
+  }
+  return Math.min(300, Math.max(0, total - 50));
+}
+
 function playerForCol(battle, c) {
   if (!battle.players.length) return null;
   if (battle.players.length === 1) return battle.players[0].playerId;
+  if (battle.kind === 'unite' && battle.players.length >= 3) {
+    const offset = c >= 19 ? 16 : c >= 11 ? 8 : 0;
+    return (battle.players.find((p) => p.colOffset === offset) ?? battle.players[0]).playerId;
+  }
   const half = c >= 11 ? 'R' : 'L';
   return (battle.players.find((p) => p.half === half) ?? battle.players[0]).playerId;
 }
@@ -205,14 +222,24 @@ function deviceTile(battle, r0, c0) {
 function spawnTurret(battle, st, d) {
   const alias = aliasOf(d) ?? `${d.key}@${d.row},${d.col}`;
   if (st.turrets.has(alias)) return st.turrets.get(alias);
-  const tiles = (d.raw?.rangeTiles ?? []).filter((p) => Array.isArray(p) && battle.grid.inRect(p[0], p[1]));
-  if (!tiles.length) return null; // shoots at nothing on this field
-  const tile = deviceTile(battle, d.row, d.col);
+  const authored = (d.raw?.rangeTiles ?? d.rangeTiles ?? []).filter((p) => Array.isArray(p) && p.length >= 2);
+  if (!authored.some(([r, c]) => battle.grid.inRect(r, c))) return null; // only this field's authored turret
+  const eunectes = !!battle.flags?.eunectesTurrets;
+  const tiles = eunectes ? eunectesRangeTiles(d.row, d.col, authored, {
+    inBounds: (r, c) => battle.grid.inBounds(r, c), inField: (r, c) => battle.grid.inRect(r, c),
+  })
+    : authored.filter(([r, c]) => battle.grid.inRect(r, c));
+  const fieldTiles = tiles.filter(([r, c]) => battle.grid.inRect(r, c));
+  if (!fieldTiles.length) return null; // shoots at nothing on this field
+  const tile = eunectes && battle.grid.inBounds(d.row, d.col)
+    ? [d.row, d.col] : deviceTile(battle, d.row, d.col);
   if (!tile) return null;
   const stats = d.raw?.stats ?? d.stats ?? {};
   const u = battle.spawnDevice(d.key, tile[0], tile[1], {
     hp: num(stats.maxHp, 100), blockCnt: 0, name: d.name ?? d.raw?.name ?? d.key,
-    atk: num(stats.atk, 0), def: num(stats.def, 0), res: num(stats.res, 0), bat: num(stats.bat, 1), aspd: num(stats.aspd, 100),
+    atk: eunectes ? 500 : num(stats.atk, 0),
+    def: num(stats.def, 0), res: num(stats.res, 0), bat: num(stats.bat, 1), aspd: num(stats.aspd, 100),
+    allowOutsideRect: eunectes,
   });
   if (!u) return null;
   const skill = d.raw?.skill ?? {};
@@ -222,6 +249,7 @@ function spawnTurret(battle, st, d) {
   u.dir = u.ownerId != null ? (battle.getPlayer(u.ownerId)?.dir ?? 'RIGHT') : 'RIGHT';
   u.mem.turret = {
     alias,
+    eunectes,
     keys: tiles.map(([r, c]) => r * COLS + c),
     baseAspd: u.base.aspd,
     aspdPer: num(bb.attack_speed_per_stack, 0),
@@ -237,26 +265,43 @@ function spawnTurret(battle, st, d) {
 }
 
 const TURRET_PROFILE = Object.freeze({ attack: 'ranged', dmgType: 'arts', projectile: 'bolt', canHitFly: true, maxTargets: 1, atkScale: 1 });
+const EUNECTES_PROFILE = Object.freeze({ attack: 'ranged', dmgType: 'phys', projectile: 'bomb', canHitFly: false,
+  groundOnly: true, splashRadius: 1, splashScale: 1, maxTargets: 1, atkScale: 1 });
 
 function tickTurret(battle, u, dt) {
   const T = u.mem.turret;
   if (!u.alive || !T) return;
   T.cd = attackCountdown(T.cd, dt);   // (the engine's attack countdown: a whole number of ticks takes exactly that many)
   if (T.cd > 0 || u.s.flags.stun) return;
-  const L = u.ownerId != null ? topLayers(battle, u.ownerId) : 0;
+  const L = u.ownerId != null ? (T.eunectes ? eunectesLayers(battle, u.ownerId) : topLayers(battle, u.ownerId)) : 0;
   const bonus = Math.min(L * T.aspdPer, T.aspdMax);
   if (Math.abs(u.base.aspd - (T.baseAspd + bonus)) > 1e-9) { u.base.aspd = T.baseAspd + bonus; u.markDirty(); }
-  const cands = battle.enemiesInKeys(T.keys, u, TURRET_PROFILE);
+  const baseProfile = T.eunectes ? EUNECTES_PROFILE : TURRET_PROFILE;
+  const cands = battle.enemiesInKeys(T.keys, u, baseProfile);
   if (!cands.length) { T.cd = 0; return; }
-  sortEnemyTargets(battle, u, cands, null);
+  if (T.eunectes) cands.sort((a, b) => {
+    const bossA = a.isBoss || a.def?.rank === 'BOSS' ? 0 : 1;
+    const bossB = b.isBoss || b.def?.rank === 'BOSS' ? 0 : 1;
+    return bossA - bossB || b.hp - a.hp || a.id - b.id;
+  });
+  else sortEnemyTargets(battle, u, cands, null);
   const frag = Math.min(1 + L * T.fragPer, T.fragMax) - 1;
+  const resistCut = T.eunectes ? Math.min(0.2, Math.floor(L / 30) * 0.02) : 0;
   const prof = {
-    ...TURRET_PROFILE,
-    afterHit: (b, src, target) => {
-      if (frag > 0 && T.fragDur > 0 && target && target.alive) b.applyStatus(target, 'fragile', { duration: T.fragDur, value: frag, source: src });
+    ...baseProfile,
+    onEachHit: (b, src, target) => {
+      if (!target?.alive) return;
+      if (frag > 0 && T.fragDur > 0) b.applyStatus(target, 'fragile', { duration: T.fragDur, value: frag, source: src });
+      if (resistCut > 0) b.applyStrongest(target, 'eunectes:dualResistDown', { duration: 2, value: resistCut,
+        mods: (v) => ({ defMul: 1 - v, resMul: 1 - v }), source: src });
     },
   };
-  performAttack(battle, u, prof, [cands[0]]);
+  const targets = [cands[0]];
+  if (T.eunectes && L >= 300) {
+    const weakest = cands.reduce((best, e) => e.hp < best.hp || (e.hp === best.hp && e.id < best.id) ? e : best);
+    targets.push(weakest);
+  }
+  performAttack(battle, u, prof, targets);
   T.cd = u.s.interval;
 }
 

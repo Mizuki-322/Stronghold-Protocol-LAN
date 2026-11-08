@@ -88,6 +88,8 @@ import { TeamPanel } from '../ui/teamPanel.js';
 import { ShopBar } from '../ui/shopBar.js';
 import { DetailPanel, resolveDetail } from '../ui/detailPanel.js';
 import { TraitSynergyDialog } from '../ui/traitSynergyDialog.js';
+import { operatorTrackId, visibleTrackedOperators } from '../ui/operatorTracking.js';
+import { OperatorTrackingDialog } from '../ui/operatorTrackingDialog.js';
 import { RewardOverlay } from '../ui/rewardOverlay.js';
 import { FinalAssaultPlate, HiddenCorePlate, EndPlate, preloadBossPlateArt, bossPlateArtReady, finalPlateRows, endPlateOf } from '../ui/bossPlates.js';
 import { DownedPlate, downedDue, preloadDownedArt, downedArtReady } from '../ui/downedPlate.js';
@@ -119,7 +121,7 @@ import {
   terrainInfo, deviceInfo, deviceTipAt, noteDeviceUnits, deviceUnitsForEntry,
   countdownState, shopBlockReason, stageOverrides, effectiveStage, watchTarget, dropFailureReason,
   previewEnemyKey, prepCamera, prepCameraFor, deployFoldsShop, deployZoomStep, deployZoomRemember, prepDeployCamera, deployFieldOf, fieldTile, panelSide, panelSlots, bondPopupPlace, unitLoadout, deployedRecord,
-  mergeTarget, modeOffBonds, readyFundsPrompt, readyShopFold, ownerBandId, ownDiyRecord, ownStandIn, roundStartReplay,
+  mergeTarget, modeOffBonds, bannedPerBond, addTrackedBonds, readyFundsPrompt, readyShopFold, ownerBandId, ownDiyRecord, ownStandIn, roundStartReplay,
 } from '../ui/gameLogic.js';
 import { toast } from '../ui/toasts.js';
 import { LoadoutButton } from './loadout.js';
@@ -195,7 +197,9 @@ function MatchScreen() {
   const myId = useStore((s) => s.me.playerId);
   const conn = useStore((s) => s.connection, shallowEqual);
   const emotes = useStore((s) => s.emotes);
+  const chats = useStore((s) => s.chats);
   const roomSolo = useStore((s) => s.room?.mode === 'solo');
+  const extendedRoom = useStore((s) => s.room?.mode === 'coop8');
   const spectator = useStore((s) => isSpectating(s.room, s.me.playerId));
   const playerSettings = useSettings();
   const metricsSetting = playerSettings.combatMetrics === true;
@@ -218,6 +222,16 @@ function MatchScreen() {
   const [watchWho, setWatchWho] = useState(null);        // { fieldId, playerId }: the teammate picked with 前往查看
   const [drawer, setDrawer] = useState(null);            // 'enemies' | 'info' | null
   const [bondOpen, setBondOpen] = useState(null);        // { id, ownerId, from }: the bond popup and whose bond it shows
+  const [trackedBonds, setTrackedBonds] = useState(() => new Set()); // local to this match; no cross-match persistence
+  const [trackedOperators, setTrackedOperators] = useState(() => new Set()); // normal and elite forms share one target
+  const [operatorTrackingOpen, setOperatorTrackingOpen] = useState(false);
+  const visibleTrackedRef = useRef(new Set());
+  useEffect(() => {
+    const visible = visibleTrackedOperators(priv, trackedOperators, (id) => data.lookup('chess', id));
+    const appeared = [...visible].filter((id) => !visibleTrackedRef.current.has(id));
+    visibleTrackedRef.current = visible;
+    if (appeared.length) toast(t('追踪干员已出现：{names}', { names: appeared.map((id) => data.lookup('chess', id)?.name || id).join('、') }), 'info');
+  }, [priv?.shop?.slots, priv?.shop?.rewardOffer?.slots, trackedOperators]);
   const [bondsCollapsed, setBondsCollapsed] = useState(false);
   const [detail, setDetail] = useState(null);            // detail target
   const [traitSynergyId, setTraitSynergyId] = useState(null);
@@ -496,6 +510,7 @@ function MatchScreen() {
   // 联防 / normal rects are stage rows; the boss PREP draws the player's half (stage rows 2–5) as board rows 9–12
   // (render/prepfield.js toDisp), which is exactly gameLogic.fieldTile.
   live.current.terrainStage = ownView ? ownStage : baseStage;
+  live.current.terrainRect = shownField?.rect ?? GEO.NORMAL_RECT;
   live.current.terrainTile = showPrep && (deployField === 'bossL' || deployField === 'bossR')
     ? (row, col) => fieldTile(deployField, row, col)
     : (row, col) => [row, col];
@@ -610,7 +625,8 @@ function MatchScreen() {
       if (Array.isArray(earlySnap.units)) {
         snapUnitsRef.current = new Map(earlySnap.units.filter(Array.isArray).map((t) => [t[0], t]));
       }
-      hudRef.current = snapHud(earlySnap);
+      const current = live.current;
+      hudRef.current = snapHud(earlySnap, current.watchWho?.fieldId === field.fieldId ? current.watchWho.playerId : current.myId);
       setHud(hudRef.current);
     }
   }, [view, showPrep, priv, editable, field, combat, mode, watchingOther, watching, holdSeq]);
@@ -654,7 +670,8 @@ function MatchScreen() {
         for (const t of snap.units) if (Array.isArray(t)) mp.set(t[0], t);
         snapUnitsRef.current = mp;
       }
-      hudRef.current = snapHud(snap);
+      const current = live.current;
+      hudRef.current = snapHud(snap, current.watchWho?.fieldId === snap.fieldId ? current.watchWho.playerId : current.myId);
       const dt = performance.now() - last;
       if (dt >= HUD_HZ_MS) flush();
       else if (!pending) pending = setTimeout(flush, HUD_HZ_MS - dt);
@@ -950,7 +967,7 @@ function MatchScreen() {
   // emote bubbles (and a sound for teammates' emotes)
   const bubbleMs = (gd.config?.timers?.chatBubble ?? 3) * 1000;
   const bubbles = activeBubbles(emotes, Date.now(), bubbleMs);
-  useTicker(bubbles.size ? 500 : 0); // re-render only while a bubble is showing (to expire it)
+  useTicker(bubbles.size || extendedRoom && chats.some((c) => Date.now() - c.at < bubbleMs) ? 500 : 0);
   const lastEmote = useRef(emotes.length ? emotes[emotes.length - 1].seq : 0);
   useEffect(() => {
     const e = emotes[emotes.length - 1];
@@ -1210,8 +1227,8 @@ function MatchScreen() {
         const L = live.current;
         const [row, col] = L.terrainTile(t.row, t.col);
         const device = L.deviceBattle
-          ? deviceTipAt(L.terrainStage, row, col, { units: [...deviceUnitsRef.current.values()], snap: snapUnitsRef.current })
-          : deviceInfo(L.terrainStage, row, col);
+          ? deviceTipAt(L.terrainStage, row, col, { units: [...deviceUnitsRef.current.values()], snap: snapUnitsRef.current, rect: L.terrainRect })
+          : deviceInfo(L.terrainStage, row, col, { rect: L.terrainRect });
         if (device) {
           audio.sfx('click', { volume: 0.4 });
           setSel(null);
@@ -1576,6 +1593,7 @@ function MatchScreen() {
   const watchedP = watchingOther ? (players.find((p) => p.playerId !== myId && (watching === ownFieldId(p.playerId) || (watching === p.fieldId && String(watching).startsWith('n:')))) || null) : null;
   const watchedName = watchingOther ? (watchedP?.name || players.find((p) => watching === p.fieldId)?.name || t('队友')) : null;
   const stripBonds = strip.bonds;
+  const shownBonds = strip.self ? addTrackedBonds(stripBonds, trackedBonds, gd.bond) : stripBonds;
   // a popup opened from the strip closes when the strip changes hands (another teammate scouted / a ‹ › half / back to
   // the own bonds); one opened from a card's chip keeps its unit owner (it carries its own player either way)
   const stripOwnerRef = useRef(strip.ownerId);
@@ -1590,6 +1608,16 @@ function MatchScreen() {
   const popOps = cc && battleRunner && field?.local && bondOpen && bondOpen.ownerId !== myId ? battleRunner.ownerOps(bondOpen.ownerId, field.fieldId) : null;
   const bondPop = popupView({ open: bondOpen, pub, priv, myId, field, units: popOps, live: liveLayers });
   const openBond = (id, ownerId, from) => { setBondOpen((b) => toggleBond(b, id, ownerId, from)); audio.sfx('click', { volume: 0.4 }); };
+  const toggleTrackedBond = (id) => setTrackedBonds((before) => {
+    const next = new Set(before);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const toggleTrackedOperator = (id) => setTrackedOperators((before) => {
+    const next = new Set(before);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
   const watchingNow = combat ? (watching || field?.fieldId || home) : watching;
   const shopOpen = showShop && !barCollapsed;
   const ufShown = !!(selEntry && editable && !facing && !drag && showPrep && ufGeo);
@@ -1654,7 +1682,8 @@ function MatchScreen() {
   const cardRangeKey = cardRange ? JSON.stringify(cardRange) : '';
   useEffect(() => {
     if (!view) return undefined;
-    showRange(view, cardRange?.grid, cardRange?.row, cardRange?.col, cardRange?.dir, SEL_RANGE);
+    if (cardRange?.tiles) view.highlightTiles(cardRange.tiles, { ...SEL_RANGE, includePadRows: true });
+    else showRange(view, cardRange?.grid, cardRange?.row, cardRange?.col, cardRange?.dir, SEL_RANGE);
     return () => showRange(view, null, 0, 0, null, SEL_RANGE);
   }, [view, cardRangeKey, showPrep, field]);
   // the card's bond chips — and the popup a chip opens: a battle / scouted unit's OWNER's bonds (yours, or that
@@ -1662,8 +1691,9 @@ function MatchScreen() {
   // cards read the strip's (ui/watchBonds.js detailBondOwner)
   const detailOwner = detailBondOwner(detailTarget, { pub, myId, stripOwnerId: strip.ownerId });
   const detailBonds = detailOwner === strip.ownerId ? stripBonds : playerBonds({ pub, priv, myId, ownerId: detailOwner, live: liveLayers });
-  // bonds this mode never activates (标准: 10 of 23, 奥术 among them) — shown 本局禁用 on cards, chips and the popup
+  // Mode pool exclusions only ban operators; bonds that reach their thresholds remain activatable.
   const offBonds = modeOffBonds(getMode(pub?.modeId));
+  const bannedBonds = new Set([...bannedPerBond(data.list('bonds'), pub?.bannedChess)].filter(([, count]) => count > 0).map(([id]) => id));
 
   return html`<div class=${cx('screen', 'gm', `gm--${mode}`, drag && 'is-dragging', barCollapsed && 'is-collapsed', (sp || hasPersonalChoice || offerBlocksPrep(pub?.offers)) && 'has-sp', sp && 'has-spdraft', pen && 'is-pen', readyWhy && 'has-readywhy')}
       data-camera=${pen ? 'pen' : camKind}>
@@ -1695,12 +1725,12 @@ function MatchScreen() {
             setBondsCollapsed(!bondsCollapsed);
           }}><${Icon} name=${bondsCollapsed ? 'chevronRight' : 'chevronLeft'} /></button>
         <div id="match-bond-strip" class="gm__bond-list" hidden=${bondsCollapsed}>
-          <${BondStrip} bonds=${stripBonds} layersDisabled=${layersDisabled} openId=${bondPop && bondPop.ownerId === strip.ownerId ? bondPop.bondId : null}
-            owner=${strip.name} onOpen=${(id) => openBond(id, strip.ownerId, 'strip')} />
+          <${BondStrip} bonds=${shownBonds} layersDisabled=${layersDisabled} openId=${bondPop && bondPop.ownerId === strip.ownerId ? bondPop.bondId : null}
+            owner=${strip.name} trackedIds=${strip.self ? trackedBonds : null} bannedBonds=${bannedBonds} onOpen=${(id) => openBond(id, strip.ownerId, 'strip')} />
         </div>
       </div>
 
-      <${TeamPanel} pub=${pub} myId=${myId} watching=${watchingNow} bubbles=${bubbles} onWatch=${watchPlayer} cap=${gd.config?.lpCapPerRound ?? 10} uniteLocal=${uniteLocal}
+      <${TeamPanel} pub=${pub} myId=${myId} watching=${watchingNow} bubbles=${bubbles} chats=${chats} roster=${extendedRoom} onWatch=${watchPlayer} cap=${gd.config?.lpCapPerRound ?? 10} uniteLocal=${uniteLocal}
         spMarks=${sp ? spMarks(sp, { solo }) : null}
         self=${Number.isFinite(priv?.lp) ? { lp: priv.lp, pending: liveLpNow.pending, unite: liveLpNow.unite, left: liveLpNow.left } : null}
         observe=${cc ? { canObserve: (p) => observeTarget(p, pub, myId, { observing: watchingOther, ownDone: localDone }), observing: watchingOther, onBack: backHome } : null} />
@@ -1713,7 +1743,7 @@ function MatchScreen() {
       </div>` : null}
 
       ${showShop ? html`<${ShopBar} priv=${priv} editable=${editable} collapsed=${barCollapsed} refreshBusy=${refreshBusy} onCollapse=${setCollapsed}
-        barRef=${barRef} offBonds=${offBonds}
+        barRef=${barRef} offBonds=${offBonds} bannedBonds=${bannedBonds} trackedBonds=${trackedBonds} trackedOperators=${trackedOperators}
         onBuy=${buy} onLevel=${() => actions.levelUp()} onRefresh=${() => actions.refresh()} onFreeze=${() => actions.freeze()}
         onDetail=${(id, kind, hint) => setDetail({ kind: kind === 'item' ? 'item' : 'chess', id, hint: hint || null, tap: ++cardTap.current })}
         onDetailClose=${() => setDetail((d) => (d?.kind === 'chess' || d?.kind === 'item' ? null : d))}
@@ -1738,7 +1768,8 @@ function MatchScreen() {
 
       <div class="gm__corner">
         ${showMetrics && metricsOpen ? html`<${CombatMetricsPanel} myId=${myId} onClose=${() => setMetricsOpen(false)} />` : null}
-        ${spectator ? null : html`<${EmoteWheel} open=${emoteOpen} onToggle=${setEmoteOpen} onSend=${(id) => actions.emote(id)} disabled=${conn.status !== 'online'} />`}
+        ${spectator ? null : html`<${EmoteWheel} open=${emoteOpen} onToggle=${setEmoteOpen} onSend=${(id) => actions.emote(id)} onSendText=${(text) => actions.chat(text)}
+          messages=${chats} players=${pub?.players || []} disabled=${conn.status !== 'online'} />`}
         ${showMetrics ? html`<button type="button" class="gm__gear gm__metrics" aria-label=${t('作战统计')} title=${t('作战统计')} aria-expanded=${metricsOpen}
           aria-controls="combat-metrics-panel" onKeyDown=${(e) => { if (e.key === ' ') e.stopPropagation(); }} onClick=${() => {
             setMetricsOpen(!metricsOpen);
@@ -1755,19 +1786,24 @@ function MatchScreen() {
       </div>
 
       ${drawer ? html`<${EnemyDrawer} tab=${drawer} onTab=${setDrawer} pub=${pub} priv=${priv} onClose=${() => setDrawer(null)}
-        bandId=${scoutBandId} bandOwner=${scoutBandOwner}
+        bandId=${scoutBandId} bandOwner=${scoutBandOwner} trackedBonds=${trackedBonds} onBond=${(id) => openBond(id, myId, 'info')}
+        trackedOperators=${trackedOperators} onOpenOperatorTracking=${() => setOperatorTrackingOpen(true)}
         onEnemy=${(k, n) => setDetail({ kind: 'enemy', id: k, count: n })} onChess=${(id) => setDetail({ kind: 'chess', id, foreign: true })} />` : null}
+      ${operatorTrackingOpen ? html`<${OperatorTrackingDialog} tracked=${trackedOperators} bannedChess=${pub?.bannedChess || []}
+        onToggle=${toggleTrackedOperator} onClose=${() => setOperatorTrackingOpen(false)} />` : null}
 
       ${bondPop ? html`<${BondPopup} bondId=${bondPop.bondId} entry=${bondPop.entry} priv=${bondPop.priv} banned=${pub?.bannedChess || []} owner=${bondPop.name}
         off=${offBonds.has(bondPop.bondId)} morphMode=${morphMode}
+        tracked=${trackedBonds.has(bondPop.bondId)} onTrack=${toggleTrackedBond} fromInfo=${bondOpen?.from === 'info'}
         place=${bpPlace} over=${!!resolved && bpPlace === dSide}
         onClose=${() => setBondOpen(null)} onMember=${(id, items, standInFor, diy) => setDetail({ kind: 'chess', id, owner: bondPop.ownerId, items: items || null, standInFor: standInFor || null, diy: diy || null })} />` : null}
 
       ${resolved ? html`<${DetailPanel} detail=${resolved} snapHp=${snapHp} onClose=${() => { setDetail(null); setSel(null); }}
-        bonds=${detailBonds} offBonds=${offBonds} loadout=${detailLoadout} ops=${priv?.ops ?? null} side=${dSide} shopOpen=${shopOpen} live=${liveStats} voice=${true}
-        morphMode=${morphMode} unequipAllowed=${unequipAllow}
+        bonds=${detailBonds} offBonds=${offBonds} mutedBonds=${bannedBonds} loadout=${detailLoadout} ops=${priv?.ops ?? null} side=${dSide} shopOpen=${shopOpen} live=${liveStats} voice=${true}
+        morphMode=${morphMode} unequipAllowed=${unequipAllow} extendedRoom=${extendedRoom}
         onUnequip=${editable && unequipAllow ? (itemUid) => actions.unequip(itemUid) : null}
-        onBond=${(id) => openBond(id, detailOwner, 'detail')} onSynergy=${setTraitSynergyId} />` : null}
+        onBond=${(id) => openBond(id, detailOwner, 'detail')} onSynergy=${setTraitSynergyId}
+        tracked=${trackedOperators.has(operatorTrackId(resolved.chess))} onTrack=${toggleTrackedOperator} />` : null}
       ${traitSynergyId ? html`<${TraitSynergyDialog} synergyId=${traitSynergyId} bannedChess=${pub?.bannedChess || []}
         onClose=${() => setTraitSynergyId(null)} onPick=${(id) => { setTraitSynergyId(null); setDetail({ kind: 'chess', id, foreign: true }); }} />` : null}
 

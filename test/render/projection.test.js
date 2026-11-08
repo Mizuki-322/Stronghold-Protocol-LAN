@@ -196,6 +196,17 @@ describe('framing', () => {
     assert.deepEqual(normRect(null), { r0: 0, r1: 18, c0: 0, c1: 20 });
   });
 
+  test('the three-helper battlefield camera includes the third section', () => {
+    const rect = { r0: 9, r1: 12, c0: 0, c1: 28 };
+    const pad = { top: 90, bottom: 180, left: 120, right: 40 };
+    const view = { ...vp, padding: pad };
+    for (const cam of [fitCamera(rect, view), presetCamera('unite', view, { rect })]) {
+      const b = bounds(cam, rect);
+      assert.ok(b.minX >= pad.left - 1 && b.maxX <= vp.width - pad.right + 1);
+      assert.ok(b.minY >= pad.top - 1 && b.maxY <= vp.height - pad.bottom + 1);
+    }
+  });
+
   test('lerpCamera endpoints and midpoint; ease', () => {
     const a = presetCamera('prep', vp), b = presetCamera('boss', vp);
     const s0 = lerpCamera(a, b, 0).params(), ap = a.params();

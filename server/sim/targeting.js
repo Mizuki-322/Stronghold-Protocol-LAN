@@ -16,6 +16,7 @@
 // blocking the source included — GitHub #97; 迷彩 is not checked — DESIGN §22.12).
 
 import { COLS, ROWS } from './constants.js';
+import { GEO } from '../../shared/constants.js';
 import { normDir, rotateOffset } from './dir.js';
 import { bodyDist } from './body.js';
 import { roundHalfEven } from './detmath.js';
@@ -24,15 +25,15 @@ import { roundHalfEven } from './detmath.js';
  * Build the absolute tile-key list of a grid for a unit standing at (r,c) facing `dir` ('UP'|'RIGHT'|'DOWN'|'LEFT';
  * a legacy facing sign ±1 is read as RIGHT / LEFT).
  */
-export function absoluteRangeKeys(grid, r, c, dir, extend = 0) {
+function rangeKeysWithWidth(grid, r, c, dir, extend, width) {
   const keys = [];
   const seen = new Set();
   const d = normDir(dir);
   const add = (dr, dc) => {
     const [ar, ac] = rotateOffset(dr, dc, d);
     const rr = r + ar, cc = c + ac;
-    if (rr < 0 || rr >= ROWS || cc < 0 || cc >= COLS) return;
-    const k = rr * COLS + cc;
+    if (rr < 0 || rr >= ROWS || cc < 0 || cc >= width) return;
+    const k = rr * width + cc;
     if (!seen.has(k)) { seen.add(k); keys.push(k); }
   };
   // kits may hand over junk (a number, a string, [[1,'a']]): ignore anything that is not an integer [dr, dc] pair
@@ -43,10 +44,15 @@ export function absoluteRangeKeys(grid, r, c, dir, extend = 0) {
   if (extend > 0 && Number.isFinite(extend)) {
     const maxByRow = new Map();
     for (const [dr, dc] of cells) maxByRow.set(dr, Math.max(maxByRow.get(dr) ?? -Infinity, dc));
-    for (const [dr, mx] of maxByRow) for (let k = 1; k <= Math.min(extend, COLS); k++) add(dr, mx + k);
+    for (const [dr, mx] of maxByRow) for (let k = 1; k <= Math.min(extend, width); k++) add(dr, mx + k);
   }
   return keys;
 }
+
+/** The ordinary 21-column board contract used by UI previews and the plugin SDK. */
+export const absoluteRangeKeys = (grid, r, c, dir, extend = 0) => rangeKeysWithWidth(grid, r, c, dir, extend, GEO.COLS);
+/** Internal simulation keys reserve space for the third 联防 section. */
+export const battleRangeKeys = (grid, r, c, dir, extend = 0) => rangeKeysWithWidth(grid, r, c, dir, extend, COLS);
 
 // extendedGrid(grid, extend): the relative form of absoluteRangeKeys' rangeExtend — one implementation with the card's
 // record range (shared/loadoutRecord.js attackRangeGrid), re-exported here for the battle (Battle._refreshRange).

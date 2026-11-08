@@ -17,7 +17,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeBattle, chessRec, enemyRec, checkInvariants } from '../helpers/battleHarness.js';
 import { getDefaultSource } from '../../server/sim/simdata.js';
-import { absoluteRangeKeys, canTargetAlly } from '../../server/sim/targeting.js';
+import { battleRangeKeys, canTargetAlly } from '../../server/sim/targeting.js';
 import { flagsOf } from '../../server/sim/snapshot.js';
 import { AUTO_OP_COOLDOWN, COLS } from '../../server/sim/constants.js';
 import { UF } from '../../shared/constants.js';
@@ -51,7 +51,7 @@ test('#15 德克萨斯 S2 剑雨 (skill range 13 tiles, attack range 2): an enem
     h.run(1);
     assert.equal(u.skill.activations, 0, 'nobody in the skill range');
     // (10,6): two tiles ahead — inside 剑雨's range, outside her 2-tile attack range
-    const keys = new Set(absoluteRangeKeys(u.def.skill.rangeGrid, 10, 4, u.dir, 0));
+    const keys = new Set(battleRangeKeys(u.def.skill.rangeGrid, 10, 4, u.dir, 0));
     assert.ok(keys.has(10 * COLS + 6) && !u.rangeKeySet.has(10 * COLS + 6));
     const e = h.spawn(sneak ? 'enemy_sneak' : 'enemy_d', { pos: [10, 6] });
     if (sneak) h.b.addBuff(e, { key: 'ab:stealth', flags: { stealth: true }, persist: true });
@@ -73,7 +73,7 @@ test('#15 audit: every MANUAL chess skill with its own 技能范围 casts with a
       assert.equal(u.skill.id, s.skillId);
       assert.equal(u.skill.rule, 'SKILL_RANGE', `${id} ${s.skillId}`);
       h.step();
-      const skill = absoluteRangeKeys(s.rangeGrid, 10, 5, u.dir, 0).filter((k) => { const r = Math.floor(k / COLS), c = k % COLS; return r >= 9 && r <= 12 && c >= 2 && c <= 10 && k !== 10 * COLS + 5; });
+      const skill = battleRangeKeys(s.rangeGrid, 10, 5, u.dir, 0).filter((k) => { const r = Math.floor(k / COLS), c = k % COLS; return r >= 9 && r <= 12 && c >= 2 && c <= 10 && k !== 10 * COLS + 5; });
       const outside = skill.filter((k) => !u.rangeKeySet.has(k));
       const k = (outside.length ? outside : skill)[0];
       assert.ok(k != null, `${id} ${s.skillId}: a field tile in the skill range`);
@@ -98,7 +98,7 @@ test('#15 an attack-range change ("攻击范围扩大") is officially the basic 
   h.step();
   fill(u);
   // a field tile of the expanded range outside his own (his row has none: 3-7 and 3-12 share it)
-  const far = absoluteRangeKeys(u.def.skill.rangeGrid, 10, 3, u.dir, 0).find((k) => !u.rangeKeySet.has(k) && Math.floor(k / COLS) >= 9 && Math.floor(k / COLS) <= 12);
+  const far = battleRangeKeys(u.def.skill.rangeGrid, 10, 3, u.dir, 0).find((k) => !u.rangeKeySet.has(k) && Math.floor(k / COLS) >= 9 && Math.floor(k / COLS) <= 12);
   assert.ok(far != null);
   h.spawn('enemy_d', { pos: [Math.floor(far / COLS), far % COLS] });
   assert.ok(h.runUntil(() => u.skill.activations === 1, 3), 'an enemy only in the expanded range: cast, no attack needed');

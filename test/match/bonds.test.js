@@ -105,7 +105,7 @@ test('助力: upper tier counts operators differing in name OR elite state', () 
   assert.equal(s.deputShip.tier, 2, 'normal + elite count as different for the 3-member tier');
 });
 
-test('layers persist on every bond; Σ activated layers only counts active bonds; FUNNY inactive bonds omitted', () => {
+test('layers persist on every bond; Σ activated layers only counts active bonds; standard exclusions do not suppress bonds', () => {
   const [a, b, c] = members('yanShip', 3);
   const s = computeBonds(gd, state({ board: [piece(a), piece(b), piece(c)], layers: { yanShip: 40, egirShip: 100 } }));
   assert.equal(s.yanShip.layers, 40);
@@ -116,5 +116,5 @@ test('layers persist on every bond; Σ activated layers only counts active bonds
   assert.ok(list.some((x) => x.bondId === 'egirShip' && !x.active), 'inactive bonds with layers are listed');
   const funny = new GameData(DATA, 'mode_multi_funny');
   const f = computeBonds(funny, state({ board: [piece(a)] }));
-  for (const off of DATA.config.modes.mode_multi_funny.inactiveBondIds) assert.ok(!(off in f), `${off} omitted in FUNNY`);
+  for (const excluded of DATA.config.modes.mode_multi_funny.inactiveBondIds) assert.ok(excluded in f, `${excluded} remains countable in FUNNY`);
 });

@@ -27,6 +27,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeBattle, chessRec, checkInvariants } from '../helpers/battleHarness.js';
+import { COLS } from '../../server/sim/constants.js';
 import { GameData } from '../../server/match/gamedata.js';
 import { setupMatchWaves, buildUniteWave, buildBossWave, buildNormalWave } from '../../server/match/waves.js';
 import { bodyKeys } from '../../server/sim/body.js';
@@ -221,7 +222,7 @@ test('item 47: 昆图斯 occupies 5 × 3 tiles (PRTS 4.95 × 2.95, up 1.0); an o
     units: [{ chessId: 'chess_char_1_12_a', row: 10, col: 7 }], enemies: [{ key: 'enemy_1521_dslily', pos: [3, 10], mods: { speedMul: 0 }, tag: 'boss' }] });
   h.step();
   const boss = h.b.enemies.find((e) => e.isBoss);
-  const tiles = bodyKeys(boss).map((k) => [Math.floor(k / 21), k % 21]);
+  const tiles = bodyKeys(boss).map((k) => [Math.floor(k / COLS), k % COLS]);
   assert.deepEqual([...new Set(tiles.map((t) => t[1]))], [8, 9, 10, 11, 12], '5 columns');
   assert.deepEqual([...new Set(tiles.map((t) => t[0]))], [3, 4, 5], '3 rows (up 1.0)');
   const u = h.unit('chess_char_1_12_a');

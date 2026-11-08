@@ -42,7 +42,7 @@
 
 import { toLocal, frontOf } from './dir.js';
 import { isHpLoss } from './damage.js';
-import { absoluteRangeKeys } from './targeting.js';
+import { battleRangeKeys } from './targeting.js';
 import { bodyKeys, bodyInRange, bodyInRangeTile } from './body.js';
 import { COLS, CHAIN_RADIUS } from './constants.js';
 import { textCount, textFinite } from '../../shared/plugins/textNumber.js';
@@ -456,7 +456,7 @@ const installSkywalker = (battle, unit) => {
 
 /** Target's tile offset from the unit in the unit's facing-RIGHT frame ([dRow, dCol], sim/dir.js toLocal). */
 /** The target (its body: a huge enemy's every tile — body.js) on a tile of `grid` around the unit (its facing frame). */
-const inTraitGrid = (unit, target, grid) => bodyInRange(target, absoluteRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0));
+const inTraitGrid = (unit, target, grid) => bodyInRange(target, battleRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0));
 
 /**
  * 'reaperrange' default front test: the target stands on the unit's own line, at or ahead of it along its facing — a

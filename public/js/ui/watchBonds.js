@@ -62,7 +62,7 @@ export function bondOwnerId({ pub, myId, fieldId = null, field = null, layer = '
   }
   const meta = isObj(field) && field.fieldId === fieldId ? field : null;
   const sides = meta ? sidesOf(meta) : {};
-  if (halves && meta && (layer === 'L' || layer === 'R')) {
+  if (halves && meta && (layer === 'L' || layer === 'C' || layer === 'R')) {
     const pid = Object.keys(sides).find((id) => sides[id] === layer);
     if (ok(pid)) return pid;
   }
@@ -97,7 +97,7 @@ export function playerLayer(field, pub, myId, playerId) {
   if (!isObj(field) || typeof playerId !== 'string' || !playerId) return null;
   if (!cameraLayers(field, pub, myId).length) return null;
   const side = sidesOf(field)[playerId];
-  return side === 'L' || side === 'R' ? side : null;
+  return side === 'L' || side === 'C' || side === 'R' ? side : null;
 }
 
 /**

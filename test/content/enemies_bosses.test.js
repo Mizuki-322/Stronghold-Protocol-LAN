@@ -1890,12 +1890,14 @@ test(`${nm('enemy_2005_axetro')}: stacking ATK/ASPD while attacking, reset after
   assert.ok(!e.findBuff('ab:axeStack'));
 });
 
-test(`${nm('enemy_2008_flking')}: operators' ATK and DEF are halved while it lives; periodic barrier`, () => {
+test(`${nm('enemy_2008_flking')}: operators keep their ATK and DEF; periodic barrier remains`, () => {
   const h = arena({ units: [{ chessId: 't_gun', row: 12, col: 3 }] });
   h.step();
   const e = put(h, 'enemy_2008_flking', [10, 7]);
   h.run(0.6);
-  approx(h.unit('t_gun').s.atk, CHESS.t_gun.stats.atk * 0.5);
+  approx(h.unit('t_gun').s.atk, CHESS.t_gun.stats.atk);
+  approx(h.unit('t_gun').s.def, CHESS.t_gun.stats.def);
+  assert.equal(h.unit('t_gun').findBuff('ab:tombstone'), null);
   h.run(skb('enemy_2008_flking', 'refreshshield').initCooldown);
   assert.ok(e.findBuff('ab:tombShield'));
 });
@@ -3185,7 +3187,7 @@ test(`${nm('enemy_2008_flking')}: unblocked, a ranged attack at ${tb('enemy_2008
   h.run(1);
   const { main, target, splash } = splashOf(h, e);
   const scale = tb('enemy_2008_flking', 'atkdown.atk_scale');
-  approx(main.amount, e.s.atk * scale);                     // (the walls' DEF is 0, halved by its own aura)
+  approx(main.amount, e.s.atk * scale);                     // the walls' DEF is 0
   const box = h.allies().filter((u) => u !== target && Math.max(Math.abs(u.tileR - target.tileR), Math.abs(u.tileC - target.tileC)) <= 1);
   assert.ok(box.length >= 1);
   for (const u of box) assert.ok(splash.some((c) => c.target === u), `${u.defId} in the 3×3`);

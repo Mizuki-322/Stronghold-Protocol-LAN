@@ -97,6 +97,8 @@ export class Session {
     this.token = token;
     /** @type {string} sanitized nickname */
     this.name = name;
+    /** @type {boolean} external AI controller; fixed when the session is first created */
+    this.agent = false;
     /** @type {import('ws').WebSocket | null} currently bound socket */
     this.ws = null;
     /** @type {boolean} */
@@ -669,6 +671,10 @@ export class Network {
     }
     const name = sanitizeName(msg.name);
     if (!name) { this.reply(conn, errorMsg(ERR.BAD_MSG, rid, 'bad field name')); return; }
+    if (msg.agent === true && !isLocalIp(conn.ip)) {
+      this.reply(conn, errorMsg(ERR.BAD_MSG, rid, 'external AI seats are LAN only'));
+      return;
+    }
 
     let session = conn.session;
     let resumed = false;
@@ -676,6 +682,10 @@ export class Network {
     if (!session) {
       session = msg.token ? this.registry.byToken(msg.token) : null;
       if (session) {
+        if (session.agent && !isLocalIp(conn.ip)) {
+          this.reply(conn, errorMsg(ERR.BAD_MSG, rid, 'external AI seats are LAN only'));
+          return;
+        }
         if (session.connected && session.ws && session.ws !== conn.ws
           && (msg.noReplace || (Number.isFinite(msg.claimAt) && session.claimAt != null && msg.claimAt > session.claimAt))) {
           this.reply(conn, errorMsg(ERR.SESSION_IN_USE, rid));
@@ -686,6 +696,7 @@ export class Network {
       } else {
         session = this.registry.create(name);
         if (!session) { this.reply(conn, errorMsg(ERR.INTERNAL, rid, 'server full')); return; }
+        session.agent = msg.agent === true;
       }
       conn.session = session;
       session.ws = conn.ws;

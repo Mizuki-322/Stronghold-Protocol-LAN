@@ -37,7 +37,7 @@
 //   the skill range is skipped].
 
 import { num, talentBb, traitBb, skillRec, statBuff, toggleBuff, giveSp, onHitBy } from '../shared/tier1.js';
-import { absoluteRangeKeys, sortEnemyTargets } from '../../../targeting.js';
+import { battleRangeKeys, sortEnemyTargets } from '../../../targeting.js';
 
 const S1 = 'skchr_irene_1';
 const S2 = 'skchr_irene_2';
@@ -54,7 +54,7 @@ const GROUND = Object.freeze({ canHitFly: false });
 
 const bbOf = (chess, id) => skillRec(chess, id)?.bb ?? {};
 /** Absolute tile keys of a skill range at the unit's tile and facing (a 技能范围 ignores 攻击距离: no extend). */
-const keysOf = (unit, grid) => absoluteRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0);
+const keysOf = (unit, grid) => battleRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0);
 /** A living 【海怪】 enemy on the field. */
 const seaMonsterOnField = (battle) => battle.enemies.some((e) => e.alive && !e.hidden && Array.isArray(e.def?.tags) && e.def.tags.includes('seamonster'));
 

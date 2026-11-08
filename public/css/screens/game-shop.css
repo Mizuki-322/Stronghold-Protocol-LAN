@@ -123,10 +123,13 @@
 /* the official module type icon (local-client art, DESIGN §13); the type text stays beside it */
 .scard__skill .scard__modicon { flex: none; width: .14rem; height: .14rem; object-fit: contain; }
 .scard__name { font-size: .19rem; font-weight: 900; letter-spacing: .04em; color: #fff; text-shadow: 0 1px 3px #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scard__track { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .12rem; font-weight: 700; color: var(--gold-2); }
+.scard.is-tracked { border-color: var(--gold-2); box-shadow: inset 0 0 0 1px rgba(255, 198, 0, .35); }
 .scard__bonds { display: flex; flex-wrap: wrap; gap: .02rem .08rem; }
 .scard__bond { display: inline-flex; align-items: center; gap: .03rem; font-size: .13rem; color: var(--mint-400); }
 .scard__bond .bglyph { width: .18rem; height: .18rem; }
-.scard__bond.is-off { color: var(--text-dim); text-decoration: line-through; text-decoration-color: rgba(255, 84, 84, .6); } /* the mode never activates it (标准) */
+.scard__bond.is-tracked { color: var(--gold-2); font-weight: 700; }
+.scard__bond.is-muted { color: var(--text-dim); }
 .scard__class { display: flex; align-items: center; gap: .05rem; font-size: .13rem; color: var(--text-lo); }
 .scard__prof { width: .18rem; height: .18rem; object-fit: contain; opacity: .85; }
 .scard__mergetag { position: absolute; z-index: 3; right: 0; top: .38rem; font-size: .12rem; font-weight: 700; padding: .01rem .06rem; background: var(--gold); color: #1d1400; letter-spacing: .08em; }

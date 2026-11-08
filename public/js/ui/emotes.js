@@ -16,6 +16,8 @@
 //               wheel turns one page per gesture, a plain vertical mouse wheel included, like Unity's ScrollRect). The
 //               panel reopens on the theme of the last emote sent (localStorage). Sending closes the panel and greys
 //               the button for the 1 s cooldown (chatCD), counted from the send so a remount keeps it.
+//               The local fork adds a separate text row for player chat when onSendText is supplied; emote art and
+//               bubbles remain picture-only.
 // Official UI sprites come from the local ui/battle extraction when present; CSS draws look-alikes otherwise.
 // Styles: public/css/emotes.css (injected on first use when the page does not link it).
 
@@ -204,16 +206,19 @@ export function EmoteBubble({ id, class: cls, ttl = EMOTE_BUBBLE_MS, at }) {
 
 /**
  * 交流 button + emote panel.
- * @param {{ onSend: (id:string)=>void, open: boolean, onToggle: (open:boolean)=>void, disabled?: boolean,
- *   cooldownMs?: number }} props
+ * @param {{ onSend: (id:string)=>void, onSendText?: (text:string)=>Promise<boolean>, open: boolean,
+ *   onToggle: (open:boolean)=>void, disabled?: boolean, cooldownMs?: number,
+ *   messages?: Array<{seq:number,playerId:string,text:string}>, players?: Array<{playerId:string,name:string}> }} props
  */
-export function EmoteWheel({ onSend, open, onToggle, disabled = false, cooldownMs = EMOTE_COOLDOWN_MS }) {
+export function EmoteWheel({ onSend, onSendText, open, onToggle, disabled = false, cooldownMs = EMOTE_COOLDOWN_MS, messages = [], players = [] }) {
   useData('local');
   useEffect(() => { ensureEmoteCss(); }, []);
   const [page, setPage] = useState(lastThemeIndex);
   const [dir, setDir] = useState(0);          // direction of the last page change (slide-in animation)
   const [dx, setDx] = useState(0);            // live drag offset (px)
   const [cooling, setCooling] = useState(() => cooldownLeft(lastSentAt, Date.now(), cooldownMs) > 0);
+  const [draft, setDraft] = useState('');
+  const [sendingText, setSendingText] = useState(false);
   const drag = useRef(null);                  // { id, x0, moved }
   const swallowClick = useRef(false);
   const wheelAcc = useRef({ x: 0, t: -Infinity, spent: false });
@@ -268,6 +273,14 @@ export function EmoteWheel({ onSend, open, onToggle, disabled = false, cooldownM
     onToggle(false);
   };
 
+  const sendText = async () => {
+    const value = draft.trim();
+    if (!value || sendingText || disabled || !onSendText) return;
+    setSendingText(true);
+    try { if (await onSendText(value)) setDraft(''); }
+    finally { setSendingText(false); }
+  };
+
   // swipe / drag (touch, pen and mouse)
   const onPointerDown = (e) => {
     if (e.button != null && e.button !== 0) return;
@@ -307,13 +320,16 @@ export function EmoteWheel({ onSend, open, onToggle, disabled = false, cooldownM
   const panelBg = emoteUiSprite('emoji_bkg');
   const cellBg = emoteUiSprite('emoji_cell_bkg');
   const panelStyle = [panelBg && `--ewheel-bg:url("${panelBg}")`, cellBg && `--ewheel-cell:url("${cellBg}")`].filter(Boolean).join(';');
-  return html`<div class="ewheel">
+  return html`<div class=${cx('ewheel', open && 'is-open')}>
+    ${messages.length ? html`<div class="ewheel__chatlog" role="log" aria-label=${t('交流')}>
+      ${messages.slice(-4).map((m) => html`<div key=${m.seq} class="ewheel__chatline"><b>${players.find((p) => p.playerId === m.playerId)?.name || m.playerId}</b><span>${m.text}</span></div>`)}
+    </div>` : null}
     <button type="button" class=${cx('ewheel__btn', btnSprite && 'has-sprite', open && 'is-on', cooling && 'is-cooling')}
       style=${btnSprite ? `--ewheel-btn:url("${btnSprite}")` : ''} onClick=${() => onToggle(!open)}
       aria-expanded=${open ? 'true' : 'false'} aria-haspopup="dialog" disabled=${disabled || cooling}>
       ${btnSprite ? null : html`<${GIcon} name="emote" />`}<span class="ewheel__label">${t('交流')}</span>
     </button>
-    ${open ? html`<div class=${cx('ewheel__panel', panelBg && 'has-sprite', cellBg && 'has-cell')} style=${panelStyle} role="dialog" aria-label=${t('交流')}>
+    ${open ? html`<div class=${cx('ewheel__panel', panelBg && 'has-sprite', cellBg && 'has-cell', onSendText && 'with-text')} style=${panelStyle} role="dialog" aria-label=${t('交流')}>
       <div class="ewheel__viewport" onPointerDown=${onPointerDown} onPointerMove=${onPointerMove}
         onPointerUp=${(e) => endDrag(e, false)} onPointerCancel=${(e) => endDrag(e, true)} onWheel=${onWheel}>
         <div key=${theme.themeId} class=${cx('ewheel__page', dir > 0 && 'is-from-right', dir < 0 && 'is-from-left', dx !== 0 && 'is-dragging')}
@@ -330,6 +346,13 @@ export function EmoteWheel({ onSend, open, onToggle, disabled = false, cooldownM
         ${EMOTE_THEMES.map((th, i) => html`<button key=${th.themeId} type="button" role="tab" class=${cx('ewheel__dot', i === page && 'is-on')}
           aria-selected=${i === page ? 'true' : 'false'} aria-label=${`${t(th.name)} ${i + 1}/${EMOTE_THEMES.length}`} onClick=${() => go(i)}></button>`)}
       </div>
+      ${onSendText ? html`<div class="ewheel__textrow">
+        <input type="text" value=${draft} placeholder=${t('最多20字')} aria-label=${t('最多20字')}
+          disabled=${disabled || sendingText} onInput=${(e) => setDraft([...e.currentTarget.value].slice(0, 20).join(''))}
+          onKeyDown=${(e) => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); sendText(); } }} />
+        <span class="ewheel__count">${[...draft].length}/20</span>
+        <button type="button" disabled=${disabled || sendingText || !draft.trim()} onClick=${sendText}>${t('发送')}</button>
+      </div>` : null}
     </div>` : null}
   </div>`;
 }

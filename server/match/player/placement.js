@@ -11,6 +11,7 @@ import { tileKey, parseKey, inField, canPlace, placeClass, freeSlot, pieceDir, p
 import { attackRangeGrid, loadoutRecord, resolveRecordLoadout } from '../../../shared/loadoutRecord.js';
 import { summonPlacementGrid } from '../../../shared/summonPlacement.js';
 import { OK, fail } from './common.js';
+import { SHU_BAND } from '../../../shared/shuStrategy.js';
 
 export class PlayerPlacement {
   /**
@@ -267,7 +268,8 @@ export class PlayerPlacement {
     }
     if (occ) return fail(ERR.BAD_TILE, 'occupied');
     // owner must be on the board for its summons to be deployable
-    const owner = [...this.board.values()].find((p) => p.uid === piece.ownerUid);
+    const field = this.bandId === SHU_BAND && piece.id === 'token_shu_field' && piece.ownerUid == null;
+    const owner = field ? true : [...this.board.values()].find((p) => p.uid === piece.ownerUid);
     if (!owner) return fail(ERR.BAD_TARGET, 'owner not deployed');
     if ((piece.count || 1) > 1) {
       piece.count -= 1;

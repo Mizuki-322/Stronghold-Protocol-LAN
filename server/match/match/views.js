@@ -106,6 +106,7 @@ export class MatchViews {
         seat: ps.seat,
         name: ps.name,
         isBot: ps.isBot,
+        ...(ps.isAgent ? { isAgent: true } : {}),
         connected: ps.isBot || (ps.connected && !ps.left),
         alive: ps.alive,
         lp: Math.max(0, ps.lp),
@@ -118,7 +119,7 @@ export class MatchViews {
         // this round's in-battle gains included once the COMBAT phase ended (PlayerState.bondsView); [] once eliminated —
         // nobody can watch an eliminated player (g.watch refuses them, they have no field) and the result screen reads
         // m.result's own bonds, so their layers would only cost every m.public bytes for the rest of the match
-        // (the mode-off bonds with members included, `off: true`, as in m.private — bondsMeta.offBondCounts)
+        // Fixed and drawn exclusions affect the operator pool only; bonds remain countable.
         bonds: ps.alive ? bondList(this.gd, ps.bondsView(), { off: offBondCounts(ps.gd || this.gd, ps) }) : [],
         fieldId: this.fieldOf(ps),
         status: this.statusOf(ps),
@@ -153,7 +154,7 @@ export class MatchViews {
     if (this.phase === PHASE.SP_DRAFT && this.sp) {
       const s = this.sp;
       v.sp = {
-        family: s.family, name: s.name, desc: s.desc, eventId: s.eventId,
+        family: s.family, name: s.name, desc: s.desc, eventId: s.eventId, extended: this.mode === 'coop8',
         cards: s.cards.map(c => ({ ...cardView(c), soldOut: c.kind === 'item' && !this.itemPool.canGain(c.id) })), order: s.order.slice(),
         turn: this.spTurn(), picks: { ...s.picks }, taken: { ...s.taken }, untimed: !!s.untimed,
       };

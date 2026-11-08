@@ -7,6 +7,10 @@ import { normDir } from '../../ui/facing.js';
 
 /** Resolve the inspected field unit without granting placement or sale actions. */
 export function inspectRange({ target, detail, pieces, showPrep = false, field, snapshot, live, loadout, getChess, backups }) {
+  if (detail?.type === 'device') {
+    const tiles = detail.device?.rangeTiles;
+    return detail.device?.key === 'turret' && Array.isArray(tiles) && tiles.length ? { tiles } : null;
+  }
   if (!detail || (detail.type !== 'chess' && detail.type !== 'token')) return null;
   let row, col, dir;
   if (target?.kind === 'piece' && showPrep) {
