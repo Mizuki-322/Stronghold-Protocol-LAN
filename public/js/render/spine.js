@@ -57,6 +57,9 @@ export const MAX_WIND_SPEEDUP = 2.5;
 
 /** Floor for the one-shot window of a skill clip with no Begin / own Idle (a very short clip still gets frames). */
 const SKILL_CLIP_MIN = 0.2;
+// A 要塞 (fortress) model's ranged-attack clip, played for its shells (UnitView._rangedShot); no official model has one —
+// a plugin model names it so (ugly-mech: the boss's Attack_2), the melee strike stays the Attack role.
+const RANGED_CLIP = 'Attack_Ranged';
 
 /**
  * Attack clip timing (pure). `loopDur` / `hit` are clip seconds (strike frame at `hit`), `interval` and `lead` game
@@ -804,6 +807,8 @@ export class SpineActor {
       // OnAttack is not proof of a cast (the integrator kept unverified operators unchanged, with or without the index).
       return sk;
     }
+    // a 要塞's ranged shot (UnitView._rangedShot) on the model's own ranged clip
+    if (this.rangedShot && this.has(RANGED_CLIP)) return { begin: null, loop: RANGED_CLIP, end: null };
     const a = this.roles.attack;
     if (a && this.has(a.loop)) return a;
     return null;

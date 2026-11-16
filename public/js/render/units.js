@@ -1011,6 +1011,17 @@ export class UnitView {
     if (form) this.setForm(form);
   }
 
+  /**
+   * A 要塞 (fortress) attacks in melee while it blocks and fires shells otherwise (sim ai.js: the 'atk' kind is 'none' for
+   * the melee strike, the shell's projectile kind for a ranged shot). A model with its own ranged clip (SpineActor
+   * RANGED_CLIP) plays it for the shots; official fortress models have none and keep their one attack clip.
+   */
+  _rangedShot(kind) {
+    if (!this.actor) return;
+    const fortress = this.ctx.subProfOf?.(this.info?.defId, this.info) === 'fortress';
+    this.actor.rangedShot = fortress && !!kind && kind !== 'none';
+  }
+
   _attackForm(kind) {
     if (!isManifold(this.info)) return;
     const form = manifoldAttackForm(kind);
@@ -1348,6 +1359,7 @@ export class UnitView {
   onAttack(target, now, kind) {
     if (!this.alive) return;
     this._attackForm(kind);
+    this._rangedShot(kind);
     this._pendingDeployElapsed = null;
     // a one-off cast (PROJ[kind].once: 暴鸰's bomb drop) is no attack rhythm: its clip plays once at its own speed
     const once = !!PROJ[kind]?.once;
@@ -1381,6 +1393,7 @@ export class UnitView {
   windUp(lead, kind) {
     if (!this.alive || !this.actor || !this.spineReady) return false;
     this._attackForm(kind);
+    this._rangedShot(kind);
     const ok = this.actor.windUp(this.atkInterval, lead, !!PROJ[kind]?.once);
     if (ok && this.imp) this.imp.dirty = true;
     return ok;
@@ -1470,8 +1483,11 @@ export class UnitView {
     this.alive = false;
     this._modelDirty = true;
     this._dieForm = this._formSpec();
-    let d = this.actor ? this.actor.die() : 0;
-    if (this.actor && !d) d = this._fallDur();
+    // its Death clip already played while it stood (dieEarly): only the short fade / the held last frame remain
+    const early = this._earlyDie;
+    this._earlyDie = false;
+    let d = early ? 0 : this.actor ? this.actor.die() : 0;
+    if (this.actor && !d && !early) d = this._fallDur();
     const rate = this.ctx.animRate?.() || 1;
     this.dieT = 0;
     this.dying = clamp(d / rate, 0.35, DIE_CLIP_MAX) + DIE_FADE_TAIL;
@@ -1486,8 +1502,19 @@ export class UnitView {
     return a && typeof a.spineEntry === 'function' && id ? dieClipDur(a.spineEntry(id, { back: this._wantsBack() })) : 0;
   }
 
+  /**
+   * Play the death clip now while the unit still stands (app.js 'dieClip' fx: a deathrattle keeps it on the field until
+   * the clip ends). The actor stops attacking and holds the clip's end; the later die() plays no second fall.
+   */
+  dieEarly() {
+    if (!this.alive || !this.actor || this._earlyDie) return;
+    this._earlyDie = true;
+    this.actor.die();
+  }
+
   /** Standing again (a redeploy, a revive): an operator facing UP gets its Back model back (this frame's update). */
   revive() {
+    this._earlyDie = false;
     this.alive = true;
     this._modelDirty = true;
     // a model built while it lay in a form's death pose (_dieForm) stands up on the unit's own clips

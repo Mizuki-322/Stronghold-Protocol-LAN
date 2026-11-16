@@ -361,6 +361,8 @@ export async function createFieldView(host, options = {}) {
   const heightAt = (r, c) => (tiles ? tiles.heightAt(r, c) : 0);
   const ctx = {
     P, layers, assets, settings, fx: null, shadowTex: shadowTexture(),
+    // a unit's 分支 (UnitView: a 要塞's ranged attack clip) — the same lookup as the FxSystem's below
+    subProfOf: (defId, info = null) => ((info && info.standInFor && data.standIn(defId)) || (info && info.diy && data.diy(defId, info.diy)) || data.chess(defId))?.subProfessionId || null,
     audio: opts.audio || null,   // the prep landings' sound (UnitView.land → audio.deployCue)
     // 设置「显示其他玩家的皮肤」 (docs/SKINS.md): whose pieces count as this player's. Held here rather than read per
     // frame, because it is a preference of the page (ui/fieldHost.js passes the settings it already subscribes to).
@@ -1800,6 +1802,14 @@ export async function createFieldView(host, options = {}) {
         // 推拉: a push / pull (battle/displacement.js) moves the enemy inside one call; its `displace` fx carries the
         // destination ['fx', 'displace', x, y, { id }] and the view slides there (UnitView.slideTo, PR #380) — normally
         // started already by syncBattle's look-ahead, which this repeats harmlessly
+        // a unit that plays its death clip while it still stands (sim fx 'dieClip' { id }: a deathrattle keeps it on the
+        // field, blocking, until the clip has played — the plugin operator ugly-mech's 自毁程序); its 'die' event then
+        // plays no second fall (UnitView.dieEarly). A dropped or missed fx only means the clip plays at the 'die' event.
+        if (e[1] === 'dieClip') {
+          const d = e[4] && typeof e[4] === 'object' ? e[4] : null;
+          const v = d && d.id != null ? views.get(d.id) : null;
+          if (v && v.alive) v.dieEarly?.();
+        }
         if (e[1] === 'displace') {
           const d = e[4] && typeof e[4] === 'object' ? e[4] : null;
           const v = d && d.id != null ? views.get(d.id) : null;
