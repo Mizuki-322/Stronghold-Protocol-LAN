@@ -250,6 +250,18 @@ assets.tokens.token_shu_field = { avatar: '/assets/band/band_shu.png' };
 delete assets.devices?.eunectesIdle;
 delete assets.devices?.eunectesAttack;
 if (assets.devices && !Object.keys(assets.devices).length) delete assets.devices;
+// The strategies' effect records (data/effects.json, like every official band's): the text the game shows for the band —
+// their battle and prep logic is in code (server/sim/content/bands, server/match), which reads bands.json, not these.
+// Without them the plugin data check (shared/plugins/validate.js) refuses every data plugin: "band …: effect missing".
+const effects = read('effects');
+for (const id of ['band_technician', 'band_eunectes', 'band_yela', 'band_udflow', 'band_lumen', 'band_shu']) {
+  const b = bands[id];
+  effects[b.effectId] = {
+    effectId: b.effectId, effectType: 'BAND_INITIAL', name: b.effectName, desc: b.desc, descRaw: b.descRaw,
+    counterType: 'NONE', continuedRound: -1, decoIconId: null, enemyPrice: 0, buffs: copy(b.buffs), params: copy(b.params),
+  };
+}
+write('effects', effects);
 write('chess', chess);
 write('bonds', bonds);
 write('garrisons', garrisons);

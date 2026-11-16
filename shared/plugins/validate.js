@@ -26,10 +26,13 @@ export function validateReferences(f, { officialOwnedSkills = true } = {}) {
     for (const t of c.talents || []) if (t.tokenKey && !c.tokens.includes(t.tokenKey)) err(`chess ${c.chessId}: talent token ${t.tokenKey} not in tokens`);
     if (c.isDiy) continue;
     if (!c.stats) err(`chess ${c.chessId}: no stats`);
-    if (!c.skill) err(`chess ${c.chessId}: no resolvable skill`);
+    // a chess the data gives no skill at all (`skill: null`, `skills: []`): a 预备干员 body that never casts — 深巡's
+    // 见习海巡队 (tools/inject-technician-data.mjs); its other fields are still checked
+    const skillless = c.skill === null && Array.isArray(c.skills) && !c.skills.length;
+    if (!c.skill && !skillless) err(`chess ${c.chessId}: no resolvable skill`);
     if (!Array.isArray(c.rangeGrid)) err(`chess ${c.chessId}: no range grid`);
     // DESIGN §16 loadout choices
-    if (!Array.isArray(c.skills) || c.skills.filter((s) => s.isDefault).length !== 1 || c.skills.find((s) => s.isDefault)?.skillId !== c.skill?.skillId) err(`chess ${c.chessId}: skills[] without exactly one default = skill`);
+    if (!skillless && (!Array.isArray(c.skills) || c.skills.filter((s) => s.isDefault).length !== 1 || c.skills.find((s) => s.isDefault)?.skillId !== c.skill?.skillId)) err(`chess ${c.chessId}: skills[] without exactly one default = skill`);
     if (c.modules && (c.modules.filter((m) => m.isDefault).length !== (c.module?.active ? 1 : 0) || !c.statsBase || !c.traitBase || !c.talentsBase)) err(`chess ${c.chessId}: inconsistent module choices`);
     // The old `placement` string is not a field. 高台 is the boolean `placeOnRanged` (build-data, from the Chinese
     // trait), read by shared/highGround.js, which still matches the Simplified line when the flag is absent.
@@ -201,12 +204,14 @@ function checkData(data, { kitExists = null, vanilla = null, owners = null, vali
     if (!object(rec) || rec[key] !== id) bad(`${file}.${id}`, `record must have ${key} = its map key`);
   }
   if (problems.length) return problems;
-  const checkSkills = (rec, at, defaults, ownerPath) => {
+  // skillless: an official chess the data gives no skill at all (`skill: null`, `skills: []` — a 预备干员 body that
+  // never casts: 深巡's 见习海巡队); its other fields are still checked
+  const checkSkills = (rec, at, defaults, ownerPath, skillless = false) => {
     if (!object(rec.stats) || !['maxHp', 'atk', 'def', 'res', 'aspd', 'bat', 'blockCnt', 'cost', 'respawnTime'].every(k => typeof rec.stats[k] === 'number' && Number.isFinite(rec.stats[k]))
       || !(rec.stats.maxHp > 0) || !(rec.stats.bat > 0)) bad(at + '.stats', 'numeric core stats and positive maxHp/bat required');
     if (!matchesSchema(rec.rangeGrid, GRID_SCHEMA)) bad(at + '.rangeGrid', 'range grid required');
     if (!object(rec.trait) || !Array.isArray(rec.talents)) bad(at, 'trait and talents required');
-    if (!Array.isArray(rec.skills) || !rec.skills.length) { bad(at + '.skills', 'skills required'); return; }
+    if (!Array.isArray(rec.skills) || !rec.skills.length) { if (!(skillless && Array.isArray(rec.skills))) bad(at + '.skills', 'skills required'); return; }
     const seen = new Set();
     for (const s of rec.skills) {
       if (!object(s) || typeof s.skillId !== 'string' || !Number.isInteger(s.index) || seen.has(s.index) || !object(s.bb)) bad(at + '.skills', 'skill id, unique index and blackboard required');
@@ -245,7 +250,7 @@ function checkData(data, { kitExists = null, vanilla = null, owners = null, vali
       || a.baseId !== c.baseId || b.baseId !== c.baseId || a.goldenId !== c.goldenId || b.goldenId !== c.goldenId
       || a.isGolden || !b.isGolden || a.charId !== b.charId || a.tier !== b.tier || c.isGolden !== (id === c.goldenId)
       || a.upgradeChessId !== b.chessId || b.upgradeChessId != null) bad(id, 'inconsistent normal/elite pair', 'PLUGIN_DATA_PAIR');
-    if (!c.isDiy) checkSkills(c, `chess.${id}`, true, `chess.${id}`);
+    if (!c.isDiy) checkSkills(c, `chess.${id}`, true, `chess.${id}`, c.skill === null);
   }
   for (const [id, u] of Object.entries(data.backups.units ?? {})) {
     if (!object(u?.forms)) { bad(id, 'unit forms required'); continue; }
