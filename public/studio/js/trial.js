@@ -26,6 +26,7 @@ export function TrialBench({ state, draft }) {
   const [board, setBoard] = useState('3d'), [effects, setEffects] = useState('lite');
   const [exercise, setExercise] = useState({ round: 1, at: 'prep', hook: '', actions: [], elite: false });
   const gameplay = GAMEPLAY_TEMPLATES.includes(draft?.template || state.authoring?.template);
+  const scriptPlugin = ['script', 'trusted'].includes(state.class);
   useEffect(() => { setExercise(v => ({ ...v, hook: '', elite: false, actions: [] })); }, [draft?.template || state.authoring?.template]);
   useEffect(() => { setResult(null); setExercise(v => ({ ...v, actions: [] })); }, [JSON.stringify(draft)]);
   useEffect(() => { let alive = true; get('trial-options').then(r => { if (alive) setOptions(r); }); return () => { alive = false; }; }, []);
@@ -36,13 +37,15 @@ export function TrialBench({ state, draft }) {
       setExercise(nextExercise);
       const r = await post('trial', { id: state.id, scenario, operator: operator || undefined, opponent: opponent || undefined, wave, seconds, seed: 1, settings,
         ...(gameplay ? { exercise: nextExercise } : {}),
-        ...(draft && draft.template !== 'script' ? { draft } : {}) });
+        // a script plugin runs its saved, packed files (its lock pins them): never an unsaved form draft
+        ...(draft && draft.template !== 'script' && !scriptPlugin ? { draft } : {}) });
       setResult(r); setPlaying(true); setReset(n => n + 1);
       if (globalThis.__studio) globalThis.__studio.trial = r;
     } catch (e) { setError(errorText(e)); } finally { setBusy(false); }
   };
   return html`<section class="st-trial" data-testid="trial-bench"><h3>${t('试一场')}</h3>
     <p class="st-note">${t('使用当前草稿，与原版在相同种子和场景下比较；新干员的原版对照使用所借用的官方干员。')}</p>
+    ${scriptPlugin ? html`<p class="st-note">${t('脚本插件按已保存并打包的文件试跑：表单里未保存的修改不参与，改完先保存再打包。')}</p>` : null}
     <div class="st-trial-options">
       <${Select} label=${t('场景')} value=${scenario} onChange=${setScenario} options=${[
         { id:'dummy', name:t('单干员对木桩') }, { id:'wave', name:t('对一波敌人') }, { id:'duel', name:t('两名干员对打（定点攻击试验）') }, ...options.golden]} />

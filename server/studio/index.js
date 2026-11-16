@@ -1006,7 +1006,18 @@ export function createStudio({ publicDir, pluginsDir, dataDir, registry, lobby =
     if (method !== 'POST') return false;
     if (sub === 'slot') return json(200, await putSlot(id, await readJson(req, STUDIO_LIMITS.bodyBytes)));
     const body = await readJson(req, sub === 'authoring' ? STUDIO_LIMITS.bodyBytes : 256 * 1024);
-    if (sub === 'authoring') { await authoring.saveAsync(id, body); return json(200, changed(id)); }
+    if (sub === 'authoring') {
+      await authoring.saveAsync(id, body);
+      // A script plugin's lock pins every file, and a form save rewrites its data files: refresh the lock as 「打包」
+      // does, or the registry silently disables its code (lock mismatch) until the author packs by hand.
+      let cls = null;
+      try { cls = JSON.parse(fs.readFileSync(files.stat(id, PLUGIN_MANIFEST).abs, 'utf8')).class; } catch { /* the folder's own check says why */ }
+      if (['script', 'trusted'].includes(cls) && files.list(id).some((f) => f.rel === LOCK_FILE)) {
+        const r = packPlugin(files.root(id), { vanilla: registry.vanillaAssets(), dataDir });
+        log.info?.(`[studio] ${id}: saved a ${cls} plugin — ${r.wrote ? 'plugin.lock.json refreshed' : 'lock not refreshed (see check)'}`);
+      }
+      return json(200, changed(id));
+    }
     if (sub === 'meta') { const p = openPlugin(files, id); editMeta(p, body.fields, typeof body.lang === 'string' ? body.lang : 'zh'); p.save(); return json(200, changed(id)); }
     if (sub === 'sections') { files.root(id); saveSections(id, body.sections); return json(200, stateOf(id)); }
     if (sub === 'ref') {

@@ -18,8 +18,9 @@ import { addFxReplay } from './fxReplay.js';
 import { GAMEPLAY_TEMPLATES } from '../../public/studio/js/gameplayModel.js';
 
 const quiet = { info() {}, warn() {}, error() {}, log() {} };
-const issue = p => ({ level: 'problem', code: p.code || 'PLUGIN_INVALID', text: p.message || p.zh || p.text || '', file: p.file,
-  params: { ...(p.params || {}), where: p.path || p.file || '', detail: p.message || p.zh || p.text || '' } });
+// a StudioError carries its reason in params (where / detail): keep it rather than blank it
+const issue = p => ({ level: 'problem', code: p.code || 'PLUGIN_INVALID', text: p.message || p.zh || p.text || p.params?.detail || '', file: p.file,
+  params: { ...(p.params || {}), where: p.path || p.file || p.params?.where || '', detail: p.message || p.zh || p.text || p.params?.detail || '' } });
 
 process.on('disconnect', () => process.exit(0));
 process.once('message', async ({ dirs, request, allowedScripts, temporary, heapMb }) => {
@@ -35,7 +36,12 @@ process.once('message', async ({ dirs, request, allowedScripts, temporary, heapM
     let draft = null, draftDir = null;
     if (request.draft) {
       const originalManifest = JSON.parse(fs.readFileSync(files.stat(request.id, 'plugin.json').abs, 'utf8'));
-      if (originalManifest.class !== 'content' || !['numbers','operator','dsl','meta','mode','fx', ...GAMEPLAY_TEMPLATES].includes(request.draft.template)) throw new StudioError('PLUGIN_STUDIO_REQUEST', 400);
+      if (originalManifest.class !== 'content' || !['numbers','operator','dsl','meta','mode','fx', ...GAMEPLAY_TEMPLATES].includes(request.draft.template)) {
+        // A script plugin's code is pinned by its lock: an unsaved form draft cannot run with it (trial.js sends none).
+        throw new StudioError('PLUGIN_STUDIO_REQUEST', 400, { detail: ['script', 'trusted'].includes(originalManifest.class)
+          ? 'a script plugin runs its saved, packed files: save and pack, then try again without a draft'
+          : `a ${originalManifest.class} plugin has no form draft to try` });
+      }
       // The copied folder is checked and the full dependency set composed below, before any simulation.
       const made = authored.prepare(request.id, request.draft, { validate: false, allowUntracked: true });
       if (!temporary) throw new StudioError('PLUGIN_STUDIO_TRIAL_FAILED', 500);
@@ -81,7 +87,8 @@ process.once('message', async ({ dirs, request, allowedScripts, temporary, heapM
     const member = wizard?.template === 'bond' ? wizard.options.members?.[0] : wizard?.template === 'trait' ? wizard.options.charId || wizard.target?.replace(/^operator:/, '') : null;
     const op = request.operator ? chooseOperator(set.data, request.operator) : member ? chooseOperator(set.data, member) : newOp || chooseOperator(set.data);
     const opponent = chooseOperator(set.data, request.opponent);
-    const original = baselineOperator(base.data, op);
+    const reference = typeof wizard?.target === 'string' && wizard.target.startsWith('operator:') ? wizard.target.slice(9) : null;
+    const original = baselineOperator(base.data, op, reference);
     const originalOpponent = baselineOperator(base.data, opponent);
     // Build both scenarios before installing plugin data; golden's module caches official data.
     const baseScene = await trialScenario(request, base.data, original, originalOpponent);

@@ -6,6 +6,27 @@ import { createAssets } from '../../../js/assets.js';
 import { createFieldView } from '../../../js/render/app.js';
 import { t } from '../../../../shared/i18n.js';
 
+/**
+ * The installation's asset manifest with the plugins' unit art written in (server/studio/fxReplay.js `artOps`: each
+ * `{ at: [container, id, field…], value }` of the overlay preview — a new operator's model and avatar). Copies along
+ * each path, so the shared manifest of data.js is never changed.
+ */
+function withArt(manifest, ops) {
+  if (!Array.isArray(ops) || !ops.length) return manifest;
+  const out = { ...manifest };
+  for (const { at, value } of ops) {
+    if (!Array.isArray(at) || at.length < 3) continue;
+    let node = out;
+    for (let i = 0; i < at.length - 1; i++) {
+      const k = at[i];
+      node[k] = node[k] && typeof node[k] === 'object' ? { ...node[k] } : {};
+      node = node[k];
+    }
+    node[at[at.length - 1]] = value;
+  }
+  return out;
+}
+
 export function TrialReplay({ replay, playing, speed, reset, board = '3d', effects = 'lite' }) {
   const host = useRef(null);
   const playback = useRef({ playing, speed });
@@ -17,7 +38,7 @@ export function TrialReplay({ replay, playing, speed, reset, board = '3d', effec
     host.current.dataset.ready = 'false';
     (async () => {
       const assets = createAssets();
-      assets.seed(replay.fxAssets ? { ...data.getRaw('assets'), fx: replay.fxAssets } : data.getRaw('assets'));
+      assets.seed(withArt(replay.fxAssets ? { ...data.getRaw('assets'), fx: replay.fxAssets } : data.getRaw('assets'), replay.artOps));
       const source = { get: file => file === 'stages' ? { ...data.get('stages'), [replay.field.stageId]: replay.stage }
         : file === 'backups' && replay.renderRecords ? { ...data.get('backups'), units: { ...data.get('backups')?.units, ...replay.renderRecords.backups.units } }
           : replay.renderRecords?.[file] ? { ...data.get(file), ...replay.renderRecords[file] } : data.get(file),

@@ -13,10 +13,19 @@ export function chooseOperator(data, id) {
   return Object.values(data.chess).find(r => r.charId === 'char_102_texas' && !r.isGolden);
 }
 
-export function baselineOperator(data, record) {
+/**
+ * The official piece a plugin operator is compared with: the kit it borrows, else `prefer` (the wizard's reference
+ * operator — a script-backed operator borrows no kit and may bring its own model), else the official art it shows
+ * (model, avatar, portrait), else 德克萨斯 — the first of these the base data has.
+ */
+export function baselineOperator(data, record, prefer = null) {
   if (data.chess[record.chessId]) return data.chess[record.chessId];
-  const keys = [record.kitRef, record.assets?.spine, record.assets?.avatar];
-  return Object.values(data.chess).find(r => !r.isGolden && keys.includes(r.charId)) || chooseOperator(data);
+  const keys = [record.kitRef, prefer, record.assets?.spine, record.assets?.avatar, record.assets?.portrait].filter(Boolean);
+  for (const key of keys) {
+    const r = Object.values(data.chess).find(r => !r.isGolden && !r.isDiy && r.charId === key);
+    if (r) return r;
+  }
+  return chooseOperator(data);
 }
 
 export async function trialScenario(request, data, operator, opponent) {

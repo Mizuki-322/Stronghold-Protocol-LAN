@@ -14,8 +14,13 @@ export function addFxReplay(result, registry, selected, data, files, { staged = 
     ids.add(id);
   };
   visit(selected);
-  const fx = {}, previews = createPreviews({ vanilla: () => registry.vanillaAssets() });
-  for (const id of ids) for (const op of previews.preview(id, files.root(id)).ops) if (op.at?.[0] === 'fx' && op.value) fx[id] = op.value;
+  const fx = {}, art = [], previews = createPreviews({ vanilla: () => registry.vanillaAssets() });
+  for (const id of ids) for (const op of previews.preview(id, files.root(id)).ops) {
+    if (op.at?.[0] === 'fx' && op.value) fx[id] = op.value;
+    // the plugins' own unit art (a new operator's model and avatar, an enemy's or token's model), as served preview
+    // URLs: the replay draws them as a room with these plugins would — not the installation's art alone
+    else if (['chars', 'enemies', 'tokens'].includes(op.at?.[0]) && op.value != null) art.push({ at: op.at, value: op.value });
+  }
   // [ASSUMED] Embed at most 8 MiB of staged compressed PNG bytes (inside the 16 MiB trial result cap).
   // Data URLs last as long as the replay, even after its draft directory is removed or the live plugin changes.
   let imageBytes = 0;
@@ -33,8 +38,9 @@ export function addFxReplay(result, registry, selected, data, files, { staged = 
     const r = data[file]?.[info.defId]; if (r) records[file][info.defId] = r;
     if (info.diy?.charId && data.backups?.units?.[info.diy.charId]) records.backups.units[info.diy.charId] = data.backups.units[info.diy.charId];
   }
-  if (Object.keys(fx).length || Object.values(records.chess).some(r => r.fx) || Object.values(records.backups.units).some(r => r.fx)) {
+  if (Object.keys(fx).length || art.length || Object.values(records.chess).some(r => r.fx) || Object.values(records.backups.units).some(r => r.fx)) {
     result.plugin.fxAssets = fx; result.plugin.renderRecords = records;
   }
+  if (art.length) result.plugin.artOps = art;
   return result;
 }
