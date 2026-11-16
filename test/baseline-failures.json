@@ -1,0 +1,803 @@
+{
+  "note": "本地完整测试里「本来就失败」的测试（node tools/test-baseline.mjs update 生成，不要手改）。见文件头注释。",
+  "updated": "2026-11-16",
+  "platform": "win32 10.0.26200, node v24.15.0",
+  "runs": 2,
+  "failures": [
+    {
+      "key": "multi-device & browser compatibility (static) > CSS: no :has(), container queries, @layer or nesting; prefixed backdrop-filter; color-mix() has a fallback",
+      "file": "test/client-static.test.js",
+      "name": "multi-device & browser compatibility (static) > CSS: no :has(), container queries, @layer or nesting; prefixed backdrop-filter; color-mix() has a fallback",
+      "detail": "public\\\\css\\\\screens\\\\lobby.css: :has() (Firefox ESR 115, Safari < 15.4)"
+    },
+    {
+      "key": "\\#24 a summon no owner shows is never a hand card: 予愿安洁莉娜 S3's “一会儿见！” is not placeable, every placeable summon is displayed",
+      "file": "test/content/feedback5-we2-summon-hand.test.js",
+      "name": "\\#24 a summon no owner shows is never a hand card: 予愿安洁莉娜 S3's “一会儿见！” is not placeable, every placeable summon is displayed",
+      "detail": "token_shu_field 田块: placeable and displayed"
+    },
+    {
+      "key": "瑰盐 / 白面鸮 / 莱恩哈特 elite modules extend the range — the initial range of the DEFAULT trigger too",
+      "file": "test/content/kits_t4.test.js",
+      "name": "瑰盐 / 白面鸮 / 莱恩哈特 elite modules extend the range — the initial range of the DEFAULT trigger too",
+      "detail": "chess_char_4_08_b: only the centre row grows"
+    },
+    {
+      "key": "瑰盐 S2 only defers damage taken by operators (summons take it in full)",
+      "file": "test/content/kits_t4.test.js",
+      "name": "瑰盐 S2 only defers damage taken by operators (summons take it in full)",
+      "detail": "The expression evaluated to a falsy value:"
+    },
+    {
+      "key": "蜜蜡 S2: obelisk on a melee tile in range, 200 % ATK arts + 1 s stun on appearance, expires; regen talent only while the skill is off",
+      "file": "test/content/kits_t4.test.js",
+      "name": "蜜蜡 S2: obelisk on a melee tile in range, 200 % ATK arts + 1 s stun on appearance, expires; regen talent only while the skill is off",
+      "detail": "inside her range"
+    },
+    {
+      "key": "elite modules: range = the module grid (夕/白面鸮), ASPD +8 unblocking (史尔特尔), +10 above half HP (山), SP +0.2 with enemies (铃兰), ATK +8 % (魔王)",
+      "file": "test/content/kits_t5.test.js",
+      "name": "elite modules: range = the module grid (夕/白面鸮), ASPD +8 unblocking (史尔特尔), +10 above half HP (山), SP +0.2 with enemies (铃兰), ATK +8 % (魔王)",
+      "detail": "chess_char_5_12_b: 6,-1 6,0 6,1 4,12 4,13 4,14 4,15 3,4 3,5 3,6"
+    },
+    {
+      "key": "S3 move: blocking nothing, she flies (2 tiles/s, 无敌, disarmed) to the tile of an unblocked flyer she can block inside the original 3-9, lands there by a 【移动】 (the skill and its bullets kept) and blocks it; “一会儿见！” marks her deployment tile; her range stays that 3-9 + the 8 around her; at the end she goes back and the marker leaves",
+      "file": "test/content/op_aglna2.test.js",
+      "name": "S3 move: blocking nothing, she flies (2 tiles/s, 无敌, disarmed) to the tile of an unblocked flyer she can block inside the original 3-9, lands there by a 【移动】 (the skill and its bullets kept) and blocks it; “一会儿见！” marks her deployment tile; her range stays that 3-9 + the 8 around her; at the end she goes back and the marker leaves",
+      "detail": "T5 normal: the anchored 3-9 ((12, 4), (9, 5))"
+    },
+    {
+      "key": "S2 临界瞬爆 (MANUAL, data DEFAULT, 8 s): no normal attack; from 0.167 s every 0.5 s the beam hits every enemy along an unbounded path — turned by her 中继器 and by any allied operator it reaches — for 90 % / 120 % ATK arts; 16 hits; her range is back after",
+      "file": "test/content/op_aphris.test.js",
+      "name": "S2 临界瞬爆 (MANUAL, data DEFAULT, 8 s): no normal attack; from 0.167 s every 0.5 s the beam hits every enemy along an unbounded path — turned by her 中继器 and by any allied operator it reaches — for 90 % / 120 % ATK arts; 16 hits; her range is back after",
+      "detail": "T5: (10, 4) on the beam"
+    },
+    {
+      "key": "S3 混沌的本质 (MANUAL, data DEFAULT, 20 bullets): 3 s 强制缴械 from the cast, every 中继器 withdrawn and back at once; interval 2.9 → 1.8 s, ATK +95 % / +115 %, 140 % / 155 % + 停顿 0.2 / 0.4 s; past a 中继器 +25 % / +30 % ATK and 停顿 +0.2 / +0.4 s; no 中继器 withdraws until it ends, all do then and come back at once",
+      "file": "test/content/op_aphris.test.js",
+      "name": "S3 混沌的本质 (MANUAL, data DEFAULT, 20 bullets): 3 s 强制缴械 from the cast, every 中继器 withdrawn and back at once; interval 2.9 → 1.8 s, ATK +95 % / +115 %, 140 % / 155 % + 停顿 0.2 / 0.4 s; past a 中继器 +25 % / +30 % ATK and 停顿 +0.2 / +0.4 s; no 中继器 withdraws until it ends, all do then and come back at once",
+      "detail": "T5: the bent 5-1 path while it runs"
+    },
+    {
+      "key": "the 中继器 (T1 链路协议): ATK +25 % (T6 BLA-Y +35 %) while it stands; it withdraws after 25 s (T6 BLA-Y 35 s) and comes back on its tile 30 s (T6 BLA-Y 20 s) later for 3 DP; untargetable, 无敌, 禁疗, 孤立, blocks nothing",
+      "file": "test/content/op_aphris.test.js",
+      "name": "the 中继器 (T1 链路协议): ATK +25 % (T6 BLA-Y +35 %) while it stands; it withdraws after 25 s (T6 BLA-Y 35 s) and comes back on its tile 30 s (T6 BLA-Y 20 s) later for 3 DP; untargetable, 无敌, 禁疗, 孤立, blocks nothing",
+      "detail": "T5 normal none: the straight line again"
+    },
+    {
+      "key": "谬因 in every 自选 form: her operator kit (all three skills authored), the form's stats + module attributes (BLA-Y: 部署费用 −8), 5-1 line without a 中继器, 轰击术师, no 特质",
+      "file": "test/content/op_aphris.test.js",
+      "name": "谬因 in every 自选 form: her operator kit (all three skills authored), the form's stats + module attributes (BLA-Y: 部署费用 −8), 5-1 line without a 中继器, 轰击术师, no 特质",
+      "detail": "T5 normal none: her own 5-1"
+    },
+    {
+      "key": "链路协议 range: her 中继器 turns the path to its facing and allows 2 more tiles; one attack strikes every enemy of the bent path (air too), none of the straight line past it; the card shows the bent path",
+      "file": "test/content/op_aphris.test.js",
+      "name": "链路协议 range: her 中继器 turns the path to its facing and allows 2 more tiles; one attack strikes every enemy of the bent path (air too), none of the straight line past it; the card shows the bent path",
+      "detail": "T5 normal none: bent path"
+    },
+    {
+      "key": "T1 共振装置: at her deployment her stock is cnt (10) and attack@max_cnt traps (2; TRP-X stage 3: 3) appear on free melee tiles of her range (the enemies' ground paths first) — no stock spent, inside the limit (10; TRP-X 13) with room left for the placed pieces",
+      "file": "test/content/op_doroth.test.js",
+      "name": "T1 共振装置: at her deployment her stock is cnt (10) and attack@max_cnt traps (2; TRP-X stage 3: 3) appear on free melee tiles of her range (the enemies' ground paths first) — no stock spent, inside the limit (10; TRP-X 13) with room left for the placed pieces",
+      "detail": "T5 normal none: on a path melee tile of her range"
+    },
+    {
+      "key": "S2 掩蔽护卫 (MANUAL, data ACTIVE_RANGE — rawRule TAKE_DAMAGE): casts with an enemy on its 2-5 that her 2-2 does not reach; 15 s, range 2-5 (SPT-Y does not grow it), ATK +45 % / +60 %, interval 0.3 s, 75 % physical and arts dodge",
+      "file": "test/content/op_jesca2.test.js",
+      "name": "S2 掩蔽护卫 (MANUAL, data ACTIVE_RANGE — rawRule TAKE_DAMAGE): casts with an enemy on its 2-5 that her 2-2 does not reach; 15 s, range 2-5 (SPT-Y does not grow it), ATK +45 % / +60 %, interval 0.3 s, 75 % physical and arts dodge",
+      "detail": "T5 normal none: back to her own range"
+    },
+    {
+      "key": "S3 饱和迸射 (MANUAL, data ACTIVE_RANGE on 2-2 + 1): 20 bullets, range +1 (SPT-Y: +2), interval 1.8 s, ATK +240 % / +270 %, DEF +50 % / +65 %, shield DEF +100 % / +135 %; casts with an enemy only the larger range reaches",
+      "file": "test/content/op_jesca2.test.js",
+      "name": "S3 饱和迸射 (MANUAL, data ACTIVE_RANGE on 2-2 + 1): 20 bullets, range +1 (SPT-Y: +2), interval 1.8 s, ATK +240 % / +270 %, DEF +50 % / +65 %, shield DEF +100 % / +135 %; casts with an enemy only the larger range reaches",
+      "detail": "T5 normal none: +1 tile (no module)"
+    },
+    {
+      "key": "T1 灵活应变: she turns to face her shield (her range turns with her) and back once it leaves; while it stands next to her she and the unit on the tile behind her DEF +18 % (孤立 too), nobody else",
+      "file": "test/content/op_jesca2.test.js",
+      "name": "T1 灵活应变: she turns to face her shield (her range turns with her) and back once it leaves; while it stands next to her she and the unit on the tile behind her DEF +18 % (孤立 too), nobody else",
+      "detail": "T5 normal none: her range turned UP"
+    },
+    {
+      "key": "涤火杰西卡 in every 自选 form: her operator kit (all three skills authored), stats + module attributes, 2-2 (SPT-Y: +1), blocks 3, ranged physical, hits air, 维多利亚, no 特质; her 机动盾牌 piece: the form's token stats, 禁疗, taunt 1, no attack, blocks 2",
+      "file": "test/content/op_jesca2.test.js",
+      "name": "涤火杰西卡 in every 自选 form: her operator kit (all three skills authored), stats + module attributes, 2-2 (SPT-Y: +1), blocks 3, ranged physical, hits air, 维多利亚, no 特质; her 机动盾牌 piece: the form's token stats, 禁疗, taunt 1, no attack, blocks 2",
+      "detail": "T5 normal none: 2-2"
+    },
+    {
+      "key": "the x-1 grid of the tests is her data range (from (10, 5) facing RIGHT)",
+      "file": "test/content/op_lin.test.js",
+      "name": "the x-1 grid of the tests is her data range (from (10, 5) facing RIGHT)",
+      "detail": "Expected values to be strictly deep-equal:"
+    },
+    {
+      "key": "机械师 in every 自选 form: her operator kit (all three skills authored), stats + SO-A attributes, 2-2, blocks 3, ranged physical, hits air, 罗德岛, no 特质; her 结构性原理: the form's token stats, 禁疗, blocks 3, melee ground-only physical",
+      "file": "test/content/op_mcnist.test.js",
+      "name": "机械师 in every 自选 form: her operator kit (all three skills authored), stats + SO-A attributes, 2-2, blocks 3, ranged physical, hits air, 罗德岛, no 特质; her 结构性原理: the form's token stats, 禁疗, blocks 3, melee ground-only physical",
+      "detail": "T5 normal none: 2-2"
+    },
+    {
+      "key": "回光黯淡: her and her summons' damage on an enemy below 60 % HP ×1.45 (the final damage); SOC-X \"攻击力提升至115%\" on an enemy her summon blocks (stage 1 and 3), which she can attack anywhere",
+      "file": "test/content/op_necras.test.js",
+      "name": "回光黯淡: her and her summons' damage on an enemy below 60 % HP ×1.45 (the final damage); SOC-X \"攻击力提升至115%\" on an enemy her summon blocks (stage 1 and 3), which she can attack anywhere",
+      "detail": "T5 normal none: its tile is her target"
+    },
+    {
+      "key": "沙地兽 (her placed piece): untargetable, 无敌, 禁疗, no attack; while it scouts (25 s) the enemies of its 3×3 are in her range and her skill trigger range, she shoots them first, ×1.15 (HUN-X stage 3: ×1.2) physical; then it leaves, and comes back on its tile after 30 s (HUN-X stage 3: 20 s) paying 3 DP",
+      "file": "test/content/op_ray.test.js",
+      "name": "沙地兽 (her placed piece): untargetable, 无敌, 禁疗, no attack; while it scouts (25 s) the enemies of its 3×3 are in her range and her skill trigger range, she shoots them first, ×1.15 (HUN-X stage 3: ×1.2) physical; then it leaves, and comes back on its tile after 30 s (HUN-X stage 3: 20 s) paying 3 DP",
+      "detail": "in her range"
+    },
+    {
+      "key": "S3: a summon is no 干员 (no 不死); a lethal hit on an operator already holding 不死 leaves the cast's 不死 for the next one",
+      "file": "test/content/op_slent2.test.js",
+      "name": "S3: a summon is no 干员 (no 不死); a lethal hit on an operator already holding 不死 leaves the cast's 不死 for the next one",
+      "detail": "The expression evaluated to a falsy value:"
+    },
+    {
+      "key": "S2 “慢慢走~” glue: her tile + 4 passable tiles in PRTS's order — open ground: the cross on her front tile; front blocked (facing the field edge): left, right, then spreading",
+      "file": "test/content/op_thumpy.test.js",
+      "name": "S2 “慢慢走~” glue: her tile + 4 passable tiles in PRTS's order — open ground: the cross on her front tile; front blocked (facing the field edge): left, right, then spreading",
+      "detail": "T5: open ground"
+    },
+    {
+      "key": "S3 “不准走！” (60 s): block +2, strikes every blocked enemy, ATK +65 % / +80 %, DEF +75 % / +105 %; the belt carries unblocked ground enemies of 重量 ≤ 4 on the 4 tiles ahead towards her at 0.8 × 20 / 30 tile/s; heavier ones, flyers and blocked ones stay",
+      "file": "test/content/op_thumpy.test.js",
+      "name": "S3 “不准走！” (60 s): block +2, strikes every blocked enemy, ATK +65 % / +80 %, DEF +75 % / +105 %; the belt carries unblocked ground enemies of 重量 ≤ 4 on the 4 tiles ahead towards her at 0.8 × 20 / 30 tile/s; heavier ones, flyers and blocked ones stay",
+      "detail": "T5: the belt"
+    },
+    {
+      "key": "S1 蓄力: both charges stored ⇒ the 3-2 range (card and trigger), the cast spends every charge and hits three times from 3 tiles away; the range is 1-1 again after it",
+      "file": "test/content/op_vvana.test.js",
+      "name": "S1 蓄力: both charges stored ⇒ the 3-2 range (card and trigger), the cast spends every charge and hits three times from 3 tiles away; the range is 1-1 again after it",
+      "detail": "T5: the DEFAULT trigger range follows"
+    },
+    {
+      "key": "every token of data/tokens.json spawns with data defaults and runs without content errors",
+      "file": "test/content/tokens_devices.test.js",
+      "name": "every token of data/tokens.json spawns with data defaults and runs without content errors",
+      "detail": "token_shu_field uses its token kit"
+    },
+    {
+      "key": "tactical point: without a board piece the 援军 (狼群) stands on an enemy ground path inside the tactician range",
+      "file": "test/content/tokens_devices.test.js",
+      "name": "tactical point: without a board piece the 援军 (狼群) stands on an enemy ground path inside the tactician range",
+      "detail": "inside the initial range"
+    },
+    {
+      "key": "diyPool: tier 5 = 15 prototypes + 72 owned 6★, tier 6 = 9 + 72; no preset, no collab; with the kit registry only kitted operators",
+      "file": "test/diy.test.js",
+      "name": "diyPool: tier 5 = 15 prototypes + 72 owned 6★, tier 6 = 9 + 72; no preset, no collab; with the kit registry only kitted operators",
+      "detail": "char_602_cdfend"
+    },
+    {
+      "key": "exporter writes only requested sprites and passes both complete model groups through the existing exporter",
+      "file": "test/local-extract-operators.test.js",
+      "name": "exporter writes only requested sprites and passes both complete model groups through the existing exporter",
+      "detail": "Expected values to be strictly equal:"
+    },
+    {
+      "key": "full extraction needs --plugin-art; explicit --only plugin-art also authorizes the local art job",
+      "file": "test/local-extract-operators.test.js",
+      "name": "full extraction needs --plugin-art; explicit --only plugin-art also authorizes the local art job",
+      "detail": "Expected values to be strictly equal:"
+    },
+    {
+      "key": "operator plan names only exact base/E2 sprites and default battle Front/Back groups",
+      "file": "test/local-extract-operators.test.js",
+      "name": "operator plan names only exact base/E2 sprites and default battle Front/Back groups",
+      "detail": "Expected values to be strictly equal:"
+    },
+    {
+      "key": "operator planner independently caps distinct operators, rather than duplicate requests",
+      "file": "test/local-extract-operators.test.js",
+      "name": "operator planner independently caps distinct operators, rather than duplicate requests",
+      "detail": "Expected values to be strictly equal:"
+    },
+    {
+      "key": "partial manifest merge preserves other operators, old pictures, and unextracted battle directions",
+      "file": "test/local-extract-operators.test.js",
+      "name": "partial manifest merge preserves other operators, old pictures, and unextracted battle directions",
+      "detail": "Expected values to be strictly equal:"
+    },
+    {
+      "key": "sprite read, decode and save failures do not skip later requested operators in a bundle",
+      "file": "test/local-extract-operators.test.js",
+      "name": "sprite read, decode and save failures do not skip later requested operators in a bundle",
+      "detail": "Expected values to be strictly equal:"
+    },
+    {
+      "key": "self-range blockers (range 0-1, only their own tile) fill the free enemy-road tiles before any other tile, on every stage and seed",
+      "file": "test/match/bot.test.js",
+      "name": "self-range blockers (range 0-1, only their own tile) fill the free enemy-road tiles before any other tile, on every stage and seed",
+      "detail": "Expected values to be strictly equal:"
+    },
+    {
+      "key": "a content plugin 自选 operator survives into the match, can be granted and fielded; without the list it is dropped",
+      "file": "test/match/content-diy.test.js",
+      "name": "a content plugin 自选 operator survives into the match, can be granted and fielded; without the list it is dropped",
+      "detail": "could not reach PREP R1 (phase BAND_DRAFT R0)"
+    },
+    {
+      "key": "§21.26 3 — strategies tied to a bond the mode switches off > the derivation (shared/bandBonds.js, run by the data build) catches a tie through a pool or a blackboard bond id alone; GameData reads the field",
+      "file": "test/match/feedback1-gaps.test.js",
+      "name": "§21.26 3 — strategies tied to a bond the mode switches off > the derivation (shared/bandBonds.js, run by the data build) catches a tie through a pool or a blackboard bond id alone; GameData reads the field",
+      "detail": "band_technician"
+    },
+    {
+      "key": "every generated game intent has a valid protocol shape, including unequip",
+      "file": "test/match/fuzz.test.js",
+      "name": "every generated game intent has a valid protocol shape, including unequip",
+      "detail": "{\"t\":\"g.botBand\"}"
+    },
+    {
+      "key": "fuzz with all four rules enabled: 12 fake and 4 real matches",
+      "file": "test/match/fuzz.test.js",
+      "name": "fuzz with all four rules enabled: 12 fake and 4 real matches",
+      "detail": "fuzz produced an invalid message {\"t\":\"g.botBand\"}"
+    },
+    {
+      "key": "fuzz with FakeBattle: 60 matches of random intents / connection churn / time jumps",
+      "file": "test/match/fuzz.test.js",
+      "name": "fuzz with FakeBattle: 60 matches of random intents / connection churn / time jumps",
+      "detail": "fuzz produced an invalid message {\"t\":\"g.botBand\"}"
+    },
+    {
+      "key": "fuzz with the real simulation: 8 matches",
+      "file": "test/match/fuzz.test.js",
+      "name": "fuzz with the real simulation: 8 matches",
+      "detail": "fuzz produced an invalid message {\"t\":\"g.botBand\"}"
+    },
+    {
+      "key": "co-op spectator over websockets: watches the real match like an eliminated player, never a private view, cannot act, resumes",
+      "file": "test/match/lobby-integration.test.js",
+      "name": "co-op spectator over websockets: watches the real match like an eliminated player, never a private view, cannot act, resumes",
+      "detail": "timeout waiting for m.public (recent: ok, room.state:FXHZ, room.state:FXHZ, m.private, m.public, ok, ok, m.public)"
+    },
+    {
+      "key": "co-op spectator removed by the host while the match runs: room.closed {kicked}, the seat freed and refilled, no frame after it, the other spectator watches on",
+      "file": "test/match/lobby-integration.test.js",
+      "name": "co-op spectator removed by the host while the match runs: room.closed {kicked}, the seat freed and refilled, no frame after it, the other spectator watches on",
+      "detail": "timeout waiting for m.public (recent: room.state:WKMS, room.state:WKMS, room.state:WKMS, m.private, m.public, ok, ok, m.public)"
+    },
+    {
+      "key": "tokens.json: the manually deployable summons are hand pieces — 医疗探机, 诅咒娃娃, 爬行号·防护单元 with the talent ones",
+      "file": "test/match/playtest6_summons.test.js",
+      "name": "tokens.json: the manually deployable summons are hand pieces — 医疗探机, 诅咒娃娃, 爬行号·防护单元 with the talent ones",
+      "detail": "Expected values to be strictly deep-equal:"
+    },
+    {
+      "key": "投资人 on a real purchase: ×2 while three different members are active, ×3 at 100 layers, ×1 otherwise",
+      "file": "test/match/r40a-invest-ongain.test.js",
+      "name": "投资人 on a real purchase: ×2 while three different members are active, ×3 at 100 layers, ×1 otherwise",
+      "detail": "FUNNY distinct=true layers=0"
+    },
+    {
+      "key": "an answer that lands before the driver subscribed to the job is applied, never recomputed",
+      "file": "test/match/rehearsal-delegate.test.js",
+      "name": "an answer that lands before the driver subscribed to the job is applied, never recomputed",
+      "detail": "round 3 reached (BAND_DRAFT R0)"
+    },
+    {
+      "key": "an answered delegation leaves the server no candidate to simulate",
+      "file": "test/match/rehearsal-delegate.test.js",
+      "name": "an answered delegation leaves the server no candidate to simulate",
+      "detail": "round 3 reached (BAND_DRAFT R0)"
+    },
+    {
+      "key": "delegation under the finest slicing: every prep is answered and the server builds no candidate",
+      "file": "test/match/rehearsal-delegate.test.js",
+      "name": "delegation under the finest slicing: every prep is answered and the server builds no candidate",
+      "detail": "round 3 reached (BAND_DRAFT R0)"
+    },
+    {
+      "key": "a packaged import fetches six tables once, derives both forms, then reuses cached bytes",
+      "file": "test/official-tables.test.js",
+      "name": "a packaged import fetches six tables once, derives both forms, then reuses cached bytes",
+      "detail": "[{\"code\":\"PLUGIN_FORGE_ZIP\",\"detail\":\"the import could not be written (EPERM)\"}]"
+    },
+    {
+      "key": "CLI honors offline, source and refresh options and keeps --json stdout parseable",
+      "file": "test/official-tables.test.js",
+      "name": "CLI honors offline, source and refresh options and keeps --json stdout parseable",
+      "detail": "Expected values to be strictly equal:"
+    },
+    {
+      "key": "concurrent imports fetch each missing table once",
+      "file": "test/official-tables.test.js",
+      "name": "concurrent imports fetch each missing table once",
+      "detail": "The expression evaluated to a falsy value:"
+    },
+    {
+      "key": "failed optional table downloads retain the required-table derivation and name the fallback",
+      "file": "test/official-tables.test.js",
+      "name": "failed optional table downloads retain the required-table derivation and name the fallback",
+      "detail": "Expected values to be strictly equal:"
+    },
+    {
+      "key": "studio preview/import use the CLI download path and offline flag without opening a port",
+      "file": "test/official-tables.test.js",
+      "name": "studio preview/import use the CLI download path and offline flag without opening a port",
+      "detail": "{\"error\":\"PLUGIN_FORGE_ZIP\",\"params\":{\"detail\":\"the import could not be written (EPERM)\"},\"detail\":\"the import could not be written (EPERM)\"}"
+    },
+    {
+      "key": "Forge keeps custom skill heal 65/80 through import and composition, retaining official and step bounds",
+      "file": "test/plugins/forge-records.test.js",
+      "name": "Forge keeps custom skill heal 65/80 through import and composition, retaining official and step bounds",
+      "detail": "[{\"code\":\"PLUGIN_FORGE_ZIP\",\"detail\":\"the import could not be written (EPERM)\"}]"
+    },
+    {
+      "key": "synthetic new hook imports as a validated content product",
+      "file": "test/plugins/forge-records.test.js",
+      "name": "synthetic new hook imports as a validated content product",
+      "detail": "[{\"code\":\"PLUGIN_FORGE_ZIP\",\"detail\":\"the import could not be written (EPERM)\"}]"
+    },
+    {
+      "key": "--dry-run writes nothing; --json is stable and has no home path",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "--dry-run writes nothing; --json is stable and has no home path",
+      "detail": "{\"assumed\":[],\"check\":\"PLUGIN_FORGE_ZIP: the import could not be written (EPERM)\",\"dryRun\":true,\"issues\":[{\"code\":\"PLUGIN_FORGE_ZIP\",\"detail\":\"the import could not be written (EPERM)\"}],\"markdown\":\"# "
+    },
+    {
+      "key": "--no-scripts (and the studio's noScripts) leaves the script plugin out and names the kit",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "--no-scripts (and the studio's noScripts) leaves the script plugin out and names the kit",
+      "detail": "{\"assumed\":[],\"check\":\"PLUGIN_FORGE_ZIP: the import could not be written (EPERM)\",\"dryRun\":false,\"issues\":[{\"code\":\"PLUGIN_FORGE_ZIP\",\"detail\":\"the import could not be written (EPERM)\"}],\"markdown\":\"#"
+    },
+    {
+      "key": "--out basename is the record namespace",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "--out basename is the record namespace",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "a 6★ declared in operators is diy and is not a visible shop chess",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "a 6★ declared in operators is diy and is not a visible shop chess",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "a chess override writes skill and the default skills[] entry as one object",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "a chess override writes skill and the default skills[] entry as one object",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "a dependency on an installed plugin is visible; a missing one is named",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "a dependency on an installed plugin is visible; a missing one is named",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "a finite number past ±1e9 inside an array leaf is omitted and the rest of the record imports",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "a finite number past ±1e9 inside an array leaf is omitted and the rest of the record imports",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "a Forge built-in language imports as a global lang overlay, separate from room content",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "a Forge built-in language imports as a global lang overlay, separate from room content",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "a garrison bbStr bond token that is not a bond id is named and that field is not written",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "a garrison bbStr bond token that is not a bond id is named and that field is not written",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "a kit for an official id needs the pack's overrides; with it the script plugin lists that kit in overrides",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "a kit for an official id needs the pack's overrides; with it the script plugin lists that kit in overrides",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "a kit whose import does not map, that fails the script check, or uses syntax the sandbox refuses is named and not written; nothing runs",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "a kit whose import does not map, that fails the script check, or uses syntax the sandbox refuses is named and not written; nothing runs",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "a pack that drops whole gameplay records says so, and a cosmetic aimed only at those records has nothing to apply to",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "a pack that drops whole gameplay records says so, and a cosmetic aimed only at those records has nothing to apply to",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "a pack unit whose shop piece is a chess pair is written once, as that pair; no bond at all gets the fallback bond",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "a pack unit whose shop piece is a chess pair is written once, as that pair; no bond at all gets the fallback bond",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "a partial or ambiguous official match keeps the generic kit and the report says which skills and why",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "a partial or ambiguous official match keeps the generic kit and the report says which skills and why",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "a rename failure rolls back only destinations this attempt created",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "a rename failure rolls back only destinations this attempt created",
+      "detail": "The input did not match the regular expression /EIO/. Input:"
+    },
+    {
+      "key": "a safe integer past ±1e9 does not reject a Forge file; game-data fields stay inside that window",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "a safe integer past ±1e9 does not reject a Forge file; game-data fields stay inside that window",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "a second import into the same folder is refused and leaves the first folder as it was",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "a second import into the same folder is refused and leaves the first folder as it was",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "a skill override without skills[] merges onto the official skill",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "a skill override without skills[] merges onto the official skill",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "a Spine import writes clip data the way pack does, and drops only an unreadable skeleton",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "a Spine import writes clip data the way pack does, and drops only an unreadable skeleton",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "a.png and files/a.png stay distinct; case and prefix collisions are refused",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "a.png and files/a.png stay distinct; case and prefix collisions are refused",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "all nine Forge UI mounts distinguish adaptation from uncopied scripts, including UI-only packs",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "all nine Forge UI mounts distinguish adaptation from uncopied scripts, including UI-only packs",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "an operator-level illustration lands on chars[<charId>].illust (and needs assets.override when the operator exists here)",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "an operator-level illustration lands on chars[<charId>].illust (and needs assets.override when the operator exists here)",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "an override array is one set; talents stay an index merge",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "an override array is one set; talents stay an index merge",
+      "detail": "The input did not match the regular expression /chess:chess_char_1_01_a → 1 set/. Input:"
+    },
+    {
+      "key": "an unknown bond, garrison or bond member is named and left out of the override",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "an unknown bond, garrison or bond member is named and left out of the override",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "boss music and ui sounds become a cosmetic overlay; an unknown sound bucket is named and left out",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "boss music and ui sounds become a cosmetic overlay; an unknown sound bucket is named and left out",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "chess.json pairs become compact records: a shop piece and a 自选 piece; unknown characters and dropped fields are named",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "chess.json pairs become compact records: a shop piece and a 自选 piece; unknown characters and dropped fields are named",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "form skills and numeric form ranks become normal and elite",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "form skills and numeric form ranks become normal and elite",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "hidden pieces preserve explicit pair, source and both forms of art without kit inference",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "hidden pieces preserve explicit pair, source and both forms of art without kit inference",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "kits/<id>.js becomes one script plugin: SDK imports rewritten, the pack's ./ file carried, the registry's script check passed",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "kits/<id>.js becomes one script plugin: SDK imports rewritten, the pack's ./ file carried, the registry's script check passed",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "malicious zip and directory input is refused and a script in the pack is not executed",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "malicious zip and directory input is refused and a script in the pack is not executed",
+      "detail": "\"EPERM: operation not permitted, symlink 'E:\\\\tmp' -> 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\sp-forge-nxeTHL\\\\linked\\\\escape'\""
+    },
+    {
+      "key": "mixed pack: cosmetic, content, ui and lang; refused pieces named with their reasons",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "mixed pack: cosmetic, content, ui and lang; refused pieces named with their reasons",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "numbers pack: bond patch, operator and enemy, content set with no problems, kit script not run",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "numbers pack: bond patch, operator and enemy, content set with no problems, kit script not run",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "official skills of one operator keep their ids and bind that operator's kit, for a 自选 unit and a shop pair",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "official skills of one operator keep their ids and bind that operator's kit, for a 自选 unit and a shop pair",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "one outfit per skin: an id that is a skin key becomes that operator's own skins variant; no usable id collapses onto the operator",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "one outfit per skin: an id that is a skin key becomes that operator's own skins variant; no usable id collapses onto the operator",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "P9: dropped records map distinct chess/item ids to art keys, while retained targets stay usable",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "P9: dropped records map distinct chess/item ids to art keys, while retained targets stay usable",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "preview and dry-run leave Object.prototype unchanged on success and on a poisoned pack",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "preview and dry-run leave Object.prototype unchanged on success and on a poisoned pack",
+      "detail": "{\"error\":\"PLUGIN_FORGE_ZIP\",\"params\":{\"detail\":\"the import could not be written (EPERM)\"},\"detail\":\"the import could not be written (EPERM)\"}"
+    },
+    {
+      "key": "skin pack: cosmetic overlay, check --strict, pack, visual set with no problems",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "skin pack: cosmetic overlay, check --strict, pack, visual set with no problems",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "the imported script plugin runs in our own sandbox: the kit's talent raises ATK by 25% (the content plugin alone does not)",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "the imported script plugin runs in our own sandbox: the kit's talent raises ATK by 25% (the content plugin alone does not)",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "voices and skill icons follow the new char and skill ids",
+      "file": "test/plugins/forgeImport.test.js",
+      "name": "voices and skill icons follow the new char and skill ids",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "import copies a supported panel, keeps a skeleton for send, and tabs a second copy",
+      "file": "test/plugins/forgePanel.test.js",
+      "name": "import copies a supported panel, keeps a skeleton for send, and tabs a second copy",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "skeletons and dropped server, host styles or messages report partial/manual up front",
+      "file": "test/plugins/forgePanel.test.js",
+      "name": "skeletons and dropped server, host styles or messages report partial/manual up front",
+      "detail": "# 导入报告 IMPORT-REPORT"
+    },
+    {
+      "key": "Forge silent phases produce a cosmetic even without media and unknown fields remain skips",
+      "file": "test/plugins/fx.test.js",
+      "name": "Forge silent phases produce a cosmetic even without media and unknown fields remain skips",
+      "detail": "Expected values to be strictly equal:"
+    },
+    {
+      "key": "the wire: welcome, room.state, the match, /healthz, /cs/, BattleSpec, b.result > /healthz names the vanilla content; /cs/<cs16>/index.json is its manifest, cached for good, and only that one",
+      "file": "test/plugins/identity.test.js",
+      "name": "the wire: welcome, room.state, the match, /healthz, /cs/, BattleSpec, b.result > /healthz names the vanilla content; /cs/<cs16>/index.json is its manifest, cached for good, and only that one",
+      "detail": "Expected values to be strictly deep-equal:"
+    },
+    {
+      "key": "the wire: welcome, room.state, the match, /healthz, /cs/, BattleSpec, b.result > welcome.content, room.state.content (always the vanilla set) and the match's opts.cs",
+      "file": "test/plugins/identity.test.js",
+      "name": "the wire: welcome, room.state, the match, /healthz, /cs/, BattleSpec, b.result > welcome.content, room.state.content (always the vanilla set) and the match's opts.cs",
+      "detail": "Expected values to be strictly deep-equal:"
+    },
+    {
+      "key": "a symlink id is not followed: status has no version, and --force renames the link",
+      "file": "test/plugins/install.test.js",
+      "name": "a symlink id is not followed: status has no version, and --force renames the link",
+      "detail": "\"EPERM: operation not permitted, symlink 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\sp-install-link-oVM9Gr\\\\real\\\\elsewhere' -> 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\sp-install-link-oVM9Gr\\\\plugins\\\\demo-s"
+    },
+    {
+      "key": "every while in the sim and the match names its loop cap",
+      "file": "test/plugins/loopCaps.test.js",
+      "name": "every while in the sim and the match names its loop cap",
+      "detail": "Expected values to be strictly deep-equal:"
+    },
+    {
+      "key": "registry rejects invalid option payloads, scripts, missing sources and escaping links",
+      "file": "test/plugins/offers.test.js",
+      "name": "registry rejects invalid option payloads, scripts, missing sources and escaping links",
+      "detail": "\"EPERM: operation not permitted, symlink 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\sp-offers-checked-93Lune\\\\outside.json' -> 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\sp-offers-checked-93Lune\\\\demo\\\\lib\\\\car"
+    },
+    {
+      "key": "production match host and an isolated browser module tree agree",
+      "file": "test/plugins/operator-traits.test.js",
+      "name": "production match host and an isolated browser module tree agree",
+      "detail": "test timed out after 30000ms"
+    },
+    {
+      "key": "Forge behaviour becomes rules; an unknown switch is skipped",
+      "file": "test/plugins/rules.test.js",
+      "name": "Forge behaviour becomes rules; an unknown switch is skipped",
+      "detail": "[{\"code\":\"PLUGIN_FORGE_ZIP\",\"detail\":\"the import could not be written (EPERM)\"}]"
+    },
+    {
+      "key": "Forge omitted options preserve a declared default and its conflict",
+      "file": "test/plugins/rules.test.js",
+      "name": "Forge omitted options preserve a declared default and its conflict",
+      "detail": "Expected values to be strictly equal:"
+    },
+    {
+      "key": "CLI test runs the template harness with composed data",
+      "file": "test/plugins/script-integration.test.js",
+      "name": "CLI test runs the template harness with composed data",
+      "detail": "\"EPERM: operation not permitted, symlink 'E:\\\\卫\\\\卫戍协议\\\\Stronghold-Protocol\\\\data' -> 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\sp-p3a-lxKtrn\\\\data'\""
+    },
+    {
+      "key": "Forge import: theme-only, variables beside a panel, and notices",
+      "file": "test/plugins/theme-notices.test.js",
+      "name": "Forge import: theme-only, variables beside a panel, and notices",
+      "detail": "\"PLUGIN_FORGE_ZIP: the import could not be written (EPERM)\""
+    },
+    {
+      "key": "operator discovery reuses W5 references, excludes the shipped roster, and never loads scripts/links",
+      "file": "test/setup-plugin-art.test.js",
+      "name": "operator discovery reuses W5 references, excludes the shipped roster, and never loads scripts/links",
+      "detail": "\"EPERM: operation not permitted, symlink 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\fx-test-O2LAYB\\\\outside.json' -> 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\fx-test-O2LAYB\\\\plugins\\\\linked\\\\link.json'\""
+    },
+    {
+      "key": "setup notices installed official references absent from data/index, without reading scripts or links",
+      "file": "test/setup-plugin-fx.test.js",
+      "name": "setup notices installed official references absent from data/index, without reading scripts or links",
+      "detail": "\"EPERM: operation not permitted, symlink 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\fx-test-jZEgk4\\\\plugins\\\\demo\\\\ops.json' -> 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\fx-test-jZEgk4\\\\plugins\\\\linked\\\\linked"
+    },
+    {
+      "key": "data: the six deviated 重装 skills are DEFAULT (深巡 S2: ACTIVE_RANGE on its 3-2) and 余 S2 is SKILL_RANGE on its x-1, on the normal and the elite record, rawRule the official TAKE_DAMAGE",
+      "file": "test/sim/feedback1-tank-triggers.test.js",
+      "name": "data: the six deviated 重装 skills are DEFAULT (深巡 S2: ACTIVE_RANGE on its 3-2) and 余 S2 is SKILL_RANGE on its x-1, on the normal and the elite record, rawRule the official TAKE_DAMAGE",
+      "detail": "chess_char_1_21_a sktech_defender_1"
+    },
+    {
+      "key": "every subProfessionId in the visible pool has a dedicated profile entry",
+      "file": "test/sim/professions.test.js",
+      "name": "every subProfessionId in the visible pool has a dedicated profile entry",
+      "detail": "Expected values to be strictly deep-equal:"
+    },
+    {
+      "key": "performance: heavy 2-player boss field (18 ops, ~130 enemies alive) averages < 0.5 ms/tick (best of 3)",
+      "file": "test/sim/robustness.test.js",
+      "name": "performance: heavy 2-player boss field (18 ops, ~130 enemies alive) averages < 0.5 ms/tick (best of 3)",
+      "detail": "best 1.0758377777777777 ms/tick of 1.376, 1.076, 1.086"
+    },
+    {
+      "key": "皮肤: the lobby seat and the match > no file under server/sim reads Unit.skin except the three that carry it",
+      "file": "test/skins.test.js",
+      "name": "皮肤: the lobby seat and the match > no file under server/sim reads Unit.skin except the three that carry it",
+      "detail": "Expected values to be strictly deep-equal:"
+    },
+    {
+      "key": "studio Forge import > a file list imports, and a path-escape name is refused",
+      "file": "test/studio/forge.test.js",
+      "name": "studio Forge import > a file list imports, and a path-escape name is refused",
+      "detail": "{\"error\":\"PLUGIN_FORGE_ZIP\",\"params\":{\"detail\":\"the import could not be written (EPERM)\"},\"detail\":\"the import could not be written (EPERM)\"}"
+    },
+    {
+      "key": "studio Forge import > a pack with a kit previews a script plugin with its run condition; noScripts leaves it out",
+      "file": "test/studio/forge.test.js",
+      "name": "studio Forge import > a pack with a kit previews a script plugin with its run condition; noScripts leaves it out",
+      "detail": "{\"error\":\"PLUGIN_FORGE_ZIP\",\"params\":{\"detail\":\"the import could not be written (EPERM)\"},\"detail\":\"the import could not be written (EPERM)\"}"
+    },
+    {
+      "key": "studio Forge import > a server path is refused; preview writes nothing; import writes the plugin; a second import is refused",
+      "file": "test/studio/forge.test.js",
+      "name": "studio Forge import > a server path is refused; preview writes nothing; import writes the plugin; a second import is refused",
+      "detail": "{\"error\":\"PLUGIN_FORGE_ZIP\",\"params\":{\"detail\":\"the import could not be written (EPERM)\"},\"detail\":\"the import could not be written (EPERM)\"}"
+    },
+    {
+      "key": "generated script harness runs with tools/plugin.mjs test, with SDK registrations preloaded",
+      "file": "test/studio/gameplay.test.js",
+      "name": "generated script harness runs with tools/plugin.mjs test, with SDK registrations preloaded",
+      "detail": "\"EPERM: operation not permitted, symlink 'E:\\\\卫\\\\卫戍协议\\\\Stronghold-Protocol\\\\data' -> 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\wp1b-test-8BicUa\\\\data'\""
+    },
+    {
+      "key": "the watch: a plugins folder over the entry limit is not watched as a tree (links not followed in the count)",
+      "file": "test/studio/hotreload.test.js",
+      "name": "the watch: a plugins folder over the entry limit is not watched as a tree (links not followed in the count)",
+      "detail": "\"EPERM: operation not permitted, symlink 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\sp-watch-big-baKCjE' -> 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\sp-watch-big-baKCjE\\\\plugins\\\\loop'\""
+    },
+    {
+      "key": "candidates refuse hidden links before staging, use clone fallback, and clean failed edits/timeouts",
+      "file": "test/studio/presentationRework.test.js",
+      "name": "candidates refuse hidden links before staging, use clone fallback, and clean failed edits/timeouts",
+      "detail": "\"EPERM: operation not permitted, symlink 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\wp1b-test-eChrv5\\\\plugins\\\\rework-skins' -> 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\wp1b-test-eChrv5\\\\plugins\\\\rework-skins"
+    },
+    {
+      "key": "P1: 5000 files link once, no unchanged media reads/writes, checker yields, candidate is invisible and cleaned",
+      "file": "test/studio/presentationRework.test.js",
+      "name": "P1: 5000 files link once, no unchanged media reads/writes, checker yields, candidate is invisible and cleaned",
+      "flaky": true,
+      "detail": "PLUGIN_STUDIO_TRIAL_TIMEOUT"
+    },
+    {
+      "key": "removing plugins in the studio > a move that fails is refused alone (PLUGIN_STUDIO_REMOVE): plugins/_removed a symbolic link is never written through",
+      "file": "test/studio/remove.test.js",
+      "name": "removing plugins in the studio > a move that fails is refused alone (PLUGIN_STUDIO_REMOVE): plugins/_removed a symbolic link is never written through",
+      "detail": "\"EPERM: operation not permitted, symlink 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\sp-studio-remove-FwY4LF\\\\elsewhere' -> 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\sp-studio-remove-FwY4LF\\\\plugins\\\\_removed'\""
+    },
+    {
+      "key": "removing plugins in the studio > refused one by one, the others removed — an invalid id, a missing folder, another case of a name, a \"_\" or dot folder, a symbolic link: 200 with each code, nothing of them touched",
+      "file": "test/studio/remove.test.js",
+      "name": "removing plugins in the studio > refused one by one, the others removed — an invalid id, a missing folder, another case of a name, a \"_\" or dot folder, a symbolic link: 200 with each code, nothing of them touched",
+      "detail": "\"EPERM: operation not permitted, symlink 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\sp-studio-remove-FwY4LF\\\\linked-target' -> 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\sp-studio-remove-FwY4LF\\\\plugins\\\\linked"
+    },
+    {
+      "key": "sandbox-incompatible code cannot be promoted to trusted by the studio key",
+      "file": "test/studio/review.test.js",
+      "name": "sandbox-incompatible code cannot be promoted to trusted by the studio key",
+      "flaky": true,
+      "detail": "Expected values to be strictly equal:"
+    },
+    {
+      "key": "trial uses the actual sandbox executor, pinned mode and runtime kit",
+      "file": "test/studio/review.test.js",
+      "name": "trial uses the actual sandbox executor, pinned mode and runtime kit",
+      "flaky": true,
+      "detail": "{\"ok\":false,\"issues\":[{\"level\":\"problem\",\"code\":\"PLUGIN_SCRIPT_CHECK\",\"text\":\"script setup exceeded 5000 ms; child terminated (SIGKILL)\",\"params\":{\"where\":\"scripts\",\"detail\":\"script setup exceeded 500"
+    },
+    {
+      "key": "files: confined to plugins/<id>/ — ids, paths, links, types, sizes; a write is atomic",
+      "file": "test/studio/studio.test.js",
+      "name": "files: confined to plugins/<id>/ — ids, paths, links, types, sizes; a write is atomic",
+      "detail": "\"EPERM: operation not permitted, symlink 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\sp-studio-files-zFLhTe\\\\outside\\\\secret.png' -> 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\sp-studio-files-zFLhTe\\\\plugins\\\\ab"
+    },
+    {
+      "key": "the studio over HTTP > a plugin folder that is itself a link: the studio never opens it (403 for every read and change, with the key or without; listed apart, nothing of the target sent); the game may still load it and serves only the files its overlay names",
+      "file": "test/studio/studio.test.js",
+      "name": "the studio over HTTP > a plugin folder that is itself a link: the studio never opens it (403 for every read and change, with the key or without; listed apart, nothing of the target sent); the game may still load it and serves only the files its overlay names",
+      "detail": "\"EPERM: operation not permitted, symlink 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\sp-studio-http-Qbj7qK\\\\linked-target' -> 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\sp-studio-http-Qbj7qK\\\\plugins\\\\linked-ski"
+    },
+    {
+      "key": "the studio over HTTP > files a plugin folder holds are served sandboxed and only of the types the studio writes (no page or script put there by hand); HEAD answers like GET",
+      "file": "test/studio/studio.test.js",
+      "name": "the studio over HTTP > files a plugin folder holds are served sandboxed and only of the types the studio writes (no page or script put there by hand); HEAD answers like GET",
+      "detail": "\"ENOENT: no such file or directory, open 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\sp-studio-http-Qbj7qK\\\\plugins\\\\lnk-files\\\\page.html'\""
+    },
+    {
+      "key": "the studio over HTTP > links put into a plugin folder by hand: nothing is read or written through them (plugin.json, an overlay file, the lock, the studio's note, plugins/_moved)",
+      "file": "test/studio/studio.test.js",
+      "name": "the studio over HTTP > links put into a plugin folder by hand: nothing is read or written through them (plugin.json, an overlay file, the lock, the studio's note, plugins/_moved)",
+      "detail": "\"EPERM: operation not permitted, symlink 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\sp-studio-http-Qbj7qK\\\\outside\\\\secret.json' -> 'C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\sp-studio-http-Qbj7qK\\\\plugins\\\\lnk"
+    },
+    {
+      "key": "the studio over HTTP > the key (server/studio/key.js): a change without it is refused whatever the address; reads need none; info tells the page; the same key after a restart, printed with the studio's address",
+      "file": "test/studio/studio.test.js",
+      "name": "the studio over HTTP > the key (server/studio/key.js): a change without it is refused whatever the address; reads need none; info tells the page; the same key after a restart, printed with the studio's address",
+      "detail": "The expression evaluated to a falsy value:"
+    },
+    {
+      "key": "assetUrls > a golden character key uses portraitE2 and avatarE2; a portrait-only entry keeps its URL",
+      "file": "test/ui/assetUrls.test.js",
+      "name": "assetUrls > a golden character key uses portraitE2 and avatarE2; a portrait-only entry keeps its URL",
+      "detail": "Expected values to be strictly equal:"
+    },
+    {
+      "key": "strategy draft bond references remain available when the pool excludes some operators > the client and server read the same strategy bond references",
+      "file": "test/ui/feedback1-gaps.test.js",
+      "name": "strategy draft bond references remain available when the pool excludes some operators > the client and server read the same strategy bond references",
+      "detail": "band_technician: the same field"
+    },
+    {
+      "key": "\\#11 the match-info model and its line: the own banned 自选 piece is named; nothing without priv / diyBanned",
+      "file": "test/ui/feedback5-we2-diybanned.test.js",
+      "name": "\\#11 the match-info model and its line: the own banned 自选 piece is named; nothing without priv / diyBanned",
+      "detail": "translated with its placeholder"
+    }
+  ]
+}

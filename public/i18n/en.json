@@ -1812,6 +1812,7 @@
   "左侧胜利": "Left wins",
   "右侧胜利": "Right wins",
   "使用当前草稿，与原版在相同种子和场景下比较；新干员的原版对照使用所借用的官方干员。": "Compare the current draft with the original using the same seed and scenario. New operators use their referenced official operator as the baseline.",
+  "脚本插件按已保存并打包的文件试跑：表单里未保存的修改不参与，改完先保存再打包。": "A script plugin runs its saved, packed files: unsaved form changes are not used. Save and pack first.",
   "单干员对木桩": "One operator versus dummy",
   "对一波敌人": "One enemy wave",
   "两名干员对打（定点攻击试验）": "Two operators (stationary attack trial)",
