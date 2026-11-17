@@ -103,6 +103,7 @@ try {
   process.exit(2);
 }
 const CACHE_DIR = OPTS.cache;
+const GAMEDATA_URL = `${GAMEDATA_REPO}${OPTS.ref}/zh_CN/gamedata/`;
 
 const log = (...a) => { if (!OPTS.quiet) console.log(...a); };
 const warnings = [];
@@ -129,7 +130,7 @@ async function ensureGamedata(rel) {
     throw new Error(`missing cached file ${rel} (offline mode)`);
   }
   await mkdir(dirname(abs), { recursive: true });
-  const url = `${GAMEDATA_REPO}${OPTS.ref}/zh_CN/gamedata/${rel}`;
+  const url = `${GAMEDATA_URL}${rel}`;
   let lastErr;
   for (let attempt = 1; attempt <= 4; attempt++) {
     try {

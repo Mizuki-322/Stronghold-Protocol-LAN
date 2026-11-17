@@ -353,8 +353,8 @@ buff aura (深池伙友卫队's field, 扎罗's 远古威慑) takes the allies `
 (PRTS 作战机制 §隐匿与Buff的关系 "隐匿状态下的单位一般无法被敌方的索敌机制和Buff选择器选中为目标"), an airborne 起飞 ally
 not [ASSUMED, §21.22]. Until 0.1.2 they took every ally in the area (GitHub issue #32 item 6; DESIGN §22.12). Still on
 every ally there: the "无视无法选择 / 无视可选性" abilities above (and 远眺's death 暴露, 圆仔's facing count), 寒霜's aura
-(PRTS names its 攻速下降 Debuff among the effects that "无视隐匿状态起作用") and map / tile / terrain effects (“墓碑”'s
-halving — PRTS: a map effect —, 【国度】, a chimera's 源石污染区 aura [ASSUMED for the last two])
+(PRTS names its 攻速下降 Debuff among the effects that "无视隐匿状态起作用") and map / tile / terrain effects (【国度】, a chimera's 源石污染区 aura [ASSUMED for both]; “墓碑”'s field effect, a hidden map
+device in the original game, is left out locally — docs/custom-content.md)
 and, unblocked, stand for each attack's clip — `attackStand`: data/enemies.json `attackAnim`, through its wind-up
 (cooldown ≤ the strike frame, a target in range) and the rest of the clip after the strike, shortened when the attacks
 come quicker than the clip; `ATTACK_PAUSE` (0.35 s) after the strike when no clip is known; an `attackMoves`

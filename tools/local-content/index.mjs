@@ -43,9 +43,16 @@ export function injectLocalContent(dir = defaultDir) {
   // 这时图标登记写进一个丢弃的空表
   const hasAssets = fs.existsSync(path.join(dir, 'assets.json'));
   const tables = Object.fromEntries(TABLES.map((name) => [name, name === 'assets' && !hasAssets ? { bands: {}, tokens: {} } : read(name)]));
+  // 各语言的游戏文字覆盖层（data/i18n/<语言>.json，tools/build-i18n.mjs 生成）：改了官方文字的内容要同步改它们。
+  // 输出到别的目录时没有这些文件，就是空的
+  const i18nDir = path.join(dir, 'i18n');
+  const i18nFiles = fs.existsSync(i18nDir) ? fs.readdirSync(i18nDir).filter((f) => f.endsWith('.json')) : [];
+  const i18n = Object.fromEntries(i18nFiles.map((f) => [f.slice(0, -5), JSON.parse(fs.readFileSync(path.join(i18nDir, f), 'utf8'))]));
   const addedBands = [];
   const ctx = {
     ...tables,
+    /** 各语言的覆盖层 { en: {...}, ja: {...} …}（没有时为空） */
+    i18n,
     /** 只读：预备干员等「备用模型」 */
     backups: read('backups').units,
     copy: (value) => structuredClone(value),
@@ -83,6 +90,8 @@ export function injectLocalContent(dir = defaultDir) {
     };
   }
   for (const name of ['effects', 'chess', 'bonds', 'garrisons', 'bands', 'assets', 'tokens', 'enemies']) if (name !== 'assets' || hasAssets) write(name, tables[name]);
+  for (const [lang, overlay] of Object.entries(i18n)) fs.writeFileSync(path.join(i18nDir, `${lang}.json`), `${JSON.stringify(overlay)}
+`);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) injectLocalContent();

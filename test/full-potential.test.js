@@ -28,6 +28,9 @@ const chess = load('chess');
 const tokens = load('tokens');
 const backups = load('backups');
 const raw = (f) => JSON.parse(readFileSync(join(CACHE, 'excel', `${f}.json`), 'utf8'));
+// the chess of the official 盟约 season: the local custom cards (tools/local-content, docs/custom-content.md) are not in
+// character_table's terms (their stats are their own), so the re-derivations skip them
+const officialChess = () => new Set(Object.keys(raw('activity_table').activity.AUTOCHESS_SEASON.act2autochess.charChessDataDict));
 const talent = (rec, name) => rec.talents.find((t) => t.name === name);
 
 test('刺玫 at full potential: ATK 435 / cost 15 (the tournament video), 再部署 66 s, 土壤基肥改良 at its 「天赋效果增强」 step', () => {
@@ -55,6 +58,7 @@ test('the other potential kinds: 攻击速度 (格雷伊 +6, 崖心 / 伊内丝 
 });
 
 test('every chess, 自选 form and stand-in form: the raw keyframes plus every potential step (re-derived from character_table)', { skip: !HAS_CACHE && 'no .cache/gamedata' }, () => {
+  const OFFICIAL = officialChess();
   const CT = raw('character_table');
   const KEY = { MAX_HP: 'maxHp', ATK: 'atk', DEF: 'def', MAGIC_RESISTANCE: 'res', COST: 'cost', RESPAWN_TIME: 'respawnTime', ATTACK_SPEED: 'aspd' };
   const steps = (charId) => {
@@ -82,7 +86,7 @@ test('every chess, 自选 form and stand-in form: the raw keyframes plus every p
   };
   let n = 0, withSteps = 0;
   for (const c of Object.values(chess)) {
-    if (c.isDiy || !c.charId) continue;
+    if (c.isDiy || !c.charId || !OFFICIAL.has(c.chessId)) continue;
     check(c.chessId, c.charId, c.status, c.statsBase ?? c.stats);
     n++;
     if (Object.keys(steps(c.charId)).length) withSteps++;
@@ -99,6 +103,7 @@ test('every chess, 自选 form and stand-in form: the raw keyframes plus every p
 });
 
 test('talent candidates: every chess talent is the last one unlocked at its status with requiredPotentialRank ≤ 5', { skip: !HAS_CACHE && 'no .cache/gamedata' }, () => {
+  const OFFICIAL = officialChess();
   const CT = raw('character_table');
   const PH = { PHASE_0: 0, PHASE_1: 1, PHASE_2: 2 };
   const ok = (c, phase, level) => {
@@ -108,7 +113,7 @@ test('talent candidates: every chess talent is the last one unlocked at its stat
   };
   let potentialTalents = 0;
   for (const c of Object.values(chess)) {
-    if (c.isDiy || !c.charId) continue;
+    if (c.isDiy || !c.charId || !OFFICIAL.has(c.chessId)) continue;
     const base = c.talentsBase ?? c.talents;
     (CT[c.charId].talents || []).forEach((t, index) => {
       const cands = (t.candidates || []).filter((x) => ok(x, c.status.phase, c.status.level));

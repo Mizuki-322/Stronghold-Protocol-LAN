@@ -19,6 +19,9 @@ node tools/local-content/index.mjs
 
 （旧命令 `node tools/inject-technician-data.mjs` 仍然可以用，效果相同。）
 
+各语言的游戏文字覆盖层 `data/i18n/*.json` 由 `node tools/build-i18n.mjs` 生成，里面「墓碑」的译文也由这个脚本改写，
+所以重新运行 `build-i18n` 之后，也要再运行一次上面的命令。
+
 `tools/local-content/` 里每个策略、每张卡一个文件，`index.mjs` 按固定顺序调用它们。顺序决定 JSON 里键的先后，
 所以新内容加在最后，已有的不要调换。
 
@@ -63,7 +66,7 @@ node tools/local-content/index.mjs
 
 | 内容 | 数据文件 | 逻辑代码 | 测试 |
 |---|---|---|---|
-| 「墓碑」`enemy_2008_flking` 不再让全场我方攻击力、防御力减半（只保留部署费用回复减半、再部署时间加倍和护盾），图鉴描述相应改写 | `tools/local-content/enemy-tombstone.mjs` | `server/sim/content/enemies/leaders.js` | `test/content/enemies_bosses.test.js`、`test/sim/playtest6-enemies.test.js` |
+| 「墓碑」`enemy_2008_flking` 去掉全场效果（我方攻击力、防御力减半，部署费用回复减半，再部署时间加倍），只保留攻击和周期性护盾；图鉴描述相应改写，删掉全场效果那条能力说明（英、日、韩、繁中的覆盖层 `data/i18n/*.json` 同样处理）。原因：官方关卡里这个效果来自隐藏的场地装置，卫戍协议里没有这个装置，官方游玩时并不生效 | `tools/local-content/enemy-tombstone.mjs` | `server/sim/content/enemies/leaders.js` | `test/content/enemies_bosses.test.js`；对局录像 `test/golden/roster.json` 的 roster-003、roster-027 |
 
 ## 和原版测试的冲突
 
@@ -79,7 +82,7 @@ node tools/local-content/index.mjs
 ## 加新内容的步骤
 
 1. 在 `tools/local-content/` 新建 `band-<名字>.mjs` 或 `op-<名字>.mjs`，导出 `export default function add(ctx)`；
-   `ctx` 提供数据表（`chess`、`bonds`、`garrisons`、`bands`、`assets`、`tokens`、`effects`）、只读的 `backups`，
+   `ctx` 提供数据表（`chess`、`bonds`、`garrisons`、`bands`、`assets`、`tokens`、`effects`、`enemies`）、各语言覆盖层 `i18n`、只读的 `backups`，
    以及 `copy`、`stripElite`、`joinBonds`、`addBand` 几个小工具（见 `index.mjs`）。
 2. 把它加到 `index.mjs` 的 `CONTENT` 末尾，运行 `node tools/local-content/index.mjs`。
 3. 逻辑写进对应代码，加一个 `test/content/<名字>-strategy.test.js`。

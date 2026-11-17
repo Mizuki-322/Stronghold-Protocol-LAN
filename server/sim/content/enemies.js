@@ -53,8 +53,8 @@
 //   制约"), the blasts of flying units credited to a ground leader (刺胄之弹, 斩胄之剑 / 破胄之锤) and the ticks of a debuff
 //   already on it (出血, 沙狱, “庞贝”'s burning, 淤困, 【自然涌动】 — a tick selects nobody). Ground enemies' buff auras
 //   (深池伙友卫队, 扎罗's 远古威慑) and the sourceless 毒雾 of 假想敌：蚀裂 still reach it [ASSUMED, §21.22] while keeping
-//   a 隐匿 ally out; 寒霜's aura (PRTS: its debuff "无视隐匿状态起作用") and map / tile effects (“墓碑” — PRTS: a map effect —,
-//   【国度】, the chimera's 源石污染区 [ASSUMED]) reach every ally.
+//   a 隐匿 ally out; 寒霜's aura (PRTS: its debuff "无视隐匿状态起作用") and map / tile effects (【国度】, the chimera's
+//   源石污染区 [ASSUMED]) reach every ally.
 //
 // Special types (factions.json):
 //   FLY        — engine (FLY motion, ranged-only targeting). Flyer kits in enemies/fly.js (御4, 护障, 寒霜, 萨科塔之翼/眼, 黑云 …).

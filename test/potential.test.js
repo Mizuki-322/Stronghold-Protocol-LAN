@@ -28,6 +28,9 @@ const tokens = load('tokens');
 const backups = load('backups');
 const effects = load('effects');
 const raw = (f) => JSON.parse(readFileSync(join(CACHE, 'excel', `${f}.json`), 'utf8'));
+// the chess of the official 盟约 season: the local custom cards (tools/local-content, docs/custom-content.md) are not in
+// character_table's terms (their stats are their own), so the re-derivations skip them
+const officialChess = () => new Set(Object.keys(raw('activity_table').activity.AUTOCHESS_SEASON.act2autochess.charChessDataDict));
 const talent = (rec, name) => rec.talents.find((t) => t.name === name);
 
 test('potDown does not create dsl or pluginId leaves', () => {
@@ -78,6 +81,7 @@ test('a resolved record carries no annotation; the full record minus them is wha
 });
 
 test('every chess and 自选 form at every potential: the raw keyframes plus the potential steps up to it (character_table)', { skip: !HAS_CACHE && 'no .cache/gamedata' }, () => {
+  const OFFICIAL = officialChess();
   const CT = raw('character_table');
   const KEY = { MAX_HP: 'maxHp', ATK: 'atk', DEF: 'def', MAGIC_RESISTANCE: 'res', COST: 'cost', RESPAWN_TIME: 'respawnTime', ATTACK_SPEED: 'aspd' };
   const steps = (charId, rank) => {
@@ -101,7 +105,7 @@ test('every chess and 自选 form at every potential: the raw keyframes plus the
   };
   let n = 0;
   for (const c of Object.values(chess)) {
-    if (c.isDiy || !c.charId) continue;
+    if (c.isDiy || !c.charId || !OFFICIAL.has(c.chessId)) continue;
     for (let rank = 0; rank <= FULL_RANK; rank++) { const r = atRank(c, rank); check(c.chessId, c.charId, c.status, r.statsBase ?? r.stats, rank); n++; }
   }
   assert.equal(n, 258 * 6);
@@ -116,6 +120,7 @@ test('every chess and 自选 form at every potential: the raw keyframes plus the
 });
 
 test('talent candidates at every potential: each talent is the last one unlocked with requiredPotentialRank ≤ the rank', { skip: !HAS_CACHE && 'no .cache/gamedata' }, () => {
+  const OFFICIAL = officialChess();
   const CT = raw('character_table');
   const PH = { PHASE_0: 0, PHASE_1: 1, PHASE_2: 2 };
   const ok = (c, phase, level, rank) => {
@@ -138,7 +143,7 @@ test('talent candidates at every potential: each talent is the last one unlocked
     }
   };
   for (const c of Object.values(chess)) {
-    if (c.isDiy || !c.charId) continue;
+    if (c.isDiy || !c.charId || !OFFICIAL.has(c.chessId)) continue;
     checkList(c.chessId, c.charId, c.status, c.talentsBase ?? c.talents);
   }
   for (const [charId, u] of Object.entries(backups.units)) for (const f of Object.values(u.forms)) checkList(`${charId}@${f.status.phase}/${f.status.level}`, charId, f.status, f.talents);

@@ -2026,16 +2026,17 @@ test(`${nm('enemy_1513_dekght_2')}: 爆炸箭 — 3 targets, ${skb('enemy_1513_d
   assert.equal(h.unit('t_wall4').stats.taken, 0, 'out of range');
 });
 
-test(`${nm('enemy_2008_flking')}: redeploy time doubled and DP recovery halved while it lives`, () => {
+test(`${nm('enemy_2008_flking')}: no field effect — DP recovery and redeploy time unchanged while it lives (local change)`, () => {
+  // in the original game the field effect comes from a hidden map device that 卫戍协议 has not got
   const h = arena({ units: [{ chessId: 't_wall', row: 10, col: 6 }], flags: { dpInit: 0 } });
   h.step();
   const e = put(h, 'enemy_2008_flking', [10, 8]);
   e.profile.noAttack = true;
   h.run(10);
-  approx(h.b.getPlayer('p1').dp, 5, 0.02);
+  approx(h.b.getPlayer('p1').dp, 10, 0.02);
   const w = h.unit('t_wall');
   h.b.kill(w, null);
-  approx(w.respawnAt - h.b.time, 2 * w.base.respawnTime, 1e-6);
+  approx(w.respawnAt - h.b.time, w.base.respawnTime, 1e-6);
 });
 
 test(`${nm('enemy_2048_smgrd')}: 【国度】 covers the 8 tiles around it (diagonals included)`, () => {

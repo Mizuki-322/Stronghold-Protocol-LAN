@@ -5,7 +5,8 @@ official zh_CN client data ([Kengxxiao/ArknightsGameData](https://github.com/Ken
 with `docs/research/*.json`. Do not edit them by hand — change the build script and rebuild.
 `data/i18n/en.json` (the official English texts of these files by record id and field) is written by
 `node tools/build-i18n.mjs` — rerun it after a build that changes a text (docs/I18N.md §2; `test/i18n-data.test.js`
-fails while it is stale).
+fails while it is stale). Local fork: `tools/local-content` also rewrites the 「墓碑」 entry of every `data/i18n/*.json`
+(docs/custom-content.md), so run `node tools/local-content/index.mjs` again after `build-i18n`.
 `data/assets.json` is written by `tools/fetch-assets.mjs`, which keeps the current file rather than drop entries whose
 downloads failed on this machine unless `--allow-shrink` (or `--prune`) is passed (docs/ASSETS.md, DESIGN §21.25).
 

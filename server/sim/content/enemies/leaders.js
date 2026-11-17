@@ -269,23 +269,15 @@ function kitLeaderMisc(key, ab, e) {
         tick(b, e2, a) { if (a.last != null && b.time - a.last >= (T(ab, 'checker.delay') ?? 4)) { a.last = null; b.removeBuff(e2, 'ab:axeStack'); } },
       }];
     case 'enemy_2008_flking': {
-      // Local balance change: remove the battlefield-wide ATK/DEF halving. Keep the doubled redeploy time,
-      // halved DP recovery and periodic shield.
+      // Local change: no battlefield-wide effect at all (no ATK/DEF halving, no halved DP recovery, no doubled redeploy
+      // time). In the original game that ability comes from a hidden map device, not from the enemy, and the 卫戍协议
+      // stages have no such device, so it never applied there. Only its attack and the periodic shield remain.
       const s = ab.sk.refreshshield;
       // its attack — PRTS “墓碑” 天赋: "自身造成的远程途径伤害的攻击倍率降低至40%" (the blackboard's atkdown.atk_scale), "未被阻挡时会
       // 进行远程攻击，对目标及其周围八格内的所有我方单位造成物理伤害，不会攻击飞行单位" ("可溅射飞行单位"); blocked, a melee hit at
       // 100 %. Until 0.1.3: a single-target hit at 100 % either way.
-      return [noAirTargets(), splashAttack({ scale: T(ab, 'atkdown.atk_scale') ?? 1, tiles: 1 }), {
-        iv: 0.5,
-        tick(b) {
-          for (const u of b.allies()) {
-            // persistent so it still counts when the unit falls (the redeploy timer is set at death)
-            b.addBuff(u, { key: 'ab:tombRedeploy', duration: 0.6, refresh: 'replace', persist: true, mods: { redeployMul: 2 } });
-          }
-        },
-      }, {
-        tick(b, e2, a, dt) { for (const p of b.players) b.addDp(p.playerId, -0.5 * b.flags.dpPerSec * dt); },
-      }, skill(s, (b, e2) => b.addBuff(e2, { key: 'ab:tombShield', shield: e2.s.maxHp * (s.bb.hp_ratio ?? 0), persist: true }))];
+      return [noAirTargets(), splashAttack({ scale: T(ab, 'atkdown.atk_scale') ?? 1, tiles: 1 }),
+        skill(s, (b, e2) => b.addBuff(e2, { key: 'ab:tombShield', shield: e2.s.maxHp * (s.bb.hp_ratio ?? 0), persist: true }))];
     }
     case 'enemy_2048_smgrd':
       // 持续在自身周围8格生成【国度】 (the 3×3 around its tile), 大幅降低其中我方单位的攻击速度; 对【国度】中的我方单位造成高额物理伤害.
@@ -764,7 +756,7 @@ export const LEADER_KITS = Object.freeze({
   enemy_2003_rockman: (ab, e) => kitLeaderMisc('enemy_2003_rockman', ab, e), // 迷路的巨像 · long-stun boulder on a non-stunned unit
   enemy_2004_balloon: (ab, e) => kitLeaderMisc('enemy_2004_balloon', ab, e), // 喷气人 · takes off when blocked: 7 s hovering, unblockable, 失衡免疫
   enemy_2005_axetro: (ab, e) => kitLeaderMisc('enemy_2005_axetro', ab, e),   // “遗弃者” · attack stacks, reset after 4 s idle
-  enemy_2008_flking: (ab, e) => kitLeaderMisc('enemy_2008_flking', ab, e),   // “墓碑” · operators' ATK/DEF halved; periodic barrier
+  enemy_2008_flking: (ab, e) => kitLeaderMisc('enemy_2008_flking', ab, e),   // “墓碑” · splash attack; periodic barrier (local: no field effect)
   enemy_2048_smgrd: (ab, e) => kitLeaderMisc('enemy_2048_smgrd', ab, e),     // “邪魔的利刃” · 国度 ASPD-down around it, ×2.5 inside
   enemy_2050_smsha: (ab, e) => kitLeaderMisc('enemy_2050_smsha', ab, e),     // 陷落雪祀 · cold + 3-target chain
   enemy_2052_smgia: (ab, e) => kitLeaderMisc('enemy_2052_smgia', ab, e),     // 纠缠藤蔓 · every 3rd attack stuns 15 s; fragile after terrain damage
