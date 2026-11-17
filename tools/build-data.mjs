@@ -3259,9 +3259,9 @@ async function main() {
       await writeFile(tmp, text);
       await rename(tmp, dest);
     }
-    // Preserve the local large-alliance strategy after official data is regenerated.
-    const { injectTechnicianData } = await import('./inject-technician-data.mjs');
-    injectTechnicianData(OPTS.out);
+    // Local custom content (the extended-alliance strategies and their cards): tools/local-content, docs/custom-content.md.
+    const { injectLocalContent } = await import('./local-content/index.mjs');
+    injectLocalContent(OPTS.out);
   }
   const report = {
     counts: {

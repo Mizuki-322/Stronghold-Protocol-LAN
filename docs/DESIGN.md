@@ -4,7 +4,7 @@ This is the **single source of truth** for every implementer. Research lives in 
 
 Language: player-facing text is **Simplified Chinese** by default, with an English switch since 0.2.0 (§25.2, docs/I18N.md: UI strings through `t('中文')`, game texts from the official Chinese data or the official EN client's). Code, comments and identifiers are English.
 
-This local fork's additions to 0.3.1 are recorded separately in [the local LAN change note](local-lan-2026-10-20.md); they are not upstream release rules.
+This local fork's additions to 0.3.1 are recorded separately in [the local LAN change note](local-lan-2026-10-20.md); they are not upstream release rules. The custom strategies, cards and plugin operators are listed in [the custom content inventory](custom-content.md).
 
 The separate 5–8 player room is a local rule set: [current contract](design/extended-coop.md) and [change note](history/local-extended-coop.md).
 
