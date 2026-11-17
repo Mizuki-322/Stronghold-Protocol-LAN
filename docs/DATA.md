@@ -15,6 +15,7 @@ node tools/build-data.mjs --offline    # never download; fail if a cached file i
 node tools/build-data.mjs --refresh    # re-download every official file; fail if any download fails
 node tools/build-data.mjs --no-research --out /tmp/x   # research-free build (fallback defaults), other dir
 node tools/build-data.mjs --cache <dir> --report <file> # other cache dir / report file (tests, CI)
+node tools/build-data.mjs --ref <commit>  # download from another ArknightsGameData commit (default: pinned GAMEDATA_REF)
 node tools/build-data.mjs --force      # write data/ even when integrity checks fail (debugging only)
 node --test test/data.test.js          # integrity tests (+ raw-data cross-check and rebuild check when .cache/gamedata exists)
 ```
@@ -22,7 +23,10 @@ Unknown options or a missing option value are errors (exit code 2); `--refresh` 
 
 - **Cache.** Official files live under `.cache/gamedata/<repo path>` (`excel/activity_table.json`,
   `levels/enemydata/enemy_database.json`, `levels/activities/act1autochess/level_*.json`, …) and are fetched from
-  `https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/<path>` when missing.
+  `https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/<ref>/zh_CN/gamedata/<path>` when missing.
+  `<ref>` is pinned (`GAMEDATA_REF` in the script, commit 17759cc8 of 2026-10-08, the data 0.3.1 was built from):
+  from 2026-11-01 the official activity table no longer carries the act2autochess season, so `master` cannot be built
+  (local note, 2026-11-17).
   Downloads are validated (must parse as JSON) and written atomically. With `--refresh`, a download that still fails
   after four attempts aborts the build (exit code 1), even if an older cached file exists. Generated files and the
   previous report remain untouched, including with `--force`; successfully downloaded cache entries are not rolled

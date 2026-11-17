@@ -1,4 +1,4 @@
-// tools/local-content — 本地自创内容（大型同盟的开局策略和它们用到的自创卡）写进生成数据。
+// tools/local-content — 本地自创内容（大型同盟的开局策略和它们用到的自创卡）以及对官方内容的本地改动写进生成数据。
 //
 // tools/build-data.mjs 生成官方数据后自动调用；单独重跑：node tools/local-content/index.mjs（改 data/ 里的文件）。
 // 每个策略 / 每张卡一个文件，清单见 docs/custom-content.md。加新内容：在这个文件夹里新建一个文件，
@@ -17,11 +17,12 @@ import yela from './band-yela.mjs';
 import udflow from './band-udflow.mjs';
 import lumen from './band-lumen.mjs';
 import shu from './band-shu.mjs';
+import tombstone from './enemy-tombstone.mjs';
 
-/** 按顺序执行的内容：先卡（策略要送它们），再策略。 */
-export const CONTENT = [allianceDefender, patrolTrainees, technician, eunectes, yela, udflow, lumen, shu];
+/** 按顺序执行的内容：先卡（策略要送它们），再策略，最后是对官方内容的改动。 */
+export const CONTENT = [allianceDefender, patrolTrainees, technician, eunectes, yela, udflow, lumen, shu, tombstone];
 
-const TABLES = ['chess', 'bonds', 'garrisons', 'bands', 'assets', 'tokens', 'effects'];
+const TABLES = ['chess', 'bonds', 'garrisons', 'bands', 'assets', 'tokens', 'effects', 'enemies'];
 const defaultDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'data');
 
 /**
@@ -29,9 +30,19 @@ const defaultDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '.
  * @param {string} [dir] 数据目录（默认仓库的 data/）
  */
 export function injectLocalContent(dir = defaultDir) {
-  const read = (name) => JSON.parse(fs.readFileSync(path.join(dir, `${name}.json`), 'utf8'));
-  const write = (name, value) => fs.writeFileSync(path.join(dir, `${name}.json`), `${JSON.stringify(value)}\n`);
-  const tables = Object.fromEntries(TABLES.map((name) => [name, read(name)]));
+  // 文件末尾的换行：build-data 写出的文件不带；这里历来给加自创内容的表补一个换行，只改文字的 enemies 保持原样。
+  // 这样 data/*.json 和拆分前逐字节一致
+  const newline = {};
+  const read = (name) => {
+    const text = fs.readFileSync(path.join(dir, `${name}.json`), 'utf8');
+    newline[name] = name === 'enemies' ? (text.endsWith('\n') ? '\n' : '') : '\n';
+    return JSON.parse(text);
+  };
+  const write = (name, value) => fs.writeFileSync(path.join(dir, `${name}.json`), `${JSON.stringify(value)}${newline[name]}`);
+  // assets.json 不是 build-data 生成的（tools/fetch-assets.mjs 写）：输出到别的目录（--out，测试的重建检查）时没有它，
+  // 这时图标登记写进一个丢弃的空表
+  const hasAssets = fs.existsSync(path.join(dir, 'assets.json'));
+  const tables = Object.fromEntries(TABLES.map((name) => [name, name === 'assets' && !hasAssets ? { bands: {}, tokens: {} } : read(name)]));
   const addedBands = [];
   const ctx = {
     ...tables,
@@ -71,7 +82,7 @@ export function injectLocalContent(dir = defaultDir) {
       counterType: 'NONE', continuedRound: -1, decoIconId: null, enemyPrice: 0, buffs: ctx.copy(b.buffs), params: ctx.copy(b.params),
     };
   }
-  for (const name of ['effects', 'chess', 'bonds', 'garrisons', 'bands', 'assets', 'tokens']) write(name, tables[name]);
+  for (const name of ['effects', 'chess', 'bonds', 'garrisons', 'bands', 'assets', 'tokens', 'enemies']) if (name !== 'assets' || hasAssets) write(name, tables[name]);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) injectLocalContent();

@@ -13,13 +13,15 @@
 //   --out          output directory (default: <repo>/data)
 //   --cache        official-data cache directory (default: <repo>/.cache/gamedata)
 //   --report       build report file (default: <repo>/.cache/build-data-report.json)
+//   --ref          ArknightsGameData commit or branch to download from (default: GAMEDATA_REF, pinned below)
 //   --no-research  ignore docs/research (research-only fields fall back to defaults; for testing)
 //   --force        write the output even when integrity checks fail (default: keep the old files)
 // Unknown options are errors (exit code 2).
 //
 // Official files are cached under <repo>/.cache/gamedata/<repo path> (e.g. excel/activity_table.json)
-// and downloaded from https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/
-// when missing. Research files are optional inputs: when absent, research-only fields fall back to
+// and downloaded from https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/<ref>/zh_CN/gamedata/
+// when missing. <ref> is pinned to GAMEDATA_REF (--ref overrides it): the official tables dropped the
+// 卫戍协议：盟约 season (act2autochess) on 2026-11-01, so `master` can no longer be built. Research files are optional inputs: when absent, research-only fields fall back to
 // documented defaults and a warning is printed.
 //
 // Determinism: the output depends only on the input files (object keys are emitted in a stable
@@ -47,20 +49,26 @@ import { createOfficialUnitBuilders } from '../server/plugins/officialUnitBuilde
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const RESEARCH_DIR = join(ROOT, 'docs', 'research');
-const GAMEDATA_URL = 'https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/';
+const GAMEDATA_REPO = 'https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/';
+// The official data data/ is built from (CN data 26-10-08, committed 2026-10-08): 0.3.1 was built from it, and it
+// reproduces data/ byte for byte. Later refs change a few values (e.g. 克莱门莎 S3's projectile_life_time); the last
+// ref with the act2autochess season is fe7d8d05 (2026-10-24), and from 2026-11-01 the activity table carries only the
+// next season (act3autochess). A cache filled from another ref is not detected: after changing it, build with --refresh.
+const GAMEDATA_REF = '17759cc8cdf37388414145d16262a3a06f3ab25e';
 const SEASON = 'act2autochess';
-const USAGE = 'usage: node tools/build-data.mjs [--refresh | --offline] [--out <dir>] [--cache <dir>] [--report <file>] [--quiet] [--no-research] [--force]';
+const USAGE = 'usage: node tools/build-data.mjs [--refresh | --offline] [--out <dir>] [--cache <dir>] [--report <file>] [--ref <commit>] [--quiet] [--no-research] [--force]';
 
 /**
  * Parse the command line strictly (unknown options and missing values are errors, so a typo can
  * never silently write data somewhere unexpected).
  * @param {string[]} argv
- * @returns {{refresh:boolean, offline:boolean, quiet:boolean, noResearch:boolean, force:boolean, out:string, cache:string, report:string}}
+ * @returns {{refresh:boolean, offline:boolean, quiet:boolean, noResearch:boolean, force:boolean, out:string, cache:string, report:string, ref:string}}
  */
 function parseArgs(argv) {
   const opts = {
     refresh: false, offline: false, quiet: false, noResearch: false, force: false,
     out: join(ROOT, 'data'), cache: join(ROOT, '.cache', 'gamedata'), report: join(ROOT, '.cache', 'build-data-report.json'),
+    ref: GAMEDATA_REF,
   };
   const flags = { '--refresh': 'refresh', '--offline': 'offline', '--quiet': 'quiet', '--no-research': 'noResearch', '--force': 'force' };
   const dirs = { '--out': 'out', '--cache': 'cache', '--report': 'report' };
@@ -72,6 +80,13 @@ function parseArgs(argv) {
       const v = inline ?? argv[++i];
       if (!v || v.startsWith('--')) throw new Error(`${name} needs a path argument\n${USAGE}`);
       opts[dirs[name]] = resolve(v);
+      continue;
+    }
+    if (name === '--ref') {
+      const v = inline ?? argv[++i];
+      if (!v || !/^[\w./-]+$/.test(v)) throw new Error(`--ref needs a commit or branch of ArknightsGameData
+${USAGE}`);
+      opts.ref = v;
       continue;
     }
     throw new Error(`unknown option ${argv[i]}\n${USAGE}`);
@@ -114,7 +129,7 @@ async function ensureGamedata(rel) {
     throw new Error(`missing cached file ${rel} (offline mode)`);
   }
   await mkdir(dirname(abs), { recursive: true });
-  const url = GAMEDATA_URL + rel;
+  const url = `${GAMEDATA_REPO}${OPTS.ref}/zh_CN/gamedata/${rel}`;
   let lastErr;
   for (let attempt = 1; attempt <= 4; attempt++) {
     try {
