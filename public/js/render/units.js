@@ -82,6 +82,7 @@
 // ground point, i.e. on the pointer (render/app.js).
 
 import { UF, ANIM } from '../../../shared/constants.js';
+import { EQUIP_SLOTS_MAX } from '../../../shared/plugins/rules.js';
 import { SpineActor } from './spine.js';
 import { skillAttackMode } from './skillAttack.js';
 import { MANIFOLD, isManifold, manifoldCopyForm, manifoldAttackForm } from './manifold.js';
@@ -1118,9 +1119,10 @@ export class UnitView {
   /** Equipped item pips (prep): list of item icon URLs. */
   setItems(urls) {
     const P = this.P;
-    // morphPairing plus can carry two ordinary items and one zero-slot morph (DESIGN §34.15).
-    const list = Array.isArray(urls) ? urls.slice(0, 3) : [];
-    while (this.itemPips.length > list.length) this.itemPips.pop().destroy(); // loop-cap: at most three item pips
+    // a chess carries up to its slots (2; “暴躁铁皮”-style records up to EQUIP_SLOTS_MAX) plus, with morphPairing plus, one
+    // zero-slot morph (DESIGN §34.15)
+    const list = Array.isArray(urls) ? urls.slice(0, EQUIP_SLOTS_MAX + 1) : [];
+    while (this.itemPips.length > list.length) this.itemPips.pop().destroy(); // loop-cap: at most EQUIP_SLOTS_MAX + 1 item pips
     list.forEach((u, i) => {
       let s = this.itemPips[i];
       if (!s) { s = new P.Sprite(P.Texture.EMPTY); s.anchor.set(0.5); this.hud.addChild(s); this.itemPips[i] = s; }
@@ -1889,7 +1891,8 @@ export class UnitView {
       const pip = this.itemPips[i];
       const ps = clamp(s * 0.26, 12, 30);
       pip.width = pip.height = ps;
-      pip.position.set(this.screen.x - s * 0.36 + i * (ps + 1), this.screen.y - s * 0.05);
+      // rows of three (two items — the usual case — stay one row as before)
+      pip.position.set(this.screen.x - s * 0.36 + (i % 3) * (ps + 1), this.screen.y - s * 0.05 + Math.floor(i / 3) * (ps + 1));
       pip.visible = this.alive;
     }
   }

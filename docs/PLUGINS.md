@@ -711,9 +711,11 @@ Each form supplies `stats` and `rangeGrid`; optional form `skills`, `trait` and 
 A MELEE form may set `placeOnRanged: true` [ASSUMED] (no official plugin source; the Simplified trait line still places when the flag is absent). The expander copies only that boolean onto the shop chess and the 自选 form. A RANGED form's flag, and any value other than `true`, is ignored.
 `skills` has exactly one `default: true`, and each skill supplies `skillId`; the expander fills index, SP, trigger,
 blackboards and display fields. `as: "chess"` needs `chess: { tier, bonds, price?, garrisonIds?, sellPrice?, identifier?,
-shopSortId? }`: normal/elite ids, prices, sell values and merge counts come from that tier's economy, and statuses
+shopSortId?, equipSlots? }`: normal/elite ids, prices, sell values and merge counts come from that tier's economy, and statuses
 from `economy.chessStatus`. `price` and `garrisonIds` are one value for both pieces or `{ normal, golden }` (an official
-pair's garrisons are `garrison_N_a` / `garrison_N_b`); `sellPrice` is one value. `as: "diy"` creates
+pair's garrisons are `garrison_N_a` / `garrison_N_b`); `sellPrice` is one value. `equipSlots` (1–6, the official
+`equipSlotNum`) is likewise one number or `{ normal, golden }`: the piece's equipment slots instead of `economy.equipPerChess`
+(local change: docs/local-lan-2026-10-20.md). `as: "diy"` creates
 `backups.units`, every existing DIY slot status, `diy.ownedPool` and `diy.operators`; `"both"` does both. The expander
 adds shop chess to their bonds' member lists. An existing record must be changed with patches.
 

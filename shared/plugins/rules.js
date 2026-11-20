@@ -240,8 +240,25 @@ export function grantedBondsByMorph(items, getItem, { mode = 'official', bondOk 
   return out;
 }
 
+/** Most equipment slots one chess record may declare (the official maximum: 第三季 “暴躁铁皮”'s elite, 6). */
+export const EQUIP_SLOTS_MAX = 6;
+
 /**
- * Official equip-slot arithmetic, frozen and shared. slotsUsed is items.length, slotCap is equipPerChess,
+ * The equipment slots of one chess: its record's own `equipSlots` (official `charChessDataDict[*].equipSlotNum`; in
+ * act3autochess every piece has 2 except “暴躁铁皮” chess_char_5_22_a / _b with 4 / 6), else the mode's
+ * `equipPerChess`. Pass the result to a slot policy's `slotCap`. A record without the field — every season-2 piece —
+ * keeps today's number.
+ * @param {any} rec chess record (data/chess.json shape) or null
+ * @param {number} equipPerChess the mode's default
+ */
+export function equipSlotsOf(rec, equipPerChess) {
+  const n = rec && typeof rec === 'object' ? rec.equipSlots : null;
+  return Number.isInteger(n) && n >= 1 && n <= EQUIP_SLOTS_MAX ? n : equipPerChess;
+}
+
+/**
+ * Official equip-slot arithmetic, frozen and shared. slotsUsed is items.length, slotCap is equipPerChess (or a
+ * chess's own `equipSlotsOf`),
  * occupies and accepts are always true, and a missing replaceUid (or one that is not equipped) is index 0.
  * Callers must use this object on the official path so the comparison and the splice index stay today's numbers.
  */

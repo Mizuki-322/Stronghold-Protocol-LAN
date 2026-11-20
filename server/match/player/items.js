@@ -105,7 +105,7 @@ export class PlayerItems {
     target.items = target.items || [];
     const policy = this._slotPolicy();
     const rec = this.gd.item(item.id);
-    const cap = policy.slotCap(this.gd.equipPerChess);
+    const cap = policy.slotCap(this.gd.equipSlotsFor(target.id));
     // A plus morph does not occupy a slot, so this while does not run for it. Official occupies() is always true
     // and slotsUsed is items.length, so the comparison and the splice index stay today's.
     while (policy.occupies(rec) && policy.slotsUsed(target.items) >= cap) { // loop-cap: splices one item each pass
@@ -127,7 +127,7 @@ export class PlayerItems {
     const policy = this._slotPolicy();
     // A plus morph does not replace anyone. Official occupies() is always true.
     if (incoming && !policy.occupies(incoming)) return null;
-    if (policy.slotsUsed(target.items) < policy.slotCap(this.gd.equipPerChess)) return null;
+    if (policy.slotsUsed(target.items) < policy.slotCap(this.gd.equipSlotsFor(target.id))) return null;
     const idx = policy.replacedIndex(target.items, replaceUid);
     const [piece] = target.items.splice(idx, 1);
     return { piece, idx };

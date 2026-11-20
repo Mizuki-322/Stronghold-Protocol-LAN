@@ -1,6 +1,7 @@
 // Equip-replace dialog (research 04 §"Replacement" / 09 §1.2 UseEquipUp { charChessInstId, equipChessInstId,
-// isChangeEquip, unloadInstId }; PRTS 帮助 "达到上限强行佩戴会改为替换装备"): an item dropped on an operator whose two
-// equipment slots are used opens this dialog. It shows the operator, the incoming item and the two equipped items
+// isChangeEquip, unloadInstId }; PRTS 帮助 "达到上限强行佩戴会改为替换装备"): an item dropped on an operator whose
+// equipment slots are all used (2, or its chess record's `equipSlots`: shared/plugins/rules.js equipSlotsOf) opens this
+// dialog. It shows the operator, the incoming item and the equipped items
 // (icon, tier, name, effect); the player picks the one to replace — it is DESTROYED — and confirms: g.equip
 // {itemUid, targetUid, replaceUid}. 取消 / ✕ / Esc / the backdrop change nothing (no intent is sent).
 // Official look from the local ui/battle sprites (equip_replace_bg, _opiton_bg, _opition_select_01/02_bg, _arrow_line /
@@ -18,7 +19,7 @@ import { html, Modal, Button, TierChip, MicroLabel } from './components.js';
 import { UnitThumb, RichText, GIcon } from './gameComponents.js';
 import { localAsset } from '../data.js';
 import { t, tParts } from '../../../shared/i18n.js';
-import { morphSlotPolicy } from '../../../shared/plugins/rules.js';
+import { morphSlotPolicy, equipSlotsOf } from '../../../shared/plugins/rules.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 const isObj = (v) => !!v && typeof v === 'object';
@@ -37,14 +38,16 @@ export function replaceRequest(ctx, intent, getChess = () => null, getItem = () 
   if (!isObj(target) || target.kind !== 'chess' || !isObj(item) || item.kind !== 'item') return null;
   const equipped = (Array.isArray(target.items) ? target.items : []).filter((it) => isObj(it) && Number.isInteger(it.uid));
   const rec = (id) => getItem(id) || null;
+  // the target's equipment slots (its chess record's `equipSlots`, else 2)
+  const cap = equipSlotsOf(getChess(target.id), 2);
   let options = equipped;
   if (ctx?.morphMode === 'plus') {
     const policy = morphSlotPolicy('plus', (it) => !!rec(typeof it === 'string' ? it : it?.id)?.canGiveBond);
     if (!policy.occupies(rec(item.id))) return null;
-    if (policy.slotsUsed(equipped) < policy.slotCap(2)) return null;
+    if (policy.slotsUsed(equipped) < policy.slotCap(cap)) return null;
     options = equipped.filter((it) => policy.occupies(rec(it.id)));
     if (!options.length) return null;
-  } else if (equipped.length < 2) return null;
+  } else if (equipped.length < cap) return null;
   const shown = getChess(target.id) || null;
   return {
     targetUid: target.uid,
@@ -53,6 +56,7 @@ export function replaceRequest(ctx, intent, getChess = () => null, getItem = () 
     // the record the avatar draws (a 补位 stand-in's or a 自选 operator's composed record; the data's for any other chess)
     targetRec: shown && (shown.standInFor || shown.diyFor) ? shown : null,
     golden: !!target.golden,
+    slots: cap,
     item: { uid: item.uid, id: item.id, name: rec(item.id)?.name || t('装备') },
     options: options.map((it) => ({ uid: it.uid, id: it.id, name: rec(it.id)?.name || it.id })),
   };
@@ -126,7 +130,7 @@ export function EquipReplaceDialog({ request, getItem = () => null, busy = false
         <${Button} variant="secondary" icon="close" class="eqr__cancel" onClick=${onCancel}>${t('取消')}<//>
         <${Button} variant="danger" class="eqr__ok" disabled=${!chosen} loading=${busy} data-autofocus onClick=${() => chosen && onConfirm(chosen.uid)}>
           ${confirmIcon ? html`<img class="eqr__ok-icon" src=${confirmIcon} alt="" draggable=${false} />` : null}${t('确认替换')}<//>`}>
-      <p class="eqr__lead">${tParts('「{name}」的装备栏已满（2/2）。选择一件装备进行替换，{warn}。', { name: html`<b>${request.targetName}</b>`, warn: html`<b class="t-red">${t('被替换的装备将被销毁')}</b>` })}</p>
+      <p class="eqr__lead">${tParts('「{name}」的装备栏已满（{n}/{n}）。选择一件装备进行替换，{warn}。', { n: request.slots ?? 2, name: html`<b>${request.targetName}</b>`, warn: html`<b class="t-red">${t('被替换的装备将被销毁')}</b>` })}</p>
       <div class="eqr__top">
         <div class="eqr__op" title=${request.targetName}>
           <span class="eqr__ava"><${UnitThumb} kind="chess" id=${request.targetId} golden=${request.golden} size="md" rec=${request.targetRec || null} /></span>

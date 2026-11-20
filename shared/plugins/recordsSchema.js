@@ -19,7 +19,11 @@ export const RECORD_SCHEMA = {
         forms: { type: 'object', required: ['normal', 'elite'], properties: { normal: form, elite: form }, additionalProperties: false },
         skills: { type: 'array', minItems: 1, maxItems: 10, items: { type: 'object', required: ['skillId', 'default'], properties: { skillId: str, default: { type: 'boolean' }, skillSpec: SKILL_SPEC_SCHEMA }, additionalProperties: true } },
         chess: { type: 'object', required: ['tier', 'bonds'], properties: { tier: { type: 'integer', minimum: 1, maximum: 6 }, bonds: { ...ids, minItems: 1 },
-          hidden: { type: 'boolean' }, ids: { type: 'object', required: ['normal', 'elite'], additionalProperties: false, properties: { normal: str, elite: str } } }, additionalProperties: true },
+          hidden: { type: 'boolean' },
+          // equipment slots (official equipSlotNum, 1–6): one number for both pieces or { normal, golden }; absent ⇒ economy.equipPerChess
+          equipSlots: { anyOf: [{ type: 'integer', minimum: 1, maximum: 6 }, { type: 'object', required: ['normal', 'golden'], additionalProperties: false,
+            properties: { normal: { type: 'integer', minimum: 1, maximum: 6 }, golden: { type: 'integer', minimum: 1, maximum: 6 } } }] },
+          ids: { type: 'object', required: ['normal', 'elite'], additionalProperties: false, properties: { normal: str, elite: str } } }, additionalProperties: true },
         kit: { anyOf: [{ enum: ['generic'] }, { type: 'object', required: ['ref'], properties: { ref: str }, additionalProperties: false },
           { type: 'object', required: ['spec'], properties: { spec: { anyOf: [str, SKILL_SPEC_SCHEMA] } }, additionalProperties: false },
           { type: 'object', required: ['dsl'], properties: { dsl: { $ref: 'dsl.schema.json' } }, additionalProperties: false }] },

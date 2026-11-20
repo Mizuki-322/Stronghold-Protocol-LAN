@@ -285,3 +285,17 @@ test('a MELEE compact form copies placeOnRanged onto the chess and the 自选 fo
   assert.equal(elite.placeOnRanged, true);
   assert.equal(meleeOnHighGround(elite), true);
 });
+test('chess.equipSlots: { normal, golden } or one number reaches both chess records; absent keeps the default', () => {
+  const recs = (equipSlots) => {
+    const g = guard();
+    if (equipSlots !== undefined) g.chess = { ...g.chess, equipSlots };
+    const r = expandRecords(base, [g], context);
+    assert.deepEqual(r.problems, []);
+    return ['a', 'b'].map((q) => r.data.chess[`chess_x_data_demo_guard_${q}`].equipSlots);
+  };
+  assert.deepEqual(recs({ normal: 4, golden: 6 }), [4, 6]);
+  assert.deepEqual(recs(3), [3, 3]);
+  assert.deepEqual(recs(undefined), [undefined, undefined]);
+  const bad = guard(); bad.chess = { ...bad.chess, equipSlots: 7 };
+  assert.ok(!matchesSchema(bad, RECORDS_SCHEMA.items ?? RECORDS_SCHEMA) || expandRecords(base, [bad], context).problems.length > 0, '7 slots is refused');
+});

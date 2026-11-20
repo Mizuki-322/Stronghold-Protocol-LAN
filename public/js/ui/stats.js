@@ -96,7 +96,7 @@ const str = (v, max = 64) => (typeof v === 'string' && v.length ? v.slice(0, max
 // per-record bounds (an imported file is foreign data: nothing a row holds may grow without limit)
 const MAX_PLAYERS = 6; // the game seats 4
 const MAX_LINEUP = 12;
-const MAX_ITEMS = 4;
+const MAX_ITEMS = 4; // kept at 4 for the 40 000-char record budget: a 4 / 6-slot piece's history keeps its first 4 items
 const MAX_BONDS = 24;
 const MAX_STAT_KEYS = 24;
 const MAX_NAME = 24;

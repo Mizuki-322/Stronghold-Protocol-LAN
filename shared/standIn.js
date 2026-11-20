@@ -30,6 +30,8 @@ export function statusKey(status) {
 export const IDENTITY_FIELDS = Object.freeze([
   'chessId', 'baseId', 'goldenId', 'isGolden', 'tier', 'identifier', 'isHidden', 'isDiy', 'visible', 'chessType', 'backup',
   'shopSortId', 'bonds', 'garrisonIds', 'price', 'sellPrice', 'upgradeNum', 'upgradeChessId', 'status', 'diyRequirement',
+  // the piece's equipment slots (official equipSlotNum; absent on every season-2 piece)
+  'equipSlots',
 ]);
 
 /** The form of `charId` at a chess `status`, or null. */

@@ -9,7 +9,7 @@ import { isObj, tileKey } from './shared.js';
 import { boardTileOf, fieldTile } from './camera.js';
 import { deployedRecord, fieldsStandIn, standInOf } from './standIn.js';
 import { t } from '../../../../shared/i18n.js';
-import { morphSlotPolicy } from '../../../../shared/plugins/rules.js';
+import { morphSlotPolicy, equipSlotsOf } from '../../../../shared/plugins/rules.js';
 
 
 // ---- placement (canPlace mirror) ------------------------------------------------------------------------
@@ -422,14 +422,16 @@ const PROMOTE_KEYS = new Set(['use_equip_upgrade_char', 'equip_round_start_upgra
  */
 export function equipReplaces(ctx, uid, targetPiece) {
   const items = targetPiece?.items;
+  // the target's equipment slots (its chess record's `equipSlots`, else 2)
+  const cap = equipSlotsOf(ctx?.getChess?.(targetPiece?.id), 2);
   if (ctx?.morphMode === 'plus') {
     if (!Array.isArray(items)) return false;
     const policy = morphSlotPolicy('plus', (it) => !!ctx.getItem?.(typeof it === 'string' ? it : it?.id)?.canGiveBond);
     const incoming = ctx.getItem?.(ctx.pieces?.get(uid)?.piece?.id);
     // a morph does not occupy a slot, so it never opens the replace dialog
     if (!policy.occupies(incoming)) return false;
-    if (policy.slotsUsed(items) < policy.slotCap(2)) return false;
-  } else if (!Array.isArray(items) || items.length < 2) return false;
+    if (policy.slotsUsed(items) < policy.slotCap(cap)) return false;
+  } else if (!Array.isArray(items) || items.length < cap) return false;
   const rec = ctx.getItem(ctx.pieces.get(uid)?.piece?.id);
   if (!consumedOnEquip(rec)) return !equipMerges(ctx, uid);
   const promotes = Array.isArray(rec.buffs) && rec.buffs.some((b) => PROMOTE_KEYS.has(b?.key));

@@ -1078,6 +1078,35 @@
                 "hidden": {
                   "type": "boolean"
                 },
+                "equipSlots": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 6
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "normal",
+                        "golden"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "normal": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 6
+                        },
+                        "golden": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 6
+                        }
+                      }
+                    }
+                  ]
+                },
                 "ids": {
                   "type": "object",
                   "required": [
@@ -3861,6 +3890,35 @@
                   },
                   "hidden": {
                     "type": "boolean"
+                  },
+                  "equipSlots": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 6
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "normal",
+                          "golden"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "normal": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 6
+                          },
+                          "golden": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 6
+                          }
+                        }
+                      }
+                    ]
                   },
                   "ids": {
                     "type": "object",
@@ -6659,6 +6717,35 @@
                       },
                       "hidden": {
                         "type": "boolean"
+                      },
+                      "equipSlots": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 6
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "normal",
+                              "golden"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "normal": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 6
+                              },
+                              "golden": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 6
+                              }
+                            }
+                          }
+                        ]
                       },
                       "ids": {
                         "type": "object",

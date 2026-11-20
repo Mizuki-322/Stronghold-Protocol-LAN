@@ -308,6 +308,9 @@ function buildChess(ctx) {
       sellPrice: priceRow.chessSoldPrice ?? null,
       upgradeNum: cd.upgradeNum,
       upgradeChessId: cd.upgradeChessId || null,
+      // equipment slots of this piece (act3autochess `equipSlotNum`: 2, “暴躁铁皮” 4 / 6); absent in act2autochess, where
+      // every piece has economy.equipPerChess — so no key is written and data/chess.json stays as it was
+      ...(Number.isInteger(cd.equipSlotNum) && cd.equipSlotNum > 0 ? { equipSlots: cd.equipSlotNum } : {}),
       status: { phase, level, skillLevel: status.skillLevel, equipLevel: status.equipLevel || 0 },
       stats: null, immunities: null, rangeId: null, rangeGrid: null,
       dmgType: null, attackKind: null, projectile: null, canHitFly: false, targetPriority: null,

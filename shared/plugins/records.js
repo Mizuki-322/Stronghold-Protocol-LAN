@@ -142,7 +142,9 @@ function operator(data, r, pluginId, validateDsl) {
         bonds: c.bonds, garrisonIds: object(c.garrisonIds) ? c.garrisonIds[quality] ?? [] : c.garrisonIds ?? [],
         price: object(c.price) ? c.price[quality] : c.price ?? econ.chessPrice?.[tier]?.[quality],
         sellPrice: c.sellPrice ?? econ.chessSell?.[tier]?.[quality] ?? 1, upgradeNum: golden ? 0 : econ.mergeCount ?? 3,
-        upgradeChessId: golden ? null : goldenId, status };
+        upgradeChessId: golden ? null : goldenId, status,
+        // equipment slots, like price: one number or { normal, golden } (official equipSlotNum; absent ⇒ equipPerChess)
+        ...(Number.isInteger(object(c.equipSlots) ? c.equipSlots[quality] : c.equipSlots) ? { equipSlots: object(c.equipSlots) ? c.equipSlots[quality] : c.equipSlots } : {}) };
       data.chess[id] = composeUnitRecord(identity, unit, f, { skillIndex });
       delete data.chess[id].skill.isDefault;
     }

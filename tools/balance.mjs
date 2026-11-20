@@ -259,7 +259,7 @@ export function applyBoard(m, ps, plan, r, rng, { profile = 1 } = {}) {
   const order = carriers.concat(pieces.filter((p) => !carriers.includes(p)));
   let ci = 0;
   for (const id of plan.items) {
-    while (ci < order.length && order[ci].items.length >= gd.equipPerChess) ci++;
+    while (ci < order.length && order[ci].items.length >= gd.equipSlotsFor(order[ci].id)) ci++;
     if (ci >= order.length) break;
     order[ci].items.push(ps.newPiece('item', id));
   }
