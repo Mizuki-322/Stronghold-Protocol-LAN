@@ -161,6 +161,13 @@ export const PROJ = Object.freeze({
   droneBomb: { look: 'shell', speed: 5, once: true, tint: 0xffe2c8, glow: 0xff5a3a, len: 0.6, width: 0.3, head: 0.5, trail: 0xff7a4a, arc: 0.35, smoke: 0x2e2824, hit: 'boom' },
 });
 
+/**
+ * The sim's projectile kind 'instant' (local, docs/local-lan-2026-10-20.md): a ranged hit with no projectile — the
+ * shooter's ranged clip (units.js _rangedShot) and this impact drawn on the target at once (fx/projectiles.js
+ * _instantHit; `hit` as in PROJ, the bomb's burst). Not a PROJ kind: nothing flies.
+ */
+export const INSTANT_HIT = Object.freeze({ glow: 0xff8a3d, trail: 0xff9c4a, smoke: 0x2e2824, muzzle: 0xffb35c, hit: 'boom' });
+
 /** Status keys (b.ev 'status' + UF flags) → icon atlas key (render/textures.js) and colour. */
 export const STATUS_ICON = Object.freeze({
   stun: 'stun', freeze: 'freeze', cold: 'cold', stealth: 'stealth', shield: 'shield', fragile: 'fragile',

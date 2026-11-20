@@ -21,7 +21,7 @@ export const SKILL_SPEC_SCHEMA = shape({
     priority: enums('default fly ranged lowDef highDef lowestHp highestHp lowestHpRatio highestAtk boss elite notBurst ground heaviest nearest farthest'), allInRange: bool, canHitFly: bool, noRangeExtend: bool, showOwnRange: bool }),
   attack: shape({ dmgType: enums('phys arts true heal elemental'), atkScale: number, healScale: number, splashRadius: number,
     splashScale: number, hits: count, funnelMul: number, funnelBodyHits: count,
-    projectile: enums('none beam arrow bolt bomb lob orb drone boomerang'), maxTargets: count, dmgMul: number,
+    projectile: enums('none beam instant arrow bolt bomb lob orb drone boomerang'), maxTargets: count, dmgMul: number,
     chain: shape({ count, falloff: { ...number, maximum: 1 }, radius: number, sluggish: number }),
     heal: shape({ mode: enums('single multi chain all'), count, falloff: { ...number, maximum: 1 }, hpAtMost: { ...number, maximum: 1 } }),
     onHitStatus: shape({ key: enums('stun freeze cold sleep slow sluggish bind fragile artsFragile physFragile elemFragile silence fear tremble disarm stealth camou reveal invulnerable levitate groundbind palsy taunt weaken resist'), duration: number, value: signed }, ['key', 'duration']),

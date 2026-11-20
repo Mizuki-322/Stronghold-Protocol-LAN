@@ -5,8 +5,10 @@
 //   data fields (dmgType/attackKind/projectile/canHitFly/targetPriority from data/chess.json) → kit.trait overrides.
 // Profile fields:
 //   attack 'melee'|'ranged'   dmgType 'phys'|'arts'|'true'|'heal'|'none'
-//   projectile 'none'|'beam'|'arrow'|'bolt'|'bomb'|'lob'|'orb'|'drone'|'boomerang' ('beam': an instant hit drawn as a
-//                             line; 'boomerang': out to the target and back to the thrower, ai.js throwBoomerang)
+//   projectile 'none'|'beam'|'instant'|'arrow'|'bolt'|'bomb'|'lob'|'orb'|'drone'|'boomerang' ('beam': an instant hit
+//                             drawn as a line; 'instant' (local, plugin kits only): an instant ranged hit drawn as the
+//                             shooter's ranged clip and an impact on the target, no line or projectile; 'boomerang':
+//                             out to the target and back to the thrower, ai.js throwBoomerang)
 //                             boomerang bool (回环射手: keeps 'boomerang')
 //   canHitFly bool            maxTargets n (≥1)          hitAllBlocked bool ("同时攻击阻挡的所有敌人": up to the block count of
 //                             targets, blocked ones first — ai.js targetCount)

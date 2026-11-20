@@ -278,7 +278,9 @@ export function performAttack(b, u, prof, targets, opts = null) {
     u.mem.engaged = true;
     b._ev(['engage', u.id]);
   }
-  const ranged = !prof._fortressMelee && prof.attack === 'ranged' && prof.projectile && prof.projectile !== 'none' && prof.projectile !== 'beam';
+  // 'beam' and 'instant' hit at once (no projectile); the 'atk' event still carries the kind for the client's visual
+  const ranged = !prof._fortressMelee && prof.attack === 'ranged' && prof.projectile && prof.projectile !== 'none' && prof.projectile !== 'beam'
+    && prof.projectile !== 'instant';
   const vis = prof._fortressMelee ? 'none' : (prof.projectile || 'none');
   // 秘术师: the stored energies leave with this attack, at its main target (professions.js installMystic)
   const energy = !isHeal && prof.releaseEnergy ? prof.releaseEnergy(b, u) : 0;

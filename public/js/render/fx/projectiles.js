@@ -1,7 +1,7 @@
 // public/js/render/fx/projectiles.js — FxSystem shots, boomerangs, mortar shells and impacts.
 // Installed on FxSystem.prototype by ./system.js (a method container: never instantiated; `this` is the effect system).
 
-import { PROJ } from '../style.js';
+import { PROJ, INSTANT_HIT } from '../style.js';
 import { SHOT_HEIGHT, bodyZ, feetZ } from './camera.js';
 import { clamp } from './limits.js';
 import { projSpeed } from './speeds.js';
@@ -55,6 +55,7 @@ export class FxProjectiles {
     // chain: the source is the previous target of the bounce (sim ai.js), so the arc hops unit to unit
     if (kind === 'chain' || kind === 'chainHeal') { if (tgt && tgt !== src) this._beam(src, tgt, kind === 'chainHeal' ? 0x7dffa8 : 0xc9a2ff, 0.22, 1, true); return; }
     if (kind === 'beam') { if (tgt && tgt !== src) this._beam(src, tgt, src.isEnemy ? 0xff7a5a : 0xffe6a8, 0.18, 0.15); return; }
+    if (kind === 'instant') { if (tgt) this._instantHit(tgt); return; }
     const spec = PROJ[kind];
     if (!spec || !tgt) {
       if (kind === 'none' || !kind) this._slashAt = src.id;
@@ -364,6 +365,12 @@ export class FxProjectiles {
       this.particle('glow', px, py, { tint: pr.glow === spec.glow ? spec.muzzle : pr.glow, life: 0.16, s0: (s / 128) * 0.45, s1: (s / 128) * 0.8, a0: 0.9, a1: 0 });
       if (look === 'shell') this.smoke(px, py, s * 0.28, spec.smoke ?? 0x2a2522, 0.3);
     }
+  }
+
+  /** 'instant' (sim: a ranged hit with no projectile): only the arrival burst, on the target now. */
+  _instantHit(tgt) {
+    const cam = this.ctx.cam();
+    this._impact({ spec: INSTANT_HIT, tx: tgt.x, ty: tgt.y, tz: bodyZ(cam, tgt, SHOT_HEIGHT.aim), glow: INSTANT_HIT.glow, trailTint: INSTANT_HIT.trail }, cam);
   }
 
   /** Arrival burst of a shot (PROJ `hit`): at the target, or the ground under it for shells. */

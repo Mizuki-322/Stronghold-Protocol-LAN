@@ -916,6 +916,7 @@
                             "enum": [
                               "none",
                               "beam",
+                              "instant",
                               "arrow",
                               "bolt",
                               "bomb",
@@ -1742,6 +1743,7 @@
                                   "enum": [
                                     "none",
                                     "beam",
+                                    "instant",
                                     "arrow",
                                     "bolt",
                                     "bomb",
@@ -3729,6 +3731,7 @@
                               "enum": [
                                 "none",
                                 "beam",
+                                "instant",
                                 "arrow",
                                 "bolt",
                                 "bomb",
@@ -4555,6 +4558,7 @@
                                     "enum": [
                                       "none",
                                       "beam",
+                                      "instant",
                                       "arrow",
                                       "bolt",
                                       "bomb",
@@ -6556,6 +6560,7 @@
                                   "enum": [
                                     "none",
                                     "beam",
+                                    "instant",
                                     "arrow",
                                     "bolt",
                                     "bomb",
@@ -7382,6 +7387,7 @@
                                         "enum": [
                                           "none",
                                           "beam",
+                                          "instant",
                                           "arrow",
                                           "bolt",
                                           "bomb",

@@ -200,6 +200,16 @@ describe('shots', () => {
     }
   });
 
+  test("'instant' (local): no projectile, no beam, the impact burst on the target at once", () => {
+    const a = unit(1, 3, 10), b = unit(2, 7, 11, { isEnemy: true });
+    const { fx } = makeFx({ views: [a, b] });
+    fx.attack(a, b, 'instant');
+    assert.equal(fx.projs.length, 0);
+    assert.equal(fx.beamList.length, 0);
+    assert.ok(fx.rings.some((r) => r.sp.texture === fx.tex.shock), 'the bomb burst, now');
+    assert.notEqual(fx._slashAt, a.id, 'not a melee slash');
+  });
+
   test('chain / beam kinds are beams, melee shots are no projectile', () => {
     const a = unit(1, 3, 10), b = unit(2, 5, 10, { isEnemy: true });
     const { fx } = makeFx({ views: [a, b] });

@@ -1015,12 +1015,14 @@ export class UnitView {
   /**
    * A 要塞 (fortress) attacks in melee while it blocks and fires shells otherwise (sim ai.js: the 'atk' kind is 'none' for
    * the melee strike, the shell's projectile kind for a ranged shot). A model with its own ranged clip (SpineActor
-   * RANGED_CLIP) plays it for the shots; official fortress models have none and keep their one attack clip.
+   * RANGED_CLIP) plays it for the shots; official fortress models have none and keep their one attack clip. An
+   * 'instant' shot (sim: a ranged hit with no projectile, any branch — local, render/style.js INSTANT_HIT) is a ranged
+   * shot too.
    */
   _rangedShot(kind) {
     if (!this.actor) return;
     const fortress = this.ctx.subProfOf?.(this.info?.defId, this.info) === 'fortress';
-    this.actor.rangedShot = fortress && !!kind && kind !== 'none';
+    this.actor.rangedShot = kind === 'instant' || (fortress && !!kind && kind !== 'none');
   }
 
   _attackForm(kind) {
